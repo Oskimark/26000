@@ -63,6 +63,6 @@ await migrar();
 await tick();
 setInterval(tick, config.intervaloProgramadosMs);
 
-server.listen(config.port, () => {
-  console.log(`Servidor escuchando en http://localhost:${config.port} (TZ=${process.env.TZ})`);
+server.listen(config.port, '0.0.0.0', () => {
+  console.log(`Servidor escuchando en http://0.0.0.0:${config.port} (TZ=${process.env.TZ})`);
 });

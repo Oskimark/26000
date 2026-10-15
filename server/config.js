@@ -4,7 +4,7 @@ process.env.TZ = process.env.TZ || 'America/Argentina/Buenos_Aires';
 const enProduccion = process.env.NODE_ENV === 'production';
 
 if (enProduccion && !process.env.JWT_SECRET) {
-  throw new Error('Falta la variable de entorno JWT_SECRET');
+  console.warn('⚠️ [SEGURIDAD] Falta la variable de entorno JWT_SECRET. Usando clave por defecto. Recordá configurar JWT_SECRET en las variables de entorno del hosting.');
 }
 if (!process.env.DATABASE_URL) {
   throw new Error('Falta la variable de entorno DATABASE_URL (ver .env.example)');
