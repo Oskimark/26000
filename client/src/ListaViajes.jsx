@@ -92,13 +92,11 @@ export default function ListaViajes({ viajes, editable = true, onAtender }) {
       <thead>
         <tr>
           <th className="col-num">N°</th>
-          <th className="col-hora">Hora</th>
-          <th>Teléfono</th>
-          <th>Dirección</th>
+          <th className="col-dir">Dirección</th>
           <th>Chofer</th>
-          <th className="col-prog">Programado</th>
-          <th className="col-fin">Fin</th>
-          <th className="col-op">Operador</th>
+          <th>Teléfono</th>
+          <th className="col-hora">Hora Inicio</th>
+          <th className="col-fin">Hora Fin</th>
           {editable && <th className="col-acc" />}
         </tr>
       </thead>
@@ -116,11 +114,15 @@ export default function ListaViajes({ viajes, editable = true, onAtender }) {
           return (
             <tr key={v.id} className={clases}>
               <td className="col-num">{pendiente ? '—' : v.numero}</td>
-              <td className="col-hora" title={`Tomado ${horaConDia(v.hora_toma)} por ${v.operador || '—'}`}>
-                {pendiente ? horaConDia(v.hora_programada) : hora(v.programado ? v.hora_programada : v.hora_toma)}
+              <td className="col-dir">
+                <span className="texto-direccion">{v.direccion}</span>
+                {v.programado && (
+                  <span className="badge-prog" title={`Tomado por ${v.operador || '—'} a las ${horaConDia(v.hora_toma)}`}>
+                    Agendado {hora(v.hora_programada)}
+                    {pendiente && mins != null && <small> · {mins <= 0 ? 'ya' : mins < 60 ? `en ${mins}m` : `en ${Math.floor(mins / 60)}h ${mins % 60}m`}</small>}
+                  </span>
+                )}
               </td>
-              <td>{v.telefono}</td>
-              <td className="col-dir">{v.direccion}</td>
               <td>
                 {v.chofer || (sinChofer ? (
                   editable && onAtender
@@ -128,16 +130,12 @@ export default function ListaViajes({ viajes, editable = true, onAtender }) {
                     : <span className="chip alerta">Sin chofer</span>
                 ) : pendiente ? <span className="tenue">al llegar la hora</span> : '')}
               </td>
-              <td className="col-prog">
-                {v.programado && (
-                  <span className="chip prog" title={`Tomado ${horaConDia(v.hora_toma)} por ${v.operador || '—'}`}>
-                    {hora(v.hora_programada)}
-                    {pendiente && mins != null && <small> · {mins <= 0 ? 'ya' : mins < 60 ? `en ${mins} min` : `en ${Math.floor(mins / 60)} h ${mins % 60} min`}</small>}
-                  </span>
-                )}
+              <td>{v.telefono || '—'}</td>
+              <td className="col-hora" title={`Tomado ${horaConDia(v.hora_toma)} por ${v.operador || '—'}`}>
+                <b>{pendiente ? hora(v.hora_programada) : hora(v.hora_ejecucion || v.hora_toma)}</b>
+                <div className="subtexto-op">{v.operador}</div>
               </td>
               <CeldaFin viaje={v} editable={editable} />
-              <td className="col-op tenue">{v.operador}</td>
               {editable && (
                 <td className="col-acc">
                   <button className="btn-link chico" onClick={() => cambiarCancelado(v)}>

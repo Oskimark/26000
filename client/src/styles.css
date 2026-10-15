@@ -468,13 +468,34 @@ input:focus, select:focus {
   background-color: var(--fila-hover);
 }
 
-.col-num { width: 45px; text-align: center; font-weight: 700; }
-.col-hora { width: 90px; }
-.col-dir { font-weight: 500; font-size: 0.95rem; }
-.col-prog { width: 150px; }
-.col-fin { width: 110px; }
-.col-op { width: 110px; }
+.col-num { width: 50px; text-align: center; font-weight: 700; color: #64748b; }
+.col-dir { font-weight: 500; font-size: 0.95rem; min-width: 240px; }
+.col-hora { width: 110px; }
+.col-fin { width: 120px; }
 .col-acc { width: 80px; text-align: right; }
+
+.texto-direccion {
+  font-weight: 600;
+  color: #0f172a;
+  display: block;
+}
+
+.badge-prog {
+  display: inline-block;
+  margin-top: 3px;
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.subtexto-op {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: normal;
+}
 
 /* Estados en la tabla */
 .fila-pendiente {
