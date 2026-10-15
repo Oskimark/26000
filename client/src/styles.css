@@ -472,6 +472,7 @@ input:focus, select:focus {
 .col-dir { font-weight: 500; font-size: 0.95rem; min-width: 240px; }
 .col-hora { width: 110px; }
 .col-fin { width: 120px; }
+.col-prog { width: 130px; }
 .col-acc { width: 80px; text-align: right; }
 
 .texto-direccion {

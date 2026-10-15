@@ -93,10 +93,11 @@ export default function ListaViajes({ viajes, editable = true, onAtender }) {
         <tr>
           <th className="col-num">N°</th>
           <th className="col-dir">Dirección</th>
-          <th>Chofer</th>
-          <th>Teléfono</th>
           <th className="col-hora">Hora Inicio</th>
           <th className="col-fin">Hora Fin</th>
+          <th>Chofer</th>
+          <th>Teléfono</th>
+          <th className="col-prog">Programado</th>
           {editable && <th className="col-acc" />}
         </tr>
       </thead>
@@ -116,13 +117,12 @@ export default function ListaViajes({ viajes, editable = true, onAtender }) {
               <td className="col-num">{pendiente ? '—' : v.numero}</td>
               <td className="col-dir">
                 <span className="texto-direccion">{v.direccion}</span>
-                {v.programado && (
-                  <span className="badge-prog" title={`Tomado por ${v.operador || '—'} a las ${horaConDia(v.hora_toma)}`}>
-                    Agendado {hora(v.hora_programada)}
-                    {pendiente && mins != null && <small> · {mins <= 0 ? 'ya' : mins < 60 ? `en ${mins}m` : `en ${Math.floor(mins / 60)}h ${mins % 60}m`}</small>}
-                  </span>
-                )}
               </td>
+              <td className="col-hora" title={`Tomado ${horaConDia(v.hora_toma)} por ${v.operador || '—'}`}>
+                <b>{pendiente ? '—' : hora(v.hora_ejecucion || v.hora_toma)}</b>
+                <div className="subtexto-op">{v.operador}</div>
+              </td>
+              <CeldaFin viaje={v} editable={editable} />
               <td>
                 {v.chofer || (sinChofer ? (
                   editable && onAtender
@@ -131,11 +131,18 @@ export default function ListaViajes({ viajes, editable = true, onAtender }) {
                 ) : pendiente ? <span className="tenue">al llegar la hora</span> : '')}
               </td>
               <td>{v.telefono || '—'}</td>
-              <td className="col-hora" title={`Tomado ${horaConDia(v.hora_toma)} por ${v.operador || '—'}`}>
-                <b>{pendiente ? hora(v.hora_programada) : hora(v.hora_ejecucion || v.hora_toma)}</b>
-                <div className="subtexto-op">{v.operador}</div>
+              <td className="col-prog">
+                {v.programado ? (
+                  <span className="badge-prog" title={`Tomado por ${v.operador || '—'} a las ${horaConDia(v.hora_toma)}`}>
+                    {hora(v.hora_programada)}
+                    {pendiente && mins != null && (
+                      <small> · {mins <= 0 ? 'ya' : mins < 60 ? `en ${mins}m` : `en ${Math.floor(mins / 60)}h ${mins % 60}m`}</small>
+                    )}
+                  </span>
+                ) : (
+                  <span className="tenue">—</span>
+                )}
               </td>
-              <CeldaFin viaje={v} editable={editable} />
               {editable && (
                 <td className="col-acc">
                   <button className="btn-link chico" onClick={() => cambiarCancelado(v)}>
