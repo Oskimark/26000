@@ -4,6 +4,7 @@ import Login from './Login.jsx';
 import Recepcion from './Recepcion.jsx';
 import ChoferesTurno from './ChoferesTurno.jsx';
 import Historial from './Historial.jsx';
+import Clientes from './Clientes.jsx';
 import Admin from './Admin.jsx';
 import Reloj from './Reloj.jsx';
 import { leerTema } from './tema.js';
@@ -12,6 +13,7 @@ const SECCIONES = [
   { id: 'recepcion', nombre: 'Recepción' },
   { id: 'choferes', nombre: 'Choferes del turno' },
   { id: 'historial', nombre: 'Historial' },
+  { id: 'clientes', nombre: 'Clientes' },
   { id: 'admin', nombre: 'Administración', soloAdmin: true },
 ];
 
@@ -108,6 +110,7 @@ export default function App() {
             </div>
             {seccion === 'choferes' && <ChoferesTurno turnos={turnos} socket={socket} esAdmin={esAdmin} />}
             {seccion === 'historial' && <Historial turnos={turnos} />}
+            {seccion === 'clientes' && <Clientes socket={socket} />}
             {seccion === 'admin' && esAdmin && <Admin operadorId={sesion.operador.id} />}
           </>
         )}

@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { CampoDireccion, CampoChofer } from './Campos.jsx';
 import { parsearHora, proximaOcurrencia } from '../../shared/turnos.js';
 import { horaConDia } from './formato.js';
+import { urlWhatsApp, IconoWhatsApp } from './TelefonoWhatsApp.jsx';
 
 /** Formulario de nuevo viaje: Teléfono → Dirección → Chofer → Programado → Enter guarda. */
 const FormViaje = forwardRef(function FormViaje({ choferes, onGuardado, onVacioCambio }, ref) {
@@ -63,26 +64,42 @@ const FormViaje = forwardRef(function FormViaje({ choferes, onGuardado, onVacioC
     if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); guardar(); }
   }
 
+  const linkWA = urlWhatsApp(telefono);
+
   return (
     <div className="form-viaje" onKeyDown={onKeyDownForm}>
       <div className="campos">
         <label className="campo campo-tel">
           <span>Teléfono</span>
-          <input
-            ref={telRef}
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value.replace(/[^\d\s+-]/g, ''))}
-            onKeyDown={(e) => {
-              if ((e.key === 'Enter' && !e.ctrlKey) || (e.key === 'Tab' && !e.shiftKey)) {
-                e.preventDefault();
-                dirRef.current?.focus();
-              }
-            }}
-            placeholder="Número"
-            inputMode="tel"
-            autoComplete="off"
-            autoFocus
-          />
+          <div className="input-con-whatsapp">
+            <input
+              ref={telRef}
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value.replace(/[^\d\s+-]/g, ''))}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' && !e.ctrlKey) || (e.key === 'Tab' && !e.shiftKey)) {
+                  e.preventDefault();
+                  dirRef.current?.focus();
+                }
+              }}
+              placeholder="Número"
+              inputMode="tel"
+              autoComplete="off"
+              autoFocus
+            />
+            {linkWA && (
+              <a
+                href={linkWA}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-whatsapp-input"
+                title="Enviar WhatsApp a este número"
+                tabIndex={-1}
+              >
+                <IconoWhatsApp size={18} />
+              </a>
+            )}
+          </div>
         </label>
 
         <label className="campo campo-dir">

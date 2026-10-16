@@ -98,6 +98,18 @@ export default function Admin({ operadorId }) {
     }
   }
 
+  async function eliminarChofer(chofer) {
+    if (!window.confirm(`¿Seguro que querés ELIMINAR al chofer "${chofer.nombre}"?`)) return;
+    try {
+      await api(`/choferes/${chofer.id}`, { method: 'DELETE' });
+      if (editChofer?.id === chofer.id) setEditChofer(null);
+      mostrarExito(`Chofer "${chofer.nombre}" eliminado correctamente`);
+      cargarChoferes();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   // --- Operadores Handlers ---
   async function agregarOperador(e) {
     e.preventDefault();
@@ -177,7 +189,7 @@ export default function Admin({ operadorId }) {
                 <tr>
                   <th>Nombre</th>
                   <th>Estado</th>
-                  <th style={{ width: 140 }}>Acción</th>
+                  <th style={{ width: 180 }}>Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,7 +228,10 @@ export default function Admin({ operadorId }) {
                           <button className="btn chico" onClick={() => setEditChofer(null)}>Cancelar</button>
                         </div>
                       ) : (
-                        <button className="btn chico" onClick={() => setEditChofer(c)}>Editar</button>
+                        <div className="botones-accion-fila">
+                          <button className="btn chico" onClick={() => setEditChofer(c)}>Editar</button>
+                          <button className="btn chico peligro" onClick={() => eliminarChofer(c)}>Eliminar</button>
+                        </div>
                       )}
                     </td>
                   </tr>

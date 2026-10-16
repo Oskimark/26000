@@ -235,3 +235,232 @@ export async function sugerirDirecciones({ q, telefono, limite = 8 }) {
   );
   return rows;
 }
+
+/**
+ * Búsqueda avanzada de viajes para el módulo Clientes y estadísticas por día, mes y año.
+ */
+export async function buscarViajesClientes(filtros = {}) {
+  const condiciones = [];
+  const params = [];
+  const addParam = (val) => {
+    params.push(val);
+    return `$${params.length}`;
+  };
+
+  const tel = normalizarTelefono(filtros.telefono);
+  if (tel) {
+    const p = addParam(`%${tel}%`);
+    condiciones.push(`v.telefono LIKE ${p}`);
+  }
+
+  const dest = normalizarDireccion(filtros.destino);
+  if (dest) {
+    const p = addParam(`%${dest.replace(/[%_\\]/g, '\\$&')}%`);
+    condiciones.push(`d.texto_normalizado LIKE ${p}`);
+  }
+
+  if (filtros.choferId) {
+    const p = addParam(Number(filtros.choferId));
+    condiciones.push(`v.chofer_id = ${p}`);
+  } else if (filtros.chofer && String(filtros.chofer).trim()) {
+    const p = addParam(`%${String(filtros.chofer).trim()}%`);
+    condiciones.push(`c.nombre ILIKE ${p}`);
+  }
+
+  if (filtros.operador && String(filtros.operador).trim()) {
+    const p = addParam(`%${String(filtros.operador).trim()}%`);
+    condiciones.push(`o.nombre ILIKE ${p}`);
+  }
+
+  if (filtros.tipoTurno === 'A' || filtros.tipoTurno === 'B') {
+    const p = addParam(filtros.tipoTurno);
+    condiciones.push(`v.tipo_turno = ${p}`);
+  }
+
+  if (filtros.fechaDesde && /^\d{4}-\d{2}-\d{2}$/.test(filtros.fechaDesde)) {
+    const p = addParam(filtros.fechaDesde);
+    condiciones.push(`v.fecha_turno >= ${p}::date`);
+  }
+
+  if (filtros.fechaHasta && /^\d{4}-\d{2}-\d{2}$/.test(filtros.fechaHasta)) {
+    const p = addParam(filtros.fechaHasta);
+    condiciones.push(`v.fecha_turno <= ${p}::date`);
+  }
+
+  if (filtros.dia && /^\d{4}-\d{2}-\d{2}$/.test(filtros.dia)) {
+    const p = addParam(filtros.dia);
+    condiciones.push(`v.fecha_turno = ${p}::date`);
+  }
+
+  if (filtros.mes && /^\d{4}-\d{2}$/.test(filtros.mes)) {
+    const p = addParam(filtros.mes);
+    condiciones.push(`to_char(v.fecha_turno, 'YYYY-MM') = ${p}`);
+  }
+
+  if (filtros.anio && /^\d{4}$/.test(filtros.anio)) {
+    const p = addParam(filtros.anio);
+    condiciones.push(`to_char(v.fecha_turno, 'YYYY') = ${p}`);
+  }
+
+  // Condición base sin filtro de estado para calcular estadísticas de realizados vs anulados
+  const whereBase = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
+
+  const estado = filtros.estado || 'realizados';
+  const condEstado = [...condiciones];
+  if (estado === 'realizados') {
+    condEstado.push('v.numero IS NOT NULL AND NOT v.cancelado');
+  } else if (estado === 'anulados') {
+    condEstado.push('v.cancelado = TRUE');
+  } else if (estado === 'programados') {
+    condEstado.push('v.programado = TRUE');
+  }
+  const whereListado = condEstado.length ? `WHERE ${condEstado.join(' AND ')}` : '';
+
+  const limite = Math.min(Math.max(Number(filtros.limite) || 300, 1), 1000);
+  const paramsListado = [...params, limite];
+
+  const baseFrom = `
+    FROM viajes v
+    JOIN direcciones d ON d.id = v.direccion_id
+    LEFT JOIN choferes c ON c.id = v.chofer_id
+    LEFT JOIN operadores o ON o.id = v.operador_id
+  `;
+
+  const [
+    resViajes,
+    resResumen,
+    resPorDia,
+    resPorMes,
+    resPorAnio,
+    resTopClientes,
+    resTopDestinos,
+    resTopChoferes,
+  ] = await Promise.all([
+    query(
+      `${SELECT_VIAJE}
+       ${whereListado}
+       ORDER BY COALESCE(v.hora_ejecucion, v.hora_programada, v.hora_toma) DESC, v.id DESC
+       LIMIT $${paramsListado.length}`,
+      paramsListado,
+    ),
+    query(
+      `SELECT
+         COUNT(*)::int AS total_filtrados,
+         COUNT(*) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS realizados,
+         COUNT(*) FILTER (WHERE v.cancelado)::int AS anulados,
+         COUNT(*) FILTER (WHERE v.programado AND NOT v.cancelado)::int AS programados,
+         COUNT(DISTINCT NULLIF(v.telefono, '')) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS clientes_unicos,
+         COUNT(DISTINCT v.direccion_id) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS destinos_unicos,
+         COUNT(DISTINCT v.chofer_id) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS choferes_unicos
+       ${baseFrom}
+       ${whereBase}`,
+      params,
+    ),
+    query(
+      `SELECT
+         to_char(v.fecha_turno, 'YYYY-MM-DD') AS periodo,
+         COUNT(*) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS realizados,
+         COUNT(*) FILTER (WHERE v.cancelado)::int AS anulados,
+         COUNT(*) FILTER (WHERE v.programado AND NOT v.cancelado)::int AS programados,
+         COUNT(DISTINCT NULLIF(v.telefono, '')) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS clientes_unicos,
+         COUNT(DISTINCT v.chofer_id) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS choferes_activos
+       ${baseFrom}
+       ${whereBase}
+       GROUP BY 1
+       ORDER BY 1 DESC
+       LIMIT 90`,
+      params,
+    ),
+    query(
+      `SELECT
+         to_char(v.fecha_turno, 'YYYY-MM') AS periodo,
+         COUNT(*) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS realizados,
+         COUNT(*) FILTER (WHERE v.cancelado)::int AS anulados,
+         COUNT(*) FILTER (WHERE v.programado AND NOT v.cancelado)::int AS programados,
+         COUNT(DISTINCT NULLIF(v.telefono, '')) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS clientes_unicos,
+         COUNT(DISTINCT v.fecha_turno) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS dias_activos
+       ${baseFrom}
+       ${whereBase}
+       GROUP BY 1
+       ORDER BY 1 DESC
+       LIMIT 36`,
+      params,
+    ),
+    query(
+      `SELECT
+         to_char(v.fecha_turno, 'YYYY') AS periodo,
+         COUNT(*) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS realizados,
+         COUNT(*) FILTER (WHERE v.cancelado)::int AS anulados,
+         COUNT(*) FILTER (WHERE v.programado AND NOT v.cancelado)::int AS programados,
+         COUNT(DISTINCT NULLIF(v.telefono, '')) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS clientes_unicos,
+         COUNT(DISTINCT to_char(v.fecha_turno, 'YYYY-MM')) FILTER (WHERE v.numero IS NOT NULL AND NOT v.cancelado)::int AS meses_activos
+       ${baseFrom}
+       ${whereBase}
+       GROUP BY 1
+       ORDER BY 1 DESC`,
+      params,
+    ),
+    query(
+      `SELECT
+         v.telefono,
+         COUNT(*)::int AS realizados,
+         MAX(COALESCE(v.hora_ejecucion, v.hora_toma)) AS ultimo_viaje,
+         (ARRAY_AGG(d.texto ORDER BY COALESCE(v.hora_ejecucion, v.hora_toma) DESC))[1] AS ultimo_destino,
+         MODE() WITHIN GROUP (ORDER BY d.texto) AS destino_frecuente,
+         MODE() WITHIN GROUP (ORDER BY c.nombre) AS chofer_frecuente
+       ${baseFrom}
+       ${whereBase ? `${whereBase} AND` : 'WHERE'} v.telefono <> '' AND v.numero IS NOT NULL AND NOT v.cancelado
+       GROUP BY v.telefono
+       ORDER BY realizados DESC, ultimo_viaje DESC
+       LIMIT 20`,
+      params,
+    ),
+    query(
+      `SELECT
+         d.texto AS direccion,
+         COUNT(*)::int AS realizados,
+         COUNT(DISTINCT NULLIF(v.telefono, ''))::int AS clientes_unicos
+       ${baseFrom}
+       ${whereBase ? `${whereBase} AND` : 'WHERE'} v.numero IS NOT NULL AND NOT v.cancelado
+       GROUP BY d.id, d.texto
+       ORDER BY realizados DESC
+       LIMIT 20`,
+      params,
+    ),
+    query(
+      `SELECT
+         v.chofer_id,
+         COALESCE(c.nombre, 'Sin chofer') AS chofer,
+         COUNT(*)::int AS realizados,
+         COUNT(DISTINCT NULLIF(v.telefono, ''))::int AS clientes_unicos
+       ${baseFrom}
+       ${whereBase ? `${whereBase} AND` : 'WHERE'} v.numero IS NOT NULL AND NOT v.cancelado
+       GROUP BY v.chofer_id, c.nombre
+       ORDER BY realizados DESC
+       LIMIT 20`,
+      params,
+    ),
+  ]);
+
+  return {
+    viajes: resViajes.rows,
+    resumen: resResumen.rows[0] || {
+      total_filtrados: 0,
+      realizados: 0,
+      anulados: 0,
+      programados: 0,
+      clientes_unicos: 0,
+      destinos_unicos: 0,
+      choferes_unicos: 0,
+    },
+    estadisticas: {
+      porDia: resPorDia.rows,
+      porMes: resPorMes.rows,
+      porAnio: resPorAnio.rows,
+      topClientes: resTopClientes.rows,
+      topDestinos: resTopDestinos.rows,
+      topChoferes: resTopChoferes.rows,
+    },
+  };
+}
+

@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { api } from './api.js';
 import { CampoChofer } from './Campos.jsx';
 import { hora } from './formato.js';
+import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 
 /**
  * Llegó la hora de un viaje programado: se muestran sus datos y se pide el chofer.
@@ -55,7 +56,9 @@ const Despacho = forwardRef(function Despacho({ viaje, choferes, pendientes, onP
       <div className="campos">
         <div className="campo">
           <span>Teléfono</span>
-          <div className="dato">{viaje.telefono || '—'}</div>
+          <div className="dato">
+            <TelefonoWhatsApp telefono={viaje.telefono} />
+          </div>
         </div>
         <div className="campo campo-dir">
           <span>Dirección</span>

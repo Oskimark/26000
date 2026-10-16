@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { api } from './api.js';
 import { hora, horaConDia } from './formato.js';
+import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 
 function minutosHasta(iso) {
   return Math.round((new Date(iso).getTime() - Date.now()) / 60_000);
@@ -130,7 +131,9 @@ export default function ListaViajes({ viajes, editable = true, onAtender }) {
                     : <span className="chip alerta">Sin chofer</span>
                 ) : pendiente ? <span className="tenue">al llegar la hora</span> : '')}
               </td>
-              <td>{v.telefono || '—'}</td>
+              <td>
+                <TelefonoWhatsApp telefono={v.telefono} />
+              </td>
               <td className="col-prog">
                 {v.programado ? (
                   <span className="badge-prog" title={`Tomado por ${v.operador || '—'} a las ${horaConDia(v.hora_toma)}`}>

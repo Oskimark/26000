@@ -860,3 +860,234 @@ input:focus, select:focus {
   background: #fff;
 }
 
+/* Botón Peligro (Eliminar) */
+.btn.peligro {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+.btn.peligro:hover:not(:disabled) {
+  background-color: #dc2626;
+  color: #ffffff;
+  border-color: #b91c1c;
+}
+
+/* Enlace de Teléfono y WhatsApp */
+.enlace-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #128c7e;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.enlace-whatsapp:hover {
+  background-color: #25d366;
+  color: #ffffff;
+  border-color: #128c7e;
+  box-shadow: 0 2px 5px rgba(37, 211, 102, 0.3);
+}
+.icono-whatsapp {
+  flex-shrink: 0;
+  color: #25d366;
+  transition: color 0.15s ease;
+}
+.enlace-whatsapp:hover .icono-whatsapp {
+  color: #ffffff;
+}
+
+.input-con-whatsapp {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-con-whatsapp input {
+  padding-right: 34px;
+}
+.btn-whatsapp-input {
+  position: absolute;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ecfdf5;
+  color: #25d366;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.btn-whatsapp-input:hover {
+  background: #25d366;
+  color: #fff;
+}
+.btn-whatsapp-input:hover .icono-whatsapp {
+  color: #fff;
+}
+
+/* Módulo Clientes y Estadísticas */
+.clientes-cabecera-filtros {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.clientes-cabecera-filtros .descripcion {
+  color: var(--texto-secundario);
+  margin-top: 3px;
+}
+
+.grilla-filtros-clientes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 12px;
+}
+
+.chips-filtros-activos {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--borde);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
+}
+.chip-cerrar {
+  background: none;
+  border: none;
+  margin-left: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  color: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.grilla-kpis-clientes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.kpi-card {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kpi-titulo {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--texto-secundario);
+}
+.kpi-valor {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--primario);
+  line-height: 1.1;
+}
+.kpi-sub {
+  font-size: 0.8rem;
+  color: var(--texto-secundario);
+}
+
+.cabecera-estadisticas {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.selector-estadisticas {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.barra-progreso-fondo {
+  width: 100%;
+  height: 10px;
+  background-color: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.barra-progreso-relleno {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primario), #38bdf8);
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+.tema-botones-naranja .barra-progreso-relleno {
+  background: linear-gradient(90deg, var(--corporativo-naranja), #fb923c);
+}
+
+.fila-seleccionada {
+  background-color: var(--primario-suave) !important;
+}
+
+.grilla-rankings-clientes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+.bloque-ranking {
+  border: 1px solid var(--borde-suave);
+  border-radius: var(--radio);
+  padding: 12px;
+  background: #fafbfc;
+}
+.bloque-ranking h4 {
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+  color: var(--texto);
+}
+
+.celda-tel-acciones {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-filtro-mini {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 0.8rem;
+  opacity: 0.65;
+  transition: all 0.15s ease;
+}
+.btn-filtro-mini:hover {
+  opacity: 1;
+  background: var(--primario-suave);
+  border-color: var(--borde);
+}
+
+.btn-texto-filtrable {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.btn-texto-filtrable:hover {
+  color: var(--primario);
+  text-decoration: underline;
+}
+
+

@@ -1,10 +1,10 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
-import { query } from './db.js';
+import { query, transaccion } from './db.js';
 import { firmarToken, requiereAuth, requiereAdmin } from './auth.js';
 import {
   ErrorNegocio, crearViaje, listarTurno, listarProgramadosFuturos, asignarChofer,
-  registrarFin, cambiarCancelacion, sugerirDirecciones, obtenerViaje,
+  registrarFin, cambiarCancelacion, sugerirDirecciones, obtenerViaje, buscarViajesClientes,
 } from './viajes.js';
 import { turnoDe, turnoSiguiente, turnoAnterior, describirTurno, validarTurno } from '../shared/turnos.js';
 
@@ -109,6 +109,11 @@ export function crearApi({ notificar }) {
     res.json(await sugerirDirecciones({ q: req.query.q, telefono: req.query.telefono }));
   }));
 
+  // ---------- Clientes y Estadísticas ----------
+  api.get('/clientes', a(async (req, res) => {
+    res.json(await buscarViajesClientes(req.query));
+  }));
+
   // ---------- Choferes ----------
   api.get('/choferes', a(async (req, res) => {
     const { rows } = await query('SELECT id, nombre, activo FROM choferes ORDER BY activo DESC, nombre');
@@ -133,6 +138,21 @@ export function crearApi({ notificar }) {
     if (!rows[0]) throw new ErrorNegocio('Chofer inexistente', 404);
     notificar('choferes');
     res.json(rows[0]);
+  }));
+
+  api.delete('/choferes/:id', requiereAdmin, a(async (req, res) => {
+    const id = Number(req.params.id);
+    if (!id) throw new ErrorNegocio('ID de chofer inválido');
+    const eliminado = await transaccion(async (client) => {
+      await client.query('DELETE FROM turno_choferes WHERE chofer_id = $1', [id]);
+      await client.query('UPDATE viajes SET chofer_id = NULL WHERE chofer_id = $1', [id]);
+      const { rows } = await client.query('DELETE FROM choferes WHERE id = $1 RETURNING id, nombre', [id]);
+      if (!rows[0]) throw new ErrorNegocio('Chofer inexistente', 404);
+      return rows[0];
+    });
+    notificar('choferes');
+    notificar('viajes');
+    res.json(eliminado);
   }));
 
   // ---------- Operadores ----------

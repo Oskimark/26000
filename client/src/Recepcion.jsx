@@ -3,6 +3,7 @@ import { api } from './api.js';
 import FormViaje from './FormViaje.jsx';
 import Despacho from './Despacho.jsx';
 import ListaViajes from './ListaViajes.jsx';
+import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 import { horaConDia } from './formato.js';
 
 export default function Recepcion({ turnos, socket, activa }) {
@@ -193,7 +194,7 @@ export default function Recepcion({ turnos, socket, activa }) {
                   <tr key={f.id} className="fila-pendiente">
                     <td>{horaConDia(f.hora_programada)}</td>
                     <td>{f.fecha_turno} ({f.tipo_turno === 'A' ? '03 a 15' : '15 a 03'})</td>
-                    <td>{f.telefono}</td>
+                    <td><TelefonoWhatsApp telefono={f.telefono} /></td>
                     <td className="col-dir">{f.direccion}</td>
                     <td className="tenue">{f.operador || '—'} a las {horaConDia(f.hora_toma)}</td>
                   </tr>

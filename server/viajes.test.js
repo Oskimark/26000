@@ -102,4 +102,25 @@ test('Flujo completo del sistema de recepción de viajes', async () => {
     body: {},
   });
   assert.ok(viajeFinalizado.hora_fin, 'Debe registrar la hora de fin');
+
+  // 10. Consultar módulo Clientes con filtros y estadísticas por día, mes y año
+  const clientesRes = await req('/clientes?telefono=3415551234&destino=San%20Martin', { token });
+  assert.ok(clientesRes.viajes.some((v) => v.id === viaje1.id), 'Debe encontrar el viaje filtrado');
+  assert.ok(clientesRes.resumen.realizados >= 1, 'Debe calcular el resumen de viajes realizados');
+  assert.ok(Array.isArray(clientesRes.estadisticas.porDia) && clientesRes.estadisticas.porDia.length >= 1, 'Estadísticas por día');
+  assert.ok(Array.isArray(clientesRes.estadisticas.porMes) && clientesRes.estadisticas.porMes.length >= 1, 'Estadísticas por mes');
+  assert.ok(Array.isArray(clientesRes.estadisticas.porAnio) && clientesRes.estadisticas.porAnio.length >= 1, 'Estadísticas por año');
+
+  // 11. Crear y eliminar un chofer desde administración
+  const choferTemp = await req('/choferes', {
+    token,
+    method: 'POST',
+    body: { nombre: 'Chofer Temporal Borrar' },
+  });
+  const eliminado = await req(`/choferes/${choferTemp.id}`, {
+    token,
+    method: 'DELETE',
+  });
+  assert.equal(eliminado.id, choferTemp.id, 'Debe eliminar el chofer correctamente');
 });
+
