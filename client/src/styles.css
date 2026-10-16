@@ -6,9 +6,9 @@
   --borde-suave: #e3e8ee;
   --texto: #1a2332;
   --texto-secundario: #5a687c;
-  --primario: #ff6600;
-  --primario-hover: #e65c00;
-  --primario-suave: #fff3eb;
+  --primario: #0d6efd;
+  --primario-hover: #0b5ed7;
+  --primario-suave: #e7f1ff;
   --corporativo-naranja: #ff6600;
   --corporativo-hover: #e65c00;
   --corporativo-borde: #ff7700;
@@ -748,15 +748,19 @@ input:focus, select:focus {
 }
 
 /* Botones principales en naranja corporativo */
-.tema-botones-naranja .btn.primario,
-.btn.primario {
+.tema-botones-naranja {
+  --primario: var(--corporativo-naranja);
+  --primario-hover: var(--corporativo-hover);
+  --primario-suave: #fff3eb;
+}
+
+.tema-botones-naranja .btn.primario {
   background-color: var(--corporativo-naranja) !important;
   border-color: var(--corporativo-hover) !important;
-  color: #ffffff;
+  color: #ffffff !important;
   box-shadow: 0 2px 6px rgba(255, 102, 0, 0.25);
 }
-.tema-botones-naranja .btn.primario:hover:not(:disabled),
-.btn.primario:hover:not(:disabled) {
+.tema-botones-naranja .btn.primario:hover:not(:disabled) {
   background-color: var(--corporativo-hover) !important;
   border-color: #cc5200 !important;
 }

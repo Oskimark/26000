@@ -414,14 +414,28 @@ export default function Admin({ operadorId }) {
 
                 <div className="vista-previa-identidad" style={{ marginTop: 20 }}>
                   <h4 style={{ marginBottom: 10, fontSize: '0.95rem' }}>Vista previa en tiempo real:</h4>
-                  <div className="tarjeta muestra-tarjeta">
+                  <div
+                    className="tarjeta muestra-tarjeta"
+                    style={!tema.elementos.marcosTarjetas ? { border: '1px solid var(--borde)', boxShadow: 'var(--sombra)' } : {}}
+                  >
                     <b>Tarjeta de prueba</b>
                     <p style={{ marginTop: 4, color: 'var(--texto-secundario)' }}>
-                      Este cuadro refleja al instante cómo se verán las tarjetas, botones y etiquetas en el sistema.
+                      Este cuadro refleja al instante cómo se verán las tarjetas, botones y etiquetas según las opciones elegidas.
                     </p>
                     <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <button className="btn primario" type="button">Botón de acción</button>
-                      <span className="chip prog">Etiqueta activa</span>
+                      <button
+                        className="btn primario"
+                        type="button"
+                        style={!tema.elementos.botonesNaranja ? { backgroundColor: '#0d6efd', borderColor: '#0b5ed7', boxShadow: 'none' } : {}}
+                      >
+                        Botón de acción
+                      </button>
+                      <span
+                        className="chip prog"
+                        style={!tema.elementos.bordeEtiquetas ? { border: 'none', backgroundColor: '#e2f0fd', color: '#0a58ca' } : {}}
+                      >
+                        Etiqueta activa
+                      </span>
                     </div>
                   </div>
                 </div>
