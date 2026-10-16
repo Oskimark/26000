@@ -252,10 +252,16 @@ kbd {
 }
 
 /* Formulario Nuevo Viaje */
-.form-viaje .campos,
-.despacho .campos {
+.form-viaje .campos {
   display: grid;
   grid-template-columns: 140px 1.5fr 1fr 150px auto;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.despacho .campos {
+  display: grid;
+  grid-template-columns: 140px 1.5fr 1fr minmax(130px, auto);
   gap: 12px;
   align-items: flex-end;
 }
@@ -428,7 +434,15 @@ input:focus, select:focus {
 }
 .despacho-acciones {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.despacho-acciones .btn {
+  width: 100%;
+  padding: 6px 12px;
+  font-size: 0.84rem;
+  white-space: nowrap;
 }
 
 /* Listado de Viajes */
