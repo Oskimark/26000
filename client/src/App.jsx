@@ -6,6 +6,7 @@ import ChoferesTurno from './ChoferesTurno.jsx';
 import Historial from './Historial.jsx';
 import Admin from './Admin.jsx';
 import Reloj from './Reloj.jsx';
+import { leerTema } from './tema.js';
 
 const SECCIONES = [
   { id: 'recepcion', nombre: 'Recepción' },
@@ -46,16 +47,30 @@ export default function App() {
     };
   }, [sesion, cargarTurnos]);
 
+  const [tema, setTema] = useState(leerTema);
+
+  useEffect(() => {
+    const alCambiarTema = (e) => setTema(e.detail);
+    window.addEventListener('cambio-tema', alCambiarTema);
+    return () => window.removeEventListener('cambio-tema', alCambiarTema);
+  }, []);
+
   if (!sesion) {
     return <Login onIngreso={(s) => { guardarSesion(s); setSesion(s); }} />;
   }
 
   const esAdmin = sesion.operador.rol === 'admin';
 
+  const clasesApp = [
+    'app',
+    tema.usarIdentidad && tema.elementos.marcosTarjetas && 'tema-marcos-naranja',
+    tema.usarIdentidad && tema.elementos.bordeEtiquetas && 'tema-etiquetas-naranja',
+    tema.usarIdentidad && tema.elementos.botonesNaranja && 'tema-botones-naranja',
+  ].filter(Boolean).join(' ');
+
   return (
-    <div className="app">
+    <div className={clasesApp}>
       <header className="barra">
-        <div className="marca">🚕 Recepción</div>
         <nav>
           {SECCIONES.filter((s) => !s.soloAdmin || esAdmin).map((s) => (
             <button
@@ -67,6 +82,13 @@ export default function App() {
             </button>
           ))}
         </nav>
+
+        {(!tema.usarIdentidad || tema.elementos.mostrarTitulo) && (
+          <div className="marca-corporativa">
+            26000 VEINTISEISMIL
+          </div>
+        )}
+
         <div className="barra-derecha">
           {turnos && <span className="turno-actual">Turno {turnos.actual.etiqueta}</span>}
           <Reloj />

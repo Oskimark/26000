@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from './api.js';
+import { leerTema, guardarTema } from './tema.js';
 
 export default function Admin({ operadorId }) {
   const [subtab, setSubtab] = useState('choferes');
@@ -13,6 +14,27 @@ export default function Admin({ operadorId }) {
   const [operadores, setOperadores] = useState([]);
   const [nuevoOp, setNuevoOp] = useState({ usuario: '', nombre: '', password: '', rol: 'operador' });
   const [editOp, setEditOp] = useState(null);
+
+  // Identidad corporativa
+  const [tema, setTema] = useState(leerTema);
+
+  function actualizarTema(modificaciones) {
+    const nuevo = { ...tema, ...modificaciones };
+    setTema(nuevo);
+    guardarTema(nuevo);
+  }
+
+  function toggleElemento(clave) {
+    const nuevo = {
+      ...tema,
+      elementos: {
+        ...tema.elementos,
+        [clave]: !tema.elementos[clave],
+      },
+    };
+    setTema(nuevo);
+    guardarTema(nuevo);
+  }
 
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
@@ -37,7 +59,7 @@ export default function Admin({ operadorId }) {
 
   useEffect(() => {
     if (subtab === 'choferes') cargarChoferes();
-    else cargarOperadores();
+    else if (subtab === 'operadores') cargarOperadores();
   }, [subtab, cargarChoferes, cargarOperadores]);
 
   function mostrarExito(txt) {
@@ -123,6 +145,12 @@ export default function Admin({ operadorId }) {
           onClick={() => { setSubtab('operadores'); setError(''); }}
         >
           Operadores ({operadores.length})
+        </button>
+        <button
+          className={subtab === 'identidad' ? 'tab activa' : 'tab'}
+          onClick={() => { setSubtab('identidad'); setError(''); }}
+        >
+          🎨 Identidad Corporativa
         </button>
       </div>
 
@@ -304,6 +332,105 @@ export default function Admin({ operadorId }) {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {subtab === 'identidad' && (
+        <div className="seccion-admin">
+          <div className="tarjeta admin-form-tarjeta">
+            <h3>🎨 Identidad y Colores Corporativos (26000)</h3>
+            <p className="descripcion" style={{ marginTop: 4, marginBottom: 16 }}>
+              Ajustá la apariencia del sistema para usar la identidad corporativa naranja o volver al estilo normal.
+            </p>
+
+            <div className="control-identidad-principal">
+              <label className="switch-identidad-label">
+                <input
+                  type="checkbox"
+                  checked={tema.usarIdentidad}
+                  onChange={(e) => actualizarTema({ usarIdentidad: e.target.checked })}
+                />
+                <span className="switch-identidad-texto">
+                  <b>Usar colores de identidad</b>
+                </span>
+              </label>
+            </div>
+
+            {tema.usarIdentidad ? (
+              <div className="desglose-elementos-identidad">
+                <h4 style={{ margin: '16px 0 10px', fontSize: '0.95rem' }}>
+                  Elegí a qué elementos aplicar el estilo naranja corporativo:
+                </h4>
+                <div className="lista-opciones-identidad">
+                  <label className="opcion-identidad-item">
+                    <input
+                      type="checkbox"
+                      checked={tema.elementos.marcosTarjetas}
+                      onChange={() => toggleElemento('marcosTarjetas')}
+                    />
+                    <div>
+                      <b>Marcos de tarjetas y paneles</b>
+                      <p className="descripcion">Aplica marco con borde naranja institucional en los bloques, formularios y tablas (desmarcar para marco normal neutro).</p>
+                    </div>
+                  </label>
+
+                  <label className="opcion-identidad-item">
+                    <input
+                      type="checkbox"
+                      checked={tema.elementos.bordeEtiquetas}
+                      onChange={() => toggleElemento('bordeEtiquetas')}
+                    />
+                    <div>
+                      <b>Bordes en etiquetas y pestañas</b>
+                      <p className="descripcion">Borde naranja en etiquetas, chips informativos y botones de navegación.</p>
+                    </div>
+                  </label>
+
+                  <label className="opcion-identidad-item">
+                    <input
+                      type="checkbox"
+                      checked={tema.elementos.botonesNaranja}
+                      onChange={() => toggleElemento('botonesNaranja')}
+                    />
+                    <div>
+                      <b>Botones principales en naranja corporativo</b>
+                      <p className="descripcion">Los botones principales (Guardar, Asignar, etc.) adoptan el color naranja corporativo en lugar de azul.</p>
+                    </div>
+                  </label>
+
+                  <label className="opcion-identidad-item">
+                    <input
+                      type="checkbox"
+                      checked={tema.elementos.mostrarTitulo}
+                      onChange={() => toggleElemento('mostrarTitulo')}
+                    />
+                    <div>
+                      <b>Título corporativo "26000 VEINTISEISMIL"</b>
+                      <p className="descripcion">Muestra el texto institucional en naranja en la barra superior.</p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="vista-previa-identidad" style={{ marginTop: 20 }}>
+                  <h4 style={{ marginBottom: 10, fontSize: '0.95rem' }}>Vista previa en tiempo real:</h4>
+                  <div className="tarjeta muestra-tarjeta">
+                    <b>Tarjeta de prueba</b>
+                    <p style={{ marginTop: 4, color: 'var(--texto-secundario)' }}>
+                      Este cuadro refleja al instante cómo se verán las tarjetas, botones y etiquetas en el sistema.
+                    </p>
+                    <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <button className="btn primario" type="button">Botón de acción</button>
+                      <span className="chip prog">Etiqueta activa</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="alerta" style={{ marginTop: 14, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                ℹ️ <b>Modo normal:</b> El sistema utilizará marcos neutros estándar y paleta de colores habitual.
+              </div>
+            )}
           </div>
         </div>
       )}

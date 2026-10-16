@@ -23,7 +23,12 @@ export default function Login({ onIngreso }) {
   return (
     <div className="login">
       <form className="tarjeta login-form" onSubmit={enviar}>
-        <h1>🚕 Recepción de viajes</h1>
+        <h1 style={{ color: 'var(--corporativo-naranja, #ff6600)', fontWeight: 800, letterSpacing: 1 }}>
+          26000 VEINTISEISMIL
+        </h1>
+        <p style={{ textAlign: 'center', marginBottom: 20, color: 'var(--texto-secundario)' }}>
+          Recepción de viajes
+        </p>
         <label>
           Usuario
           <input autoFocus value={usuario} onChange={(e) => setUsuario(e.target.value)} autoComplete="username" />

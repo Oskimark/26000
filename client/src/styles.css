@@ -6,9 +6,12 @@
   --borde-suave: #e3e8ee;
   --texto: #1a2332;
   --texto-secundario: #5a687c;
-  --primario: #0d6efd;
-  --primario-hover: #0b5ed7;
-  --primario-suave: #e7f1ff;
+  --primario: #ff6600;
+  --primario-hover: #e65c00;
+  --primario-suave: #fff3eb;
+  --corporativo-naranja: #ff6600;
+  --corporativo-hover: #e65c00;
+  --corporativo-borde: #ff7700;
   --alerta-bg: #fff3cd;
   --alerta-texto: #856404;
   --alerta-borde: #ffeeba;
@@ -16,8 +19,8 @@
   --exito-texto: #155724;
   --error-bg: #f8d7da;
   --error-texto: #721c24;
-  --prog-bg: #e2f0fd;
-  --prog-texto: #0a58ca;
+  --prog-bg: #fff0e6;
+  --prog-texto: #c2410c;
   --fila-hover: #f8fafc;
   --radio: 8px;
   --sombra: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -48,11 +51,15 @@ body {
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
-.marca {
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  margin-right: 24px;
+.marca-corporativa {
+  color: var(--corporativo-naranja);
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+  padding: 0 16px;
+  user-select: none;
 }
 
 nav {
@@ -704,3 +711,134 @@ input:focus, select:focus {
   margin-top: 10px;
   height: 40px;
 }
+
+/* =========================================
+   Estilos de Identidad Corporativa (26000)
+   ========================================= */
+
+/* Marcos naranjas en tarjetas y paneles */
+.tema-marcos-naranja .tarjeta {
+  border: 2.5px solid var(--corporativo-naranja) !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(255, 102, 0, 0.08);
+}
+
+/* Bordes en etiquetas y pestañas */
+.tema-etiquetas-naranja .tab {
+  border: 1px solid rgba(255, 102, 0, 0.35);
+}
+.tema-etiquetas-naranja .tab.activa {
+  background-color: var(--corporativo-naranja) !important;
+  border: 1.5px solid var(--corporativo-hover) !important;
+  color: #fff;
+}
+.tema-etiquetas-naranja .badge-prog {
+  background-color: #fff5ed;
+  border: 1.5px solid var(--corporativo-borde);
+  color: #c2410c;
+}
+.tema-etiquetas-naranja .chip.prog {
+  background-color: #fff5ed;
+  border: 1.5px solid var(--corporativo-borde);
+  color: #c2410c;
+}
+.tema-etiquetas-naranja .tarjeta-chofer.seleccionado {
+  border: 2px solid var(--corporativo-naranja);
+  background-color: #fff5ed;
+}
+
+/* Botones principales en naranja corporativo */
+.tema-botones-naranja .btn.primario,
+.btn.primario {
+  background-color: var(--corporativo-naranja) !important;
+  border-color: var(--corporativo-hover) !important;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(255, 102, 0, 0.25);
+}
+.tema-botones-naranja .btn.primario:hover:not(:disabled),
+.btn.primario:hover:not(:disabled) {
+  background-color: var(--corporativo-hover) !important;
+  border-color: #cc5200 !important;
+}
+
+/* Panel de control de Identidad en Administración */
+.control-identidad-principal {
+  background: #fff8f3;
+  border: 2px dashed var(--corporativo-naranja);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+
+.switch-identidad-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch-identidad-label input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--corporativo-naranja);
+  cursor: pointer;
+}
+
+.desglose-elementos-identidad {
+  background: #ffffff;
+  border: 1px solid var(--borde-suave);
+  border-radius: 10px;
+  padding: 18px;
+}
+
+.lista-opciones-identidad {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.opcion-identidad-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #fafbfc;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.opcion-identidad-item:hover {
+  background: #fff5ed;
+  border-color: var(--corporativo-naranja);
+}
+
+.opcion-identidad-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--corporativo-naranja);
+  cursor: pointer;
+}
+
+.opcion-identidad-item b {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--texto);
+}
+
+.opcion-identidad-item .descripcion {
+  margin-top: 3px;
+  font-size: 0.8rem;
+  color: var(--texto-secundario);
+}
+
+.muestra-tarjeta {
+  max-width: 450px;
+  background: #fff;
+}
+
