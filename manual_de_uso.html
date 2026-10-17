@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual de Uso Completo — TAXI 26000 VEINTISEISMIL</title>
+  <style>
+    :root {
+      --naranja: #ff6600;
+      --naranja-oscuro: #c2410c;
+      --naranja-suave: #fff5ed;
+      --azul-barra: #1a2233;
+      --azul-primario: #0d6efd;
+      --texto: #1a2332;
+      --texto-sec: #475569;
+      --borde: #cbd5e1;
+      --bg-pagina: #f1f5f9;
+      --bg-hoja: #ffffff;
+      --verde-wa: #25d366;
+      --rojo-avisar: #dc2626;
+      --gris-avisado: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: var(--texto);
+      background-color: var(--bg-pagina);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    /* Barra fija de herramientas del manual */
+    .barra-manual {
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 10px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 3px solid var(--naranja);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .barra-manual-Marca {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .barra-manual-Marca strong {
+      color: var(--naranja);
+      font-size: 1.2rem;
+      letter-spacing: 1px;
+      font-weight: 900;
+    }
+
+    .barra-manual-controles {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-manual {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-manual:hover {
+      border-color: var(--naranja);
+      background: #334155;
+    }
+    .btn-manual.activo {
+      background: var(--naranja);
+      border-color: var(--naranja);
+      color: #ffffff;
+    }
+
+    /* Contenedor principal */
+    .contenedor-manual {
+      max-width: 1120px;
+      margin: 28px auto 60px;
+      padding: 0 20px;
+    }
+
+    /* Portada */
+    .portada {
+      background: linear-gradient(135deg, #1a2233 0%, #0f172a 100%);
+      color: #ffffff;
+      border-radius: 14px;
+      padding: 36px 40px;
+      border: 3px solid var(--naranja);
+      margin-bottom: 28px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .portada-etiqueta {
+      display: inline-block;
+      background: var(--naranja);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+
+    .portada h1 {
+      font-size: 2.1rem;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .portada h1 span {
+      color: var(--naranja);
+    }
+
+    .portada p {
+      color: #cbd5e1;
+      font-size: 1.05rem;
+      max-width: 820px;
+    }
+
+    .portada-meta {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      font-size: 0.88rem;
+      color: #94a3b8;
+    }
+
+    /* Índice numerado */
+    .indice-tarjeta {
+      background: var(--bg-hoja);
+      border: 2px solid var(--naranja);
+      border-radius: 12px;
+      padding: 24px 30px;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .indice-tarjeta h2 {
+      font-size: 1.35rem;
+      color: var(--texto);
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--naranja-suave);
+    }
+
+    .indice-columnas {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px 28px;
+    }
+
+    .indice-grupo h3 {
+      font-size: 0.98rem;
+      margin-bottom: 6px;
+      color: var(--naranja-oscuro);
+    }
+
+    .indice-grupo h3 a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .indice-grupo h3 a:hover {
+      text-decoration: underline;
+    }
+
+    .indice-grupo ul {
+      list-style: none;
+      padding-left: 10px;
+      border-left: 2px solid #e2e8f0;
+    }
+
+    .indice-grupo li {
+      font-size: 0.88rem;
+      margin: 4px 0;
+    }
+
+    .indice-grupo li a {
+      color: var(--texto-sec);
+      text-decoration: none;
+    }
+    .indice-grupo li a:hover {
+      color: var(--naranja);
+      text-decoration: underline;
+    }
+
+    /* Secciones del manual */
+    .seccion-manual {
+      background: var(--bg-hoja);
+      border: 1px solid var(--borde);
+      border-top: 4px solid var(--naranja);
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .seccion-manual > h2 {
+      font-size: 1.5rem;
+      color: #0f172a;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .num-seccion {
+      background: var(--naranja);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 1rem;
+      padding: 3px 10px;
+      border-radius: 6px;
+    }
+
+    .subseccion {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px dashed #cbd5e1;
+    }
+    .subseccion:first-of-type {
+      margin-top: 10px;
+      padding-top: 0;
+      border-top: none;
+    }
+
+    .subseccion h3 {
+      font-size: 1.18rem;
+      color: #1e293b;
+      margin-bottom: 10px;
+    }
+
+    .subseccion h4 {
+      font-size: 1rem;
+      color: var(--naranja-oscuro);
+      margin: 14px 0 6px;
+    }
+
+    p {
+      margin-bottom: 10px;
+    }
+
+    ol.pasos-numerados,
+    ul.lista-detalle {
+      margin: 8px 0 14px 22px;
+    }
+
+    ol.pasos-numerados li,
+    ul.lista-detalle li {
+      margin-bottom: 6px;
+    }
+
+    kbd {
+      background: #f1f5f9;
+      border: 1px solid #94a3b8;
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.85em;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.9em;
+      color: #b45309;
+    }
+
+    /* Cuadros de aviso / nota / importante */
+    .nota-box {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+      font-size: 0.93rem;
+      border-left: 4px solid;
+    }
+    .nota-box.importante {
+      background: #fff7ed;
+      border-color: var(--naranja);
+      color: #9a3412;
+    }
+    .nota-box.alerta {
+      background: #fef2f2;
+      border-color: #dc2626;
+      color: #991b1b;
+    }
+    .nota-box.tip {
+      background: #eff6ff;
+      border-color: #2563eb;
+      color: #1e40af;
+    }
+
+    /* Tablas de referencia dentro del manual */
+    .tabla-manual {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 16px;
+      font-size: 0.92rem;
+    }
+    .tabla-manual th {
+      background: #f8fafc;
+      color: #334155;
+      text-align: left;
+      padding: 9px 12px;
+      border: 1px solid #cbd5e1;
+      font-weight: 700;
+    }
+    .tabla-manual td {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e1;
+      vertical-align: top;
+    }
+
+    /* ==========================================================
+       FIGURAS: Recortes visuales de la interfaz + Placeholder IMG
+       ========================================================== */
+    figure.figura-ui {
+      margin: 18px 0 22px;
+      border: 2px solid #cbd5e1;
+      border-radius: 10px;
+      background: #f8fafc;
+      overflow: hidden;
+    }
+
+    .figura-cabecera {
+      background: #e2e8f0;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #cbd5e1;
+    }
+
+    /* Recorte visual fiel de la interfaz (HTML/CSS) */
+    .recorte-interfaz {
+      padding: 16px;
+      background: #eef2f6;
+      border-bottom: 1px dashed #cbd5e1;
+      overflow-x: auto;
+    }
+
+    /* Placeholder para captura real del usuario (con <img> y alt explicativo) */
+    .placeholder-captura {
+      padding: 14px 16px;
+      background: #fffbeb;
+      border-top: 1px dashed #f59e0b;
+      font-size: 0.88rem;
+      color: #78350f;
+    }
+
+    .placeholder-captura-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .img-captura-usuario {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin: 8px auto;
+      border: 2px solid var(--naranja);
+      border-radius: 8px;
+    }
+
+    /* Si la imagen real aún no existe en disco, estiliza el alt del <img> como recuadro guía */
+    .img-captura-usuario.sin-archivo {
+      display: none;
+    }
+
+    .caja-alt-texto {
+      background: #ffffff;
+      border: 1.5px dashed #d97706;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #451a03;
+      font-size: 0.86rem;
+    }
+
+    figcaption {
+      padding: 8px 14px;
+      background: #f1f5f9;
+      font-size: 0.85rem;
+      color: #475569;
+      font-style: italic;
+    }
+
+    /* Modos de visualización controlados desde la barra superior */
+    body[data-modo-figuras="solo-recortes"] .placeholder-captura {
+      display: none;
+    }
+    body[data-modo-figuras="solo-placeholders"] .recorte-interfaz {
+      display: none;
+    }
+
+    /* ==========================================================
+       Componentes simulados para los recortes fieles de UI
+       ========================================================== */
+    .mock-barra {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1a2233;
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .mock-tabs { display: flex; gap: 5px; flex-wrap: wrap; }
+    .mock-tab {
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,102,0,0.4);
+      color: #cbd5e1;
+      font-size: 0.8rem;
+    }
+    .mock-tab.activa {
+      background: #ff6600;
+      color: #fff;
+      font-weight: 700;
+    }
+    .mock-marca {
+      color: #ff6600;
+      font-weight: 900;
+      letter-spacing: 1px;
+      font-size: 1rem;
+    }
+    .mock-derecha {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+    .mock-pill-oscuro {
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 3px 8px;
+      border-radius: 5px;
+      color: #fff;
+      font-weight: 600;
+    }
+    .mock-turno {
+      background: #2b3952;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .mock-reloj {
+      background: #0f1623;
+      color: #38bdf8;
+      font-family: monospace;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .mock-card {
+      background: #ffffff;
+      border: 2px solid #ff6600;
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .mock-card-oscura {
+      background: #1e293b;
+      color: #ffffff;
+      border: 2px solid #ff6600;
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .mock-form-grid {
+      display: grid;
+      grid-template-columns: 140px 1.6fr 1fr 130px auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .mock-label {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+    .mock-input {
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 6px 9px;
+      font-size: 0.88rem;
+      color: #0f172a;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mock-input.foco {
+      border-color: #ff6600;
+      box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.18);
+    }
+    .mock-btn-naranja {
+      background: #ff6600;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .mock-btn-avisar {
+      background: #dc2626;
+      color: #fff;
+      border: 1px solid #b91c1c;
+      border-radius: 5px;
+      padding: 3px 9px;
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+    .mock-btn-avisado {
+      background: #94a3b8;
+      color: #fff;
+      border: 1px solid #64748b;
+      border-radius: 5px;
+      padding: 3px 9px;
+      font-size: 0.76rem;
+      font-weight: 600;
+    }
+    .mock-wa {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #ecfdf5;
+      color: #128c7e;
+      border: 1px solid #a7f3d0;
+      border-radius: 5px;
+      padding: 1px 6px;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+    .mock-sug-lista {
+      list-style: none;
+      margin-top: 4px;
+      border: 1.5px solid #475569;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #1e293b;
+      color: #fff;
+    }
+    .mock-sug-lista li {
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid #334155;
+      font-size: 0.85rem;
+    }
+    .mock-sug-lista li.activa {
+      background: #ea580c;
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    @media print {
+      .barra-manual { display: none; }
+      body { background: #fff; }
+      .seccion-manual { break-inside: avoid; box-shadow: none; }
+    }
+  </style>
+</head>
+<body data-modo-figuras="ambos">
+
+  <!-- Barra superior de herramientas del manual -->
+  <header class="barra-manual">
+    <div class="barra-manual-Marca">
+      <strong>TAXI 26000 VEINTISEISMIL</strong>
+      <span>· Manual Oficial de Operación y Administración</span>
+    </div>
+    <div class="barra-manual-controles">
+      <button type="button" class="btn-manual activo" onclick="cambiarModoFiguras('ambos', this)">
+        🖼️ Ver Recortes + Guía de Capturas
+      </button>
+      <button type="button" class="btn-manual" onclick="cambiarModoFiguras('solo-recortes', this)">
+        ✨ Solo Recortes Integrados
+      </button>
+      <button type="button" class="btn-manual" onclick="cambiarModoFiguras('solo-placeholders', this)">
+        📸 Solo Placeholders (Texto Alternativo)
+      </button>
+      <button type="button" class="btn-manual" onclick="window.print()">
+        🖨️ Imprimir / Guardar PDF
+      </button>
+    </div>
+  </header>
+
+  <div class="contenedor-manual">
+
+    <!-- PORTADA -->
+    <section class="portada">
+      <div class="portada-etiqueta">Documentación Completa Numerada</div>
+      <h1>Manual de Uso — <span>TAXI 26000 VEINTISEISMIL</span></h1>
+      <p>
+        Guía paso a paso de recepción de viajes, autocompletado inteligente de calles y sitios de San José de Mayo,
+        asignación y aviso a choferes, programación horaria, repetición programática, auditoría de viajes,
+        estadísticas de clientes y administración general del sistema.
+      </p>
+      <div class="portada-meta">
+        <span>📍 Ciudad de referencia: <strong>San José de Mayo, Uruguay</strong></span>
+        <span>⚡ Sincronización: <strong>Tiempo real multi-operador (Socket.IO)</strong></span>
+        <span>🌓 Interfaz: <strong>Modo Claro y Modo Oscuro de alto contraste</strong></span>
+      </div>
+    </section>
+
+    <!-- ÍNDICE NUMERADO -->
+    <nav class="indice-tarjeta" aria-label="Índice del manual">
+      <h2>📑 Índice General Numerado</h2>
+      <div class="indice-columnas">
+        <div class="indice-grupo">
+          <h3><a href="#sec-1">1. Introducción, Acceso y Barra Superior</a></h3>
+          <ul>
+            <li><a href="#sec-1-1">1.1. Inicio de sesión (Login) y roles</a></li>
+            <li><a href="#sec-1-2">1.2. Cabecera corporativa, reloj y Modo Oscuro</a></li>
+            <li><a href="#sec-1-3">1.3. Régimen automático de turnos (Mañana, Tarde, Noche)</a></li>
+          </ul>
+        </div>
+        <div class="indice-grupo">
+          <h3><a href="#sec-2">2. Recepción y Despacho de Viajes</a></h3>
+          <ul>
+            <li><a href="#sec-2-1">2.1. Flujo rápido por teclado para tomar un viaje</a></li>
+            <li><a href="#sec-2-2">2.2. Campo Teléfono y botón directo de WhatsApp</a></li>
+            <li><a href="#sec-2-3">2.3. Reglas del Campo Dirección (Calles con N° y Sitios con Referencia)</a></li>
+            <li><a href="#sec-2-4">2.4. Asignación de Chofer y opción "Sin asignar" por defecto</a></li>
+            <li><a href="#sec-2-5">2.5. Viajes programados y ventana de aviso previo</a></li>
+            <li><a href="#sec-2-6">2.6. Listado del Turno: Columnas Asignado, Botón Avisar/Avisado y Estados</a></li>
+            <li><a href="#sec-2-7">2.7. Viajes programados para próximos turnos</a></li>
+            <li><a href="#sec-2-8">2.8. Tabla de atajos de teclado de Recepción</a></li>
+          </ul>
+        </div>
+        <div class="indice-grupo">
+          <h3><a href="#sec-3">3. Ficha de Viaje, Repetición e Historial</a></h3>
+          <ul>
+            <li><a href="#sec-3-1">3.1. Apertura de la Ficha de Viaje (click en fila)</a></li>
+            <li><a href="#sec-3-2">3.2. Registros inalterables de tiempos y operadores</a></li>
+            <li><a href="#sec-3-3">3.3. Edición de datos y reprogramación horaria</a></li>
+            <li><a href="#sec-3-4">3.4. Repetición programática ("Cada día" y selección de días)</a></li>
+            <li><a href="#sec-3-5">3.5. Historial de auditoría del viaje</a></li>
+          </ul>
+        </div>
+        <div class="indice-grupo">
+          <h3><a href="#sec-4">4. Módulo Choferes del Turno</a></h3>
+          <ul>
+            <li><a href="#sec-4-1">4.1. Selección de choferes activos por turno</a></li>
+            <li><a href="#sec-4-2">4.2. Copiar dotación del turno anterior</a></li>
+          </ul>
+        </div>
+        <div class="indice-grupo">
+          <h3><a href="#sec-5">5. Módulo Historial por Turnos</a></h3>
+          <ul>
+            <li><a href="#sec-5-1">5.1. Consulta de turnos pasados y exportación CSV</a></li>
+          </ul>
+        </div>
+        <div class="indice-grupo">
+          <h3><a href="#sec-6">6. Módulo Clientes y Estadísticas</a></h3>
+          <ul>
+            <li><a href="#sec-6-1">6.1. Filtros por teléfono, destino, chofer, estado y fechas</a></li>
+            <li><a href="#sec-6-2">6.2. Estadísticas por Día, por Mes y por Año + Rankings</a></li>
+          </ul>
+        </div>
+        <div class="indice-grupo">
+          <h3><a href="#sec-7">7. Módulo Administración (Solo Admin)</a></h3>
+          <ul>
+            <li><a href="#sec-7-1">7.1. Gestión y eliminación de Choferes</a></li>
+            <li><a href="#sec-7-2">7.2. Gestión de Operadores y permisos</a></li>
+            <li><a href="#sec-7-3">7.3. Catálogo curado de Calles de San José de Mayo</a></li>
+            <li><a href="#sec-7-4">7.4. Configuración de minutos de aviso previo</a></li>
+            <li><a href="#sec-7-5">7.5. Personalización de Identidad Corporativa 26000</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ===================================================================
+         SECCIÓN 1: INTRODUCCIÓN, ACCESO Y BARRA SUPERIOR
+         =================================================================== -->
+    <section class="seccion-manual" id="sec-1">
+      <h2><span class="num-seccion">1</span> Introducción, Acceso y Barra Superior</h2>
+
+      <div class="subseccion" id="sec-1-1">
+        <h3>1.1. Inicio de sesión (Login) y roles de usuario</h3>
+        <p>
+          Al abrir la aplicación en el navegador, se presenta la pantalla de acceso. Cada operador ingresa con su
+          nombre de usuario y contraseña asignados por la administración.
+        </p>
+        <ol class="pasos-numerados">
+          <li><strong>1.1.1.</strong> Ingrese su nombre de <strong>Usuario</strong> (por ejemplo, <code>admin</code> o el usuario del telefonista).</li>
+          <li><strong>1.1.2.</strong> Ingrese su <strong>Contraseña</strong>.</li>
+          <li><strong>1.1.3.</strong> Presione <kbd>Enter</kbd> o haga click en el botón <strong>Entrar</strong>.</li>
+          <li><strong>1.1.4.</strong> Existen dos roles en el sistema:
+            <ul class="lista-detalle">
+              <li><strong>Rol Operador:</strong> Accede a los módulos <em>Recepción</em>, <em>Choferes del turno</em>, <em>Historial</em> y <em>Clientes</em>.</li>
+              <li><strong>Rol Administrador (<code>admin</code>):</strong> Accede además a la pestaña <em>Administración</em> y puede editar viajes de turnos históricos.</li>
+            </ul>
+          </li>
+        </ol>
+
+        <figure class="figura-ui">
+          <div class="figura-cabecera">
+            <span>FIGURA 1.1 — Pantalla de Inicio de Sesión</span>
+            <span>Archivo sugerido: <code>capturas/fig-1-1-login.png</code></span>
+          </div>
+          <div class="recorte-interfaz">
+            <div style="max-width: 340px; margin: 0 auto; background: #1e293b; color: #fff; border: 2px solid #ff6600; border-radius: 10px; padding: 20px;">
+              <div style="text-align: center; font-weight: 800; font-size: 1.1rem; margin-bottom: 12px; color: #ff6600;">TAXI 26000 · Recepción</div>
+              <div style="margin-bottom: 10px; font-size: 0.82rem;">Usuario<div class="mock-input" style="margin-top:4px;">admin</div></div>
+              <div style="margin-bottom: 14px; font-size: 0.82rem;">Contraseña<div class="mock-input" style="margin-top:4px;">••••••••</div></div>
+              <div class="mock-btn-naranja" style="text-align: center; width: 100%;">Entrar</div>
+            </div>
+          </div>
+          <div class="placeholder-captura">
+            <div class="placeholder-captura-head">
+              <strong>📸 Guía para captura real (Texto Alternativo):</strong>
+              <code>capturas/fig-1-1-login.png</code>
+            </div>
+            <img
+              class="img-captura-usuario sin-archivo"
+              src="capturas/fig-1-1-login.png"
+              alt="Recorte de la tarjeta central de inicio de sesión mostrando los campos Usuario, Contraseña y el botón naranja Entrar sobre fondo oscuro."
+              onload="this.classList.remove('sin-archivo')"
+            />
+            <div class="caja-alt-texto">
+              <strong>ALT:</strong> "Recorte de la tarjeta central de inicio de sesión mostrando los campos Usuario, Contraseña y el botón naranja Entrar sobre fondo oscuro."
+            </div>
+          </div>
+          <figcaption>Figura 1.1: Tarjeta de ingreso con credenciales de operador.</figcaption>
+        </figure>
+      </div>
+
+      <div class="subseccion" id="sec-1-2">
+        <h3>1.2. Cabecera corporativa, navegación y botón de Modo Oscuro</h3>
+        <p>
+          Una vez iniciada la sesión, la barra superior permanece visible en todo momento y se divide en tres sectores:
+        </p>
+        <ol class="pasos-numerados">
+          <li><strong>1.2.1. Menú de módulos (izquierda):</strong> Pestañas <strong>Recepción</strong>, <strong>Choferes del turno</strong>, <strong>Historial</strong>, <strong>Clientes</strong> y <strong>Administración</strong> (visible para administradores). Nota: al cambiar de pestaña, lo que se esté escribiendo en <em>Recepción</em> no se pierde.</li>
+          <li><strong>1.2.2. Emblema central:</strong> Muestra el título corporativo en color naranja: <strong><code>TAXI 26000 VEINTISEISMIL</code></strong>.</li>
+          <li><strong>1.2.3. Controles de estado (derecha):</strong>
+            <ul class="lista-detalle">
+              <li><strong>Botón <code>🌙 Oscuro</code> / <code>☀️ Claro</code>:</strong> Alterna instantáneamente toda la interfaz entre el modo claro y el modo oscuro de alto contraste (ideal para turnos nocturnos). La preferencia queda guardada en el equipo.</li>
+              <li><strong>Indicador de Turno:</strong> Muestra la fecha y el turno activo (ej. <code>Turno Sáb 17/10 · Noche</code>).</li>
+              <li><strong>Reloj en tiempo real:</strong> Hora exacta con segundos para referencia de despacho.</li>
+              <li><strong>Nombre del operador activo</strong> y botón <strong>Salir</strong> para cerrar sesión.</li>
+            </ul>
+          </li>
+        </ol>
+
+        <figure class="figura-ui">
+          <div class="figura-cabecera">
+            <span>FIGURA 1.2 — Barra Superior de Navegación y Controles</span>
+            <span>Archivo sugerido: <code>capturas/fig-1-2-barra-superior.png</code></span>
+          </div>
+          <div class="recorte-interfaz">
+            <div class="mock-barra">
+              <div class="mock-tabs">
+                <span class="mock-tab activa">Recepción</span>
+                <span class="mock-tab">Choferes del turno</span>
+                <span class="mock-tab">Historial</span>
+                <span class="mock-tab">Clientes</span>
+                <span class="mock-tab">Administración</span>
+              </div>
+              <div class="mock-marca">TAXI 26000 VEINTISEISMIL</div>
+              <div class="mock-derecha">
+                <span class="mock-pill-oscuro">☀️ Claro</span>
+                <span class="mock-turno">Turno Sáb 17/10 · Mañana</span>
+                <span class="mock-reloj">09:42:18</span>
+                <span>Administrador</span>
+                <span style="color:#93c5fd; text-decoration:underline;">Salir</span>
+              </div>
+            </div>
+          </div>
+          <div class="placeholder-captura">
+            <div class="placeholder-captura-head">
+              <strong>📸 Guía para captura real (Texto Alternativo):</strong>
+              <code>capturas/fig-1-2-barra-superior.png</code>
+            </div>
+            <img
+              class="img-captura-usuario sin-archivo"
+              src="capturas/fig-1-2-barra-superior.png"
+              alt="Recorte horizontal de la cabecera superior mostrando las 5 pestañas de navegación a la izquierda, el título naranja TAXI 26000 VEINTISEISMIL al centro, y a la derecha el botón de modo oscuro/claro, etiqueta del turno actual, reloj digital, nombre del operador y botón Salir."
+              onload="this.classList.remove('sin-archivo')"
+            />
+            <div class="caja-alt-texto">
+              <strong>ALT:</strong> "Recorte horizontal de la cabecera superior mostrando las 5 pestañas de navegación a la izquierda, el título naranja TAXI 26000 VEINTISEISMIL al centro, y a la derecha el botón de modo oscuro/claro, etiqueta del turno actual, reloj digital, nombre del operador y botón Salir."
+            </div>
+          </div>
+          <figcaption>Figura 1.2: Barra superior con marca corporativa TAXI 26000 VEINTISEISMIL y selector de Modo Oscuro.</figcaption>
+        </figure>
+      </div>
+
+      <div class="subseccion" id="sec-1-3">
+        <h3>1.3. Régimen automático de turnos</h3>
+        <p>El día operativo se divide automáticamente en <strong>3 turnos de 8 horas</strong> y la numeración de viajes (<code>N° 1, 2, 3...</code>) se reinicia en cada turno:</p>
+        <table class="tabla-manual">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nombre del Turno</th>
+              <th>Franja Horaria</th>
+              <th>Observaciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>M</strong></td>
+              <td>Mañana</td>
+              <td><code>06:00</code> a <code>13:59</code></td>
+              <td>Inicia la numeración diaria a las 06:00 hs.</td>
+            </tr>
+            <tr>
+              <td><strong>T</strong></td>
+              <td>Tarde</td>
+              <td><code>14:00</code> a <code>21:59</code></td>
+              <td>Reinicia numeración en N° 1 a las 14:00 hs.</td>
+            </tr>
+            <tr>
+              <td><strong>N</strong></td>
+              <td>Noche</td>
+              <td><code>22:00</code> a <code>05:59</code> (madrugada siguiente)</td>
+              <td>Los viajes entre las 00:00 y las 05:59 pertenecen al turno Noche iniciado el día anterior a las 22:00.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SECCIÓN 2: MÓDULO RECEPCIÓN Y DESPACHO DE VIAJES
+         =================================================================== -->
+    <section class="seccion-manual" id="sec-2">
+      <h2><span class="num-seccion">2</span> Módulo 1: Recepción y Despacho de Viajes</h2>
+
+      <div class="subseccion" id="sec-2-1">
+        <h3>2.1. Flujo rápido por teclado para tomar un viaje</h3>
+        <p>
+          El formulario superior de <strong>Recepción</strong> está diseñado para que el telefonista pueda cargar un viaje completo
+          sin usar el mouse, avanzando con <kbd>Tab</kbd> o <kbd>Enter</kbd>:
+        </p>
+        <ol class="pasos-numerados">
+          <li><strong>2.1.1. Teléfono:</strong> El cursor inicia aquí automáticamente (<kbd>F1</kbd> vuelve a este campo en cualquier momento). Escriba el teléfono del cliente y presione <kbd>Enter</kbd> o <kbd>Tab</kbd>.</li>
+          <li><strong>2.1.2. Dirección:</strong> Ingrese la dirección (o elija una sugerencia asociada a ese teléfono con las flechas <kbd>↑</kbd>/<kbd>↓</kbd> y <kbd>Tab</kbd>).</li>
+          <li><strong>2.1.3. Chofer:</strong> Por defecto figura en <strong><code>Sin asignar</code></strong>. Puede dejarlo sin asignar para despacharlo luego, o escribir parte del nombre/móvil del chofer y presionar <kbd>Enter</kbd> o <kbd>Tab</kbd>.</li>
+          <li><strong>2.1.4. Programado:</strong> Si es un viaje inmediato, déjelo vacío y presione <kbd>Enter</kbd> para guardar. Si es para una hora futura, escriba la hora (ej. <code>1430</code> o <code>14:30</code>) y presione <kbd>Enter</kbd>.</li>
+          <li><strong>2.1.5. Guardado inmediato desde cualquier campo:</strong> Presionando <kbd>Ctrl</kbd> + <kbd>Enter</kbd> el viaje se guarda instantáneamente desde cualquiera de los campos.</li>
+        </ol>
+
+        <figure class="figura-ui">
+          <div class="figura-cabecera">
+            <span>FIGURA 2.1 — Formulario de Toma de Nuevo Viaje</span>
+            <span>Archivo sugerido: <code>capturas/fig-2-1-formulario-viaje.png</code></span>
+          </div>
+          <div class="recorte-interfaz">
+            <div class="mock-card">
+              <div class="mock-form-grid">
+                <div class="mock-label">
+                  <span>Teléfono</span>
+                  <div class="mock-input">
+                    <span>099123456</span>
+                    <span class="mock-wa" title="Botón WhatsApp">🟢 WA</span>
+                  </div>
+                </div>
+                <div class="mock-label">
+                  <span>Dirección</span>
+                  <div class="mock-input foco">
+                    <span>450 Artigas</span>
+                  </div>
+                </div>
+                <div class="mock-label">
+                  <span>Chofer</span>
+                  <div class="mock-input">
+                    <span>Sin asignar</span>
+                  </div>
+                </div>
+                <div class="mock-label">
+                  <span>Programado</span>
+                  <div class="mock-input" style="padding:0; overflow:hidden;">
+                    <span style="background:#f1f5f9; padding:6px 8px; border-right:1px solid #cbd5e1; font-weight:700; font-size:0.78rem;">NO</span>
+                    <span style="padding:6px 8px; color:#94a3b8;">hora</span>
+                  </div>
+                </div>
+                <button class="mock-btn-naranja">Guardar <kbd style="background:rgba(255,255,255,0.25); color:#fff; border-color:#fff;">Enter</kbd></button>
+              </div>
+            </div>
+          </div>
+          <div class="placeholder-captura">
+            <div class="placeholder-captura-head">
+              <strong>📸 Guía para captura real (Texto Alternativo):</strong>
+              <code>capturas/fig-2-1-formulario-viaje.png</code>
+            </div>
+            <img
+              class="img-captura-usuario sin-archivo"
+              src="capturas/fig-2-1-formulario-viaje.png"
+              alt="Recorte de la tarjeta superior de nuevo viaje mostrando en una fila los campos Teléfono (con ícono verde de WhatsApp), Dirección, Chofer (con valor por defecto Sin asignar), Programado (indicador NO/SÍ) y el botón naranja Guardar Enter."
+              onload="this.classList.remove('sin-archivo')"
+            />
+            <div class="caja-alt-texto">
+              <strong>ALT:</strong> "Recorte de la tarjeta superior de nuevo viaje mostrando en una fila los campos Teléfono (con ícono verde de WhatsApp), Dirección, Chofer (con valor por defecto Sin asignar), Programado (indicador NO/SÍ) y el botón naranja Guardar Enter."
+            </div>
+          </div>
+          <figcaption>Figura 2.1: Formulario principal de carga de viajes con opción "Sin asignar" por defecto e ícono de WhatsApp.</figcaption>
+        </figure>
+      </div>
+
+      <div class="subseccion" id="sec-2-2">
+        <h3>2.2. Campo Teléfono e integración con WhatsApp</h3>
+        <ol class="pasos-numerados">
+          <li><strong>2.2.1. Historial automático por teléfono:</strong> Apenas escribe un número de teléfono ya conocido, al pasar al campo <em>Dirección</em> se despliegan automáticamente las direcciones más usadas por ese cliente (ordenadas por cantidad de viajes con una estrella <code>★ X con este tel.</code>).</li>
+          <li><strong>2.2.2. Teléfonos clickeables con WhatsApp:</strong> Tanto dentro del campo de teléfono del formulario como en todas las tablas del sistema (<em>Recepción</em>, <em>Ficha de viaje</em>, <em>Historial</em> y <em>Clientes</em>), cada teléfono aparece acompañado del ícono de WhatsApp. Al hacer click sobre él, se abre automáticamente WhatsApp (Web o aplicación de escritorio) dirigido a ese número (normalizando números de Uruguay con prefijo <code>598</code> cuando comienzan con <code>09...</code> o teléfono fijo de 8 dígitos).</li>
+        </ol>
+      </div>
+
+      <div class="subseccion" id="sec-2-3">
+        <h3>2.3. Reglas del Campo Dirección (Nomenclátor curado de San José de Mayo)</h3>
+        <p>
+          Para mantener la consistencia de la base de datos entre todos los operadores y evitar duplicados por errores
+          de tipeo o nombres alternativos, el campo <strong>Dirección</strong> combina el historial de viajes con un
+          <strong>catálogo curado de calles, rutas y sitios de San José de Mayo</strong>.
+        </p>
+
+        <h4>2.3.1. Caso A: Direcciones con número de puerta (SIEMPRE <code>&lt;número&gt; &lt;calle&gt;</code>)</h4>
+        <div class="nota-box importante">
+          <strong>Regla de oro de ingreso:</strong> Cuando se ingresa una calle con número de puerta, el orden es
+          <strong>SIEMPRE primero el número y luego la calle</strong> (ejemplo: <code>450 Artigas</code>, <code>1250 Batlle y Ordóñez</code>, <code>820 Aparicio Saravia</code>).
+        </div>
+        <ol class="pasos-numerados">
+          <li><strong>2.3.1.1.</strong> Escriba el número de puerta seguido de las primeras letras de la calle (por ejemplo: <code>450 art</code>).</li>
+          <li><strong>2.3.1.2.</strong> El sistema mostrará el texto fantasma completando la calle y sugerirá en el desplegable <strong><code>450 Artigas</code></strong> con la etiqueta <code>🗺️ Calle San José</code>.</li>
+          <li><strong>2.3.1.3.</strong> Si escribe un nombre oficial largo o variante (por ejemplo, <code>1250 jose batlle</code> o <code>820 bvr aparicio</code>), el sistema sugiere y normaliza automáticamente al nombre cotidiano curado: <strong><code>1250 Batlle y Ordóñez</code></strong> o <strong><code>820 Aparicio Saravia</code></strong>.</li>
+          <li><strong>2.3.1.4.</strong> Calles con nombre de fecha patria (<code>18 de Julio</code>, <code>25 de Mayo</code>, <code>25 de Agosto</code>, <code>19 de Abril</code>, <code>12 de Octubre</code>, <code>33</code>): el sistema distingue automáticamente si escribió solo la calle (<code>18 de Julio</code>) o si escribió un número de puerta delante (<code>450 18 de Julio</code>).</li>
+        </ol>
+
+        <h4>2.3.2. Caso B: Direcciones SIN número de puerta (Sitios + Referencia del punto del pasajero)</h4>
+        <p>
+          Cuando una dirección <strong>no comienza con un número</strong>, significa que se está indicando un sitio, centro de salud,
+          plaza, parque o camino, habitualmente acompañado de la <strong>referencia del punto exacto donde espera el pasajero</strong>:
+        </p>
+        <table class="tabla-manual">
+          <thead>
+            <tr>
+              <th>Lo que escribe el operador (incluso con errores)</th>
+              <th>Sugerencia / Canonización automática</th>
+              <th>Explicación del desglose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>Camaino carreton km 28</code></td>
+              <td><strong><code>Camino Carretón km 28</code></strong></td>
+              <td>Corrige el error de tipeo <em>"Camaino carreton"</em> al sitio <strong>Camino Carretón</strong> y conserva la referencia kilométrica <strong>km 28</strong>.</td>
+            </tr>
+            <tr>
+              <td><code>amsj artigas</code> (o <code>amsj art</code>)</td>
+              <td><strong><code>AMSJ Artigas</code></strong></td>
+              <td>Reconoce el sitio <strong>AMSJ</strong> y autocompleta la calle de referencia donde espera el pasajero (<strong>Artigas</strong>).</td>
+            </tr>
+            <tr>
+              <td><code>amsj emergencia</code> (o <code>amsj em</code>)</td>
+              <td><strong><code>AMSJ Emergencia</code></strong></td>
+              <td>Reconoce el sitio <strong>AMSJ</strong> y autocompleta el sector común <strong>Emergencia</strong>.</td>
+            </tr>
+            <tr>
+              <td><code>plaza 33 asamblea</code> (o <code>plaza 33 as</code>)</td>
+              <td><strong><code>Plaza 33 Asamblea</code></strong></td>
+              <td>Reconoce el sitio <strong>Plaza 33</strong> y autocompleta la calle lateral de referencia (<strong>Asamblea</strong>).</td>
+            </tr>
+            <tr>
+              <td><code>hospital policlinica</code></td>
+              <td><strong><code>Hospital Policlínica</code></strong></td>
+              <td>Reconoce el sitio <strong>Hospital</strong> y autocompleta el punto de referencia <strong>Policlínica</strong>.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="nota-box tip">
+          <strong>💡 Uso de <kbd>Tab</kbd> en sitios sin número:</strong> Si escribe únicamente el sitio (por ejemplo <code>camaino carreton</code> o <code>amsj</code>) y presiona <kbd>Tab</kbd>, el campo se corrige a <code>"Camino Carretón "</code> o <code>"AMSJ "</code> (con un espacio al final), <strong>mantiene el cursor dentro de Dirección</strong> y despliega sugerencias de puntos habituales para que pueda escribir enseguida la referencia (<code>km 28</code>, <code>artigas</code>, <code>emergencia</code>). Si no desea agregar referencia, basta con presionar <kbd>Enter</kbd> o <kbd>Tab</kbd> nuevamente para pasar al campo Chofer.
+        </div>
+
+        <figure class="figura-ui">
+          <div class="figura-cabecera">
+            <span>FIGURA 2.2 — Autocompletado de Dirección en Modo Oscuro (Alto Contraste)</span>
+            <span>Archivo sugerido: <code>capturas/fig-2-2-autocompletado-direccion.png</code></span>
+          </div>
+          <div class="recorte-interfaz">
+            <div class="mock-card-oscura" style="max-width: 560px; margin: 0 auto;">
+              <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Dirección (Modo Oscuro)</div>
+              <div class="mock-input foco" style="background: #0f172a; color: #ffffff; border-color: #ff6600;">
+                <span>amsj art<span style="color:#94a3b8;">igas</span></span>
+              </div>
+              <ul class="mock-sug-lista">
+                <li class="activa">
+                  <span>AMSJ Artigas</span>
+                  <small style="color:#fff;">📍 Sitio + ref.</small>
+                </li>
+                <li>
+                  <span>AMSJ Artigas Méndez Clara</span>
+                  <small style="color:#cbd5e1;">📍 Sitio + ref.</small>
+                </li>
+                <li>
+                  <span>AMSJ Emergencia</span>
+                  <small style="color:#cbd5e1;">★ 4 con este tel.</small>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="placeholder-captura">
+            <div class="placeholder-captura-head">
+              <strong>📸 Guía para captura real (Texto Alternativo):</strong>
+              <code>capturas/fig-2-2-autocompletado-direccion.png</code>
+            </div>
+            <img
+              class="img-captura-usuario sin-archivo"
+              src="capturas/fig-2-2-autocompletado-direccion.png"
+              alt="Recorte del campo Dirección en Modo Oscuro mostrando el texto ingresado 'amsj art' con texto fantasma 'igas' y el menú desplegable de sugerencias con fondo oscuro (#1e293b), texto blanco y la primera opción 'AMSJ Artigas (📍 Sitio + ref.)' resaltada en naranja de alto contraste."
+              onload="this.classList.remove('sin-archivo')"
+            />
+            <div class="caja-alt-texto">
+              <strong>ALT:</strong> "Recorte del campo Dirección en Modo Oscuro mostrando el texto ingresado 'amsj art' con texto fantasma 'igas' y el menú desplegable de sugerencias con fondo oscuro (#1e293b), texto blanco y la primera opción 'AMSJ Artigas (📍 Sitio + ref.)' resaltada en naranja de alto contraste."
+            </div>
+          </div>
+          <figcaption>Figura 2.2: Desplegable de sugerencias en modo oscuro con alto contraste y detección de Sitio + Referencia.</figcaption>
+        </figure>
+      </div>
+
+      <div class="subseccion" id="sec-2-4">
+        <h3>2.4. Asignación de Chofer y opción "Sin asignar" por defecto</h3>
+        <ol class="pasos-numerados">
+          <li><strong>2.4.1. "Sin asignar" por defecto:</strong> Todo viaje nuevo tiene preseleccionada la opción <strong><code>Sin asignar</code></strong>. Esto permite tomar rápidamente el pedido del cliente y asignarle el móvil unos instantes o minutos después.</li>
+          <li><strong>2.4.2. Asignación en cualquier momento:</strong> Tanto los viajes inmediatos como los viajes programados pueden crearse con chofer o sin chofer, y su chofer puede asignarse o cambiarse en cualquier momento directamente desde el desplegable de la columna <strong>Chofer</strong> en la tabla de viajes.</li>
+        </ol>
+      </div>
+
+      <div class="subseccion" id="sec-2-5">
+        <h3>2.5. Viajes programados y ventana de aviso previo</h3>
+        <ol class="pasos-numerados">
+          <li><strong>2.5.1. Creación:</strong> Al escribir una hora en el campo <strong>Programado</strong> (formatos admitidos: <code>0830</code>, <code>8:30</code>, <code>18.45</code>, <code>7</code>), el indicador cambia de <code>NO</code> a <strong><code>SÍ</code></strong> y debajo del formulario se informa para qué fecha y turno quedará agendado.</li>
+          <li><strong>2.5.2. Hora de inicio en programados:</strong> En los viajes programados, la columna <strong>Hora inicio</strong> muestra siempre la <strong>hora en que se tomó/creó el viaje</strong>, acompañada de una etiqueta debajo con la hora programada (ej. <code>⏰ Prog. 15:30</code>).</li>
+          <li><strong>2.5.3. Aviso previo configurable:</strong> Cuando faltan <strong>X minutos</strong> para la hora programada (por defecto <strong>5 minutos</strong>, configurable en <em>Administración → Configuración</em>):
+            <ul class="lista-detalle">
+              <li>El viaje pasa automáticamente a la cola activa recibiendo su número de orden del turno.</li>
+              <li>La fila y su etiqueta se resaltan con una animación de alerta (<code>🔔 Aviso (en 4 min) · Prog. 15:30</code>).</li>
+              <li>Si aún no tiene chofer asignado o no fue avisado, aparece el cartel amarillo superior de alerta y se abre el cuadro de <strong>Despacho Rápido (<kbd>F2</kbd>)</strong>.</li>
+            </ul>
+          </li>
+        </ol>
+      </div>
+
+      <div class="subseccion" id="sec-2-6">
+        <h3>2.6. Listado del Turno: Columnas "Asignado", Botón "Avisar / Avisado" y Estados</h3>
+        <p>La tabla principal de <strong>Viajes del turno</strong> presenta 8 columnas clave:</p>
+        <table class="tabla-manual">
+          <thead>
+            <tr>
+              <th>Columna</th>
+              <th>Descripción detallada</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. N°</strong></td>
+              <td>Número correlativo del viaje dentro del turno actual (los programados pendientes de entrar en ventana muestran <code>⏱</code>).</td>
+            </tr>
+            <tr>
+              <td><strong>2. Hora inicio</strong></td>
+              <td>Hora en que se creó/tomó el viaje y nombre del operador que lo ingresó. En programados incluye el badge <code>⏰ Prog. HH:MM</code>.</td>
+            </tr>
+            <tr>
+              <td><strong>3. Dirección</strong></td>
+              <td>Dirección normalizada en texto destacado (blanco en modo oscuro). Si tiene repetición programática activa muestra el ícono <code>🔁</code>.</td>
+            </tr>
+            <tr>
+              <td><strong>4. Teléfono</strong></td>
+              <td>Número clickeable con botón verde de WhatsApp para enviar mensaje directo al pasajero.</td>
+            </tr>
+            <tr>
+              <td><strong>5. Chofer</strong></td>
+              <td>Selector desplegable activo en todo momento con <code>Sin asignar</code> y la lista de choferes. Si está sin asignar, resalta en ámbar e incluye el botón rápido <kbd>F2</kbd>.</td>
+            </tr>
+            <tr>
+              <td><strong>6. Asignado</strong></td>
+              <td>Muestra la <strong>hora exacta en que se le asignó el chofer</strong> al viaje (y qué operador lo asignó).</td>
+            </tr>
+            <tr>
+              <td><strong>7. Avisado</strong></td>
+              <td>
+                Controla si el viaje ya fue efectivamente comunicado al chofer por radio/teléfono:
+                <ul class="lista-detalle" style="margin-top:4px;">
+                  <li><strong>Botón rojo <code>Avisar</code> (texto blanco):</strong> Indica que el viaje aún NO fue comunicado al chofer.</li>
+                  <li><strong>Botón gris <code>Avisado</code> + Hora:</strong> Al pulsar <em>Avisar</em>, el botón pasa a color gris con el texto <code>Avisado</code> y registra al lado la <strong>hora exacta en que fue avisado</strong>.</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>8. Acciones</strong></td>
+              <td>Botón <strong>Anular</strong> (o <strong>Restaurar</strong> si el viaje estaba anulado).</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="nota-box alerta">
+          <strong>⚠️ Reglas de seguridad del botón Avisar y cambio de Chofer:</strong>
+          <ul class="lista-detalle" style="margin-bottom:0;">
+            <li><strong>No se puede avisar sin chofer:</strong> Si pulsa el botón rojo <code>Avisar</code> cuando el viaje aún está en <em>"Sin asignar"</em>, el sistema bloquea la acción y muestra la alerta: <code>"⚠️ Primero tenés que asignar un chofer antes de avisar."</code></li>
+            <li><strong>Cambio de chofer reinicia el aviso:</strong> Si a un viaje que ya estaba en estado <code>Avisado</code> se le cambia el chofer (desde la tabla o desde la Ficha de Viaje), el botón vuelve automáticamente a color <strong>rojo (<code>Avisar</code>)</strong> y se limpia la hora de avisado para no olvidar comunicarle al nuevo chofer.</li>
+          </ul>
+        </div>
+
+        <figure class="figura-ui">
+          <div class="figura-cabecera">
+            <span>FIGURA 2.3 — Tabla de Viajes del Turno: Columnas Asignado y Botón Avisar / Avisado</span>
+            <span>Archivo sugerido: <code>capturas/fig-2-3-tabla-viajes-avisar.png</code></span>
+          </div>
+          <div class="recorte-interfaz">
+            <div class="mock-card" style="padding: 8px;">
+              <table class="tabla-manual" style="margin:0;">
+                <thead>
+                  <tr>
+                    <th>N°</th>
+                    <th>Hora inicio</th>
+                    <th>Dirección</th>
+                    <th>Teléfono</th>
+                    <th>Chofer</th>
+                    <th>Asignado</th>
+                    <th>Avisado</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>1</strong></td>
+                    <td><strong>09:10</strong><div style="font-size:0.72rem; color:#64748b;">Admin</div></td>
+                    <td><strong>450 Artigas</strong></td>
+                    <td><span class="mock-wa">🟢 099111222</span></td>
+                    <td><span style="border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px; font-weight:600;">Móvil 04 - Pérez ▾</span></td>
+                    <td><strong>09:11</strong><div style="font-size:0.72rem; color:#64748b;">Admin</div></td>
+                    <td><span class="mock-btn-avisado">Avisado</span> <strong>09:12</strong></td>
+                    <td><span style="border:1px solid #cbd5e1; padding:2px 6px; border-radius:4px; font-size:0.75rem;">Anular</span></td>
+                  </tr>
+                  <tr style="background:#fffbeb;">
+                    <td><strong>2</strong></td>
+                    <td><strong>09:15</strong><div style="font-size:0.72rem; color:#b45309; font-weight:700;">🔔 Aviso (en 3 min) · Prog. 09:18</div></td>
+                    <td><strong>AMSJ Emergencia</strong> 🔁</td>
+                    <td><span class="mock-wa">🟢 43421234</span></td>
+                    <td><span style="border:1px solid #cbd5e1; padding:3px 8px; border-radius:4px; font-weight:600; background:#fff;">Móvil 07 - Gómez ▾</span></td>
+                    <td><strong>09:15</strong></td>
+                    <td><span class="mock-btn-avisar">Avisar</span></td>
+                    <td><span style="border:1px solid #cbd5e1; padding:2px 6px; border-radius:4px; font-size:0.75rem;">Anular</span></td>
+                  </tr>
+                  <tr style="background:#fef3c7;">
+                    <td><strong>3</strong></td>
+                    <td><strong>09:16</strong></td>
+                    <td><strong>Camino Carretón km 28</strong></td>
+                    <td><span class="mock-wa">🟢 098765432</span></td>
+                    <td><span style="border:1px solid #f59e0b; background:#fffbeb; color:#92400e; padding:3px 8px; border-radius:4px; font-weight:700;">Sin asignar ▾</span> <kbd>F2</kbd></td>
+                    <td>—</td>
+                    <td><span class="mock-btn-avisar">Avisar</span></td>
+                    <td><span style="border:1px solid #cbd5e1; padding:2px 6px; border-radius:4px; font-size:0.75rem;">Anular</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="placeholder-captura">
+            <div class="placeholder-captura-head">
+              <strong>📸 Guía para captura real (Texto Alternativo):</strong>
+              <code>capturas/fig-2-3-tabla-viajes-avisar.png</code>
+            </div>
+            <img
+              class="img-captura-usuario sin-archivo"
+              src="capturas/fig-2-3-tabla-viajes-avisar.png"
+              alt="Recorte del listado de viajes del turno mostrando tres filas: la primera con chofer asignado y botón gris 'Avisado 09:12'; la segunda con un viaje programado en ventana de aviso previo y botón rojo 'Avisar'; la tercera con selector en 'Sin asignar' resaltado en amarillo y botón F2."
+              onload="this.classList.remove('sin-archivo')"
+            />
+            <div class="caja-alt-texto">
+              <strong>ALT:</strong> "Recorte del listado de viajes del turno mostrando tres filas: la primera con chofer asignado y botón gris 'Avisado 09:12'; la segunda con un viaje programado en ventana de aviso previo y botón rojo 'Avisar'; la tercera con selector en 'Sin asignar' resaltado en amarillo y botón F2."
+            </div>
+          </div>
+          <figcaption>Figura 2.3: Comparativa visual de estados en la tabla del turno: Avisado (gris con hora), Por avisar (rojo) y Sin asignar.</figcaption>
+        </figure>
+      </div>
+
+      <div class="subseccion" id="sec-2-7">
+        <h3>2.7. Viajes programados para próximos turnos</h3>
+        <p>
+          Debajo de la tabla del turno actual se muestra la tarjeta <strong>Programados para próximos turnos</strong>.
+          En ella figuran todos los viajes agendados para turnos posteriores (con su hora de inicio en texto blanco de alto contraste en modo oscuro, la hora programada, dirección, teléfono, selector de chofer, columna <em>Asignado</em> y botón <em>Avisar / Avisado</em>).
+        </p>
+      </div>
+
+      <div class="subseccion" id="sec-2-8">
+        <h3>2.8. Tabla resumen de atajos de teclado en Recepción</h3>
+        <table class="tabla-manual">
+          <thead>
+            <tr>
+              <th>Tecla / Combinación</th>
+              <th>Acción que ejecuta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><kbd>F1</kbd></td>
+              <td>Lleva el foco inmediatamente al campo <strong>Teléfono</strong> del formulario de nuevo viaje.</td>
+            </tr>
+            <tr>
+              <td><kbd>F2</kbd></td>
+              <td>Abre el panel de <strong>Despacho Rápido</strong> para asignar chofer al primer viaje programado en aviso o pendiente sin chofer.</td>
+            </tr>
+            <tr>
+              <td><kbd>Tab</kbd></td>
+              <td>En Dirección: completa la sugerencia resaltada (si es un sitio sin número, agrega espacio para escribir la referencia). En los demás campos: avanza al siguiente campo.</td>
+            </tr>
+            <tr>
+              <td><kbd>↑</kbd> / <kbd>↓</kbd></td>
+              <td>Recorre la lista desplegable de sugerencias de direcciones o de choferes.</td>
+            </tr>
+            <tr>
+              <td><kbd>Enter</kbd></td>
+              <td>Avanza al siguiente campo canonizando la dirección; en el campo <em>Programado</em> guarda el viaje.</td>
+            </tr>
+            <tr>
+              <td><kbd>Ctrl</kbd> + <kbd>Enter</kbd></td>
+              <td>Guarda el viaje inmediatamente desde cualquier campo del formulario.</td>
+            </tr>
+            <tr>
+              <td><kbd>Esc</kbd></td>
+              <td>Cierra desplegables de sugerencias, limpia la hora programada o cierra el modal de Ficha de Viaje.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SECCIÓN 3: FICHA DE VIAJE, REPETICIÓN E HISTORIAL
+         =================================================================== -->
+    <section class="seccion-manual" id="sec-3">
+      <h2><span class="num-seccion">3</span> Ficha de Viaje, Reprogramación, Repetición Programática e Historial</h2>
+
+      <div class="subseccion" id="sec-3-1">
+        <h3>3.1. Apertura de la Ficha de Viaje</h3>
+        <p>
+          Haciendo <strong>click sobre cualquier fila</strong> de la tabla de viajes del turno actual, de próximos turnos,
+          del módulo <em>Historial</em> o del módulo <em>Clientes</em>, se abre la ventana modal <strong>📋 Ficha de Viaje</strong>.
+        </p>
+      </div>
+
+      <div class="subseccion" id="sec-3-2">
+        <h3>3.2. Registros de tiempos y operadores (Solo Lectura)</h3>
+        <p>
+          En la parte superior de la ficha se exhiben 4 tarjetas bloqueadas (<strong>no editables</strong> por ningún usuario)
+          que garantizan la auditoría de cada viaje:
+        </p>
+        <ol class="pasos-numerados">
+          <li><strong>3.2.1. Hora de inicio (creación):</strong> Fecha y hora exacta con segundos en que se tomó el pedido y nombre del operador que lo creó.</li>
+          <li><strong>3.2.2. Hora de asignación de chofer:</strong> Fecha y hora en que se asignó el chofer actual y operador que lo asignó.</li>
+          <li><strong>3.2.3. Comunicación al chofer (Avisado):</strong> Fecha y hora en que se pulsó <em>Avisar</em>, operador que lo avisó y botón rápido para avisar o desmarcar.</li>
+          <li><strong>3.2.4. Hora programada / Estado de anulación:</strong> Muestra la hora programada vigente o quién anuló el viaje.</li>
+        </ol>
+      </div>
+
+      <div class="subseccion" id="sec-3-3">
+        <h3>3.3. Edición de Dirección, Teléfono, Chofer y Reprogramación</h3>
+        <ol class="pasos-numerados">
+          <li><strong>3.3.1. Datos editables:</strong> Desde el formulario de la ficha puede corregir la <strong>Dirección</strong> (se canoniza con el catálogo de San José de Mayo), el <strong>Teléfono</strong> y el <strong>Chofer asignado</strong> (recordando que cambiar el chofer reinicia el estado de <em>Avisar</em>).</li>
+          <li><strong>3.3.2. Reprogramar viaje:</strong> Marque o desmarque la casilla <strong>⏰ Programar / Reprogramar horario del viaje</strong> e indique la nueva hora en formato 24 hs (ej. <code>18:30</code>). Si desmarca la casilla en un viaje programado pendiente, pasa a ser un viaje inmediato del turno actual.</li>
+        </ol>
+      </div>
+
+      <div class="subseccion" id="sec-3-4">
+        <h3>3.4. Repetición programática automática ("Cada día" o selección de días)</h3>
+        <p>
+          Para pasajeros habituales (diálisis, colegios, entradas al trabajo, etc.), la ficha permite configurar que el
+          sistema genere automáticamente el viaje programado en los días indicados:
+        </p>
+        <ol class="pasos-numerados">
+          <li><strong>3.4.1.</strong> Active la casilla <strong>🔁 Repetir este viaje programáticamente</strong>.</li>
+          <li><strong>3.4.2.</strong> Indique la <strong>Hora de repetición (24 hs)</strong> (ej. <code>07:30</code>).</li>
+          <li><strong>3.4.3. Checkbox "Cada día (todos los días)":</strong>
+            <ul class="lista-detalle">
+              <li>Al marcar el checkbox <strong>☑️ Cada día (todos los días)</strong>, se marcan automáticamente los 7 días de la semana y aparece un <strong>recuadro verde de confirmación visual</strong>: <code>✅ Repetición programática activa: Este viaje se generará automáticamente CADA DÍA (Lunes a Domingo) a las 07:30 hs.</code></li>
+            </ul>
+          </li>
+          <li><strong>3.4.4. Selección de días específicos:</strong> Si el viaje solo se repite ciertos días (una vez por semana, lunes a viernes, etc.), desmarque <em>"Cada día"</em> o pulse directamente sobre los botones de los días (<code>Lun</code>, <code>Mar</code>, <code>Mié</code>, <code>Jue</code>, <code>Vie</code>, <code>Sáb</code>, <code>Dom</code>) o use los atajos rápidos (<em>Lun a Vie</em>, <em>Lun a Sáb</em>, <em>Fin de semana</em>).</li>
+          <li><strong>3.4.5.</strong> Pulse <strong>💾 Guardar cambios en la ficha</strong>.</li>
+        </ol>
+
+        <figure class="figura-ui">
+          <div class="figura-cabecera">
+            <span>FIGURA 3.1 — Modal Ficha de Viaje y Repetición Programática con Checkbox "Cada día"</span>
+            <span>Archivo sugerido: <code>capturas/fig-3-1-ficha-viaje-modal.png</code></span>
+          </div>
+          <div class="recorte-interfaz">
+            <div class="mock-card" style="max-width: 720px; margin: 0 auto;">
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #cbd5e1; padding-bottom:8px; margin-bottom:10px;">
+                <strong>📋 Ficha de Viaje · N° 2 (ID #148)</strong>
+                <span style="background:#dbeafe; color:#1e40af; padding:2px 8px; border-radius:4px; font-size:0.78rem; font-weight:700;">🔁 Repetición activa (07:30)</span>
+              </div>
+              <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:12px; font-size:0.78rem;">
+                <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:8px; border-radius:6px;">
+                  <div style="color:#64748b; font-weight:700;">Hora de inicio (creación)</div>
+                  <strong>17/10/2026 07:10:04</strong>
+                  <div style="color:#64748b;">Operador: Admin</div>
+                </div>
+                <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:8px; border-radius:6px;">
+                  <div style="color:#64748b; font-weight:700;">Hora de asignación</div>
+                  <strong>17/10/2026 07:12:30</strong>
+                  <div style="color:#64748b;">Asignado por: Admin</div>
+                </div>
+                <div style="background:#f8fafc; border:1px solid #cbd5e1; padding:8px; border-radius:6px;">
+                  <div style="color:#64748b; font-weight:700;">Comunicación (Avisado)</div>
+                  <strong>17/10/2026 07:13:05</strong>
+                  <div style="color:#64748b;">Avisado por: Admin</div>
+                </div>
+              </div>
+              <div style="border:1px solid #cbd5e1; border-radius:8px; padding:10px; background:#f8fafc;">
+                <div style="font-weight:700; margin-bottom:8px;">☑️ 🔁 Repetir este viaje programáticamente</div>
+                <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                  <span style="border:2px solid #ff6600; background:rgba(255,102,0,0.12); padding:5px 10px; border-radius:6px; font-weight:700; font-size:0.84rem;">
+                    ☑️ <strong>Cada día (todos los días)</strong>
+                  </span>
+                  <span style="font-size:0.84rem;">Hora: <strong>07:30</strong></span>
+                </div>
+                <div style="background:#d4edda; color:#155724; border:1px solid #10b981; padding:8px 10px; border-radius:6px; font-size:0.82rem;">
+                  ✅ <strong>Repetición programática activa:</strong> Este viaje se generará automáticamente <strong>CADA DÍA (Lunes a Domingo)</strong> a las <strong>07:30 hs</strong>.
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="placeholder-captura">
+            <div class="placeholder-captura-head">
+              <strong>📸 Guía para captura real (Texto Alternativo):</strong>
+              <code>capturas/fig-3-1-ficha-viaje-modal.png</code>
+            </div>
+            <img
+              class="img-captura-usuario sin-archivo"
+              src="capturas/fig-3-1-ficha-viaje-modal.png"
+              alt="Recorte del modal Ficha de Viaje mostrando arriba los bloques de tiempos y operadores de solo lectura, en el centro los campos editables de Dirección, Teléfono y Chofer, y abajo la sección 'Repetir este viaje programáticamente' con el checkbox 'Cada día (todos los días)' marcado, el cartel verde de confirmación y los botones de días Lun a Dom."
+              onload="this.classList.remove('sin-archivo')"
+            />
+            <div class="caja-alt-texto">
+              <strong>ALT:</strong> "Recorte del modal Ficha de Viaje mostrando arriba los bloques de tiempos y operadores de solo lectura, en el centro los campos editables de Dirección, Teléfono y Chofer, y abajo la sección 'Repetir este viaje programáticamente' con el checkbox 'Cada día (todos los días)' marcado, el cartel verde de confirmación y los botones de días Lun a Dom."
+            </div>
+          </div>
+          <figcaption>Figura 3.1: Ficha de Viaje con registros inalterables, checkbox "Cada día" con feedback visual e historial.</figcaption>
+        </figure>
+      </div>
+
+      <div class="subseccion" id="sec-3-5">
+        <h3>3.5. Historial de auditoría del viaje</h3>
+        <p>
+          Al pie de la <strong>Ficha de Viaje</strong> se encuentra la sección <strong>🕓 Historial de cambios del viaje</strong>.
+          Cada vez que se crea el viaje, se asigna o cambia un chofer, se pulsa el botón <em>Avisar</em>, se edita la dirección/teléfono,
+          se reprograma o se anula/restaura, queda registrado un ítem cronológico indicando <strong>fecha y hora exacta, nombre del operador y detalle del cambio</strong> (ej. <code>Cambió chofer de "Móvil 04" a "Móvil 07" (se reinició el botón de Avisar)</code>).
+        </p>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SECCIÓN 4: MÓDULO CHOFERES DEL TURNO
+         =================================================================== -->
+    <section class="seccion-manual" id="sec-4">
+      <h2><span class="num-seccion">4</span> Módulo 2: Choferes del Turno</h2>
+
+      <div class="subseccion" id="sec-4-1">
+        <h3>4.1. Selección de choferes activos por turno</h3>
+        <p>
+          Para agilizar la recepción y evitar asignar por error un viaje a un móvil que no está trabajando en el turno actual,
+          la pestaña <strong>Choferes del turno</strong> permite tildar qué choferes están operativos en cada turno:
+        </p>
+        <ol class="pasos-numerados">
+          <li><strong>4.1.1.</strong> Seleccione en las pestañas superiores si desea configurar el <strong>Turno actual</strong> o alguno de los <strong>próximos turnos</strong>.</li>
+          <li><strong>4.1.2.</strong> Haga click sobre las tarjetas de los choferes para marcarlos (borde naranja) o desmarcarlos. El cambio se guarda y transmite en tiempo real a todos los puestos de recepción.</li>
+        </ol>
+      </div>
+
+      <div class="subseccion" id="sec-4-2">
+        <h3>4.2. Botón "Copiar del turno anterior"</h3>
+        <p>
+          Si el turno recién comienza y aún no tiene choferes seleccionados, puede pulsar el botón
+          <strong>Copiar del turno anterior</strong> para traer con un solo click la lista de choferes que trabajaron en el turno previo.
+        </p>
+
+        <figure class="figura-ui">
+          <div class="figura-cabecera">
+            <span>FIGURA 4.1 — Grilla de Choferes del Turno</span>
+            <span>Archivo sugerido: <code>capturas/fig-4-1-choferes-turno.png</code></span>
+          </div>
+          <div class="recorte-interfaz">
+            <div class="mock-card">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <strong>Choferes en servicio · Turno Mañana (4 seleccionados)</strong>
+                <span style="background:#e2e8f0; padding:4px 10px; border-radius:6px; font-size:0.8rem; font-weight:600;">Copiar del turno anterior</span>
+              </div>
+              <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:8px;">
+                <div style="border:2px solid #ff6600; background:#fff5ed; padding:8px 12px; border-radius:8px; font-weight:700;">☑️ Móvil 01 - Carlos</div>
+                <div style="border:2px solid #ff6600; background:#fff5ed; padding:8px 12px; border-radius:8px; font-weight:700;">☑️ Móvil 04 - Pérez</div>
+                <div style="border:2px solid #cbd5e1; background:#fff; padding:8px 12px; border-radius:8px; color:#64748b;">⬜ Móvil 05 - Silva</div>
+                <div style="border:2px solid #ff6600; background:#fff5ed; padding:8px 12px; border-radius:8px; font-weight:700;">☑️ Móvil 07 - Gómez</div>
+              </div>
+            </div>
+          </div>
+          <div class="placeholder-captura">
+            <div class="placeholder-captura-head">
+              <strong>📸 Guía para captura real (Texto Alternativo):</strong>
+              <code>capturas/fig-4-1-choferes-turno.png</code>
+            </div>
+            <img
+              class="img-captura-usuario sin-archivo"
+              src="capturas/fig-4-1-choferes-turno.png"
+              alt="Recorte del módulo Choferes del turno mostrando las pestañas de turnos arriba, el botón 'Copiar del turno anterior' a la derecha y la grilla de tarjetas con checkboxes de los choferes seleccionados en borde naranja."
+              onload="this.classList.remove('sin-archivo')"
+            />
+            <div class="caja-alt-texto">
+              <strong>ALT:</strong> "Recorte del módulo Choferes del turno mostrando las pestañas de turnos arriba, el botón 'Copiar del turno anterior' a la derecha y la grilla de tarjetas con checkboxes de los choferes seleccionados en borde naranja."
+            </div>
+          </div>
+          <figcaption>Figura 4.1: Selección rápida de choferes activos para el turno en curso o turnos siguientes.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SECCIÓN 5: MÓDULO HISTORIAL POR TURNOS
+         =================================================================== -->
+    <section class="seccion-manual" id="sec-5">
+      <h2><span class="num-seccion">5</span> Módulo 3: Historial por Turnos y Exportación CSV</h2>
+
+      <div class="subseccion" id="sec-5-1">
+        <h3>5.1. Consulta de turnos pasados y descarga de planilla CSV</h3>
+        <ol class="pasos-numerados">
+          <li><strong>5.1.1. Selección de Fecha y Turno:</strong> En la pestaña <strong>Historial</strong>, elija cualquier fecha del calendario y el turno deseado (<strong>Mañana 06–14</strong>, <strong>Tarde 14–22</strong> o <strong>Noche 22–06</strong>).</li>
+          <li><strong>5.1.2. Visualización y Ficha:</strong> Se listan todos los viajes de ese turno. Haciendo click en cualquier fila se abre su <strong>Ficha de Viaje</strong> con todo su historial de auditoría. (Si el usuario tiene rol <code>admin</code>, también puede editar desde allí).</li>
+          <li><strong>5.1.3. Exportar CSV:</strong> Al pulsar el botón <strong>Exportar CSV</strong>, se descarga un archivo compatible con Microsoft Excel / LibreOffice Calc (con codificación UTF-8 y separador <code>;</code>) con todas las columnas del turno.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SECCIÓN 6: MÓDULO CLIENTES Y ESTADÍSTICAS
+         =================================================================== -->
+    <section class="seccion-manual" id="sec-6">
+      <h2><span class="num-seccion">6</span> Módulo 4: Clientes, Buscador Multicriterio y Estadísticas</h2>
+
+      <div class="subseccion" id="sec-6-1">
+        <h3>6.1. Búsqueda y filtrado combinado de viajes realizados</h3>
+        <p>
+          El módulo <strong>Clientes</strong> permite auditar el histórico global de viajes aplicando uno o varios filtros simultáneamente:
+        </p>
+        <ol class="pasos-numerados">
+          <li><strong>6.1.1. Teléfono:</strong> Busca coincidencias parciales o completas de números telefónicos.</li>
+          <li><strong>6.1.2. Destino / Dirección:</strong> Filtra por calle, número, sitio o punto de referencia (ignorando tildes y mayúsculas/minúsculas).</li>
+          <li><strong>6.1.3. Chofer:</strong> Permite elegir un chofer específico de la lista desplegable.</li>
+          <li><strong>6.1.4. Estado:</strong> Filtra entre <em>Solo realizados (no anulados)</em>, <em>Todos (incluye anulados)</em> o <em>Solo anulados</em>.</li>
+          <li><strong>6.1.5. Rango de fechas (Desde / Hasta):</strong> Acota la búsqueda y las estadísticas a un período determinado.</li>
+          <li><strong>6.1.6. Filtros rápidos desde los resultados (<code>🔍</code>):</strong> En la tabla de resultados o en los rankings, al hacer click sobre una dirección, sobre un chofer o sobre la lupa <code>🔍</code> junto a un teléfono, ese valor se aplica automáticamente como filtro.</li>
+        </ol>
+      </div>
+
+      <div class="subseccion" id="sec-6-2">
+        <h3>6.2. Estadísticas por Día, por Mes y por Año + Rankings</h3>
+        <p>
+          Todos los indicadores y gráficos del módulo se recalculan dinámicamente según los filtros activos:
+        </p>
+        <ol class="pasos-numerados">
+          <li><strong>6.2.1. Tarjetas KPI superiores:</strong> Muestran el total de <strong>Viajes realizados</strong> (y anulados), <strong>Clientes únicos</strong>, <strong>Choferes con viajes</strong> y <strong>Destinos distintos</strong>.</li>
+          <li><strong>6.2.2. Estadísticas temporales:</strong> Mediante los tres botones superiores de la tarjeta de estadísticas puede alternar la agrupación entre:
+            <ul class="lista-detalle">
+              <li><strong>📅 Por Día:</strong> Detalle diario con viajes realizados, anulados, clientes únicos, choferes activos y barra porcentual. (Haciendo click en una fila diaria, filtra automáticamente ese día).</li>
+              <li><strong>🗓️ Por Mes:</strong> Resumen mensual (<code>AAAA-MM</code>) para analizar la evolución mes a mes.</li>
+              <li><strong>📈 Por Año:</strong> Totales anuales acumulados.</li>
+            </ul>
+          </li>
+          <li><strong>6.2.3. Rankings (Top 10):</strong> Tres paneles inferiores muestran los <strong>📍 Destinos más frecuentes</strong>, <strong>📞 Clientes (Teléfonos) más frecuentes</strong> (con acceso directo a WhatsApp) y <strong>🚕 Viajes por Chofer</strong>.</li>
+        </ol>
+
+        <figure class="figura-ui">
+          <div class="figura-cabecera">
+            <span>FIGURA 6.1 — Módulo Clientes: Filtros, KPIs y Estadísticas por Día / Mes / Año</span>
+            <span>Archivo sugerido: <code>capturas/fig-6-1-modulo-clientes-estadisticas.png</code></span>
+          </div>
+          <div class="recorte-interfaz">
+            <div class="mock-card">
+              <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:12px;">
+                <div style="border:1px solid #cbd5e1; border-radius:8px; padding:8px;">
+                  <div style="font-size:0.7rem; color:#64748b; font-weight:700;">VIAJES REALIZADOS</div>
+                  <div style="font-size:1.35rem; font-weight:800; color:#ff6600;">1.248</div>
+                </div>
+                <div style="border:1px solid #cbd5e1; border-radius:8px; padding:8px;">
+                  <div style="font-size:0.7rem; color:#64748b; font-weight:700;">CLIENTES ÚNICOS</div>
+                  <div style="font-size:1.35rem; font-weight:800; color:#ff6600;">386</div>
+                </div>
+                <div style="border:1px solid #cbd5e1; border-radius:8px; padding:8px;">
+                  <div style="font-size:0.7rem; color:#64748b; font-weight:700;">CHOFERES CON VIAJES</div>
+                  <div style="font-size:1.35rem; font-weight:800; color:#ff6600;">14</div>
+                </div>
+                <div style="border:1px solid #cbd5e1; border-radius:8px; padding:8px;">
+                  <div style="font-size:0.7rem; color:#64748b; font-weight:700;">DESTINOS DISTINTOS</div>
+                  <div style="font-size:1.35rem; font-weight:800; color:#ff6600;">512</div>
+                </div>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <strong>📊 Estadísticas de viajes</strong>
+                <div style="display:flex; gap:4px;">
+                  <span class="mock-btn-naranja" style="padding:3px 8px; font-size:0.75rem;">📅 Por Día</span>
+                  <span style="background:#e2e8f0; padding:3px 8px; border-radius:4px; font-size:0.75rem;">🗓️ Por Mes</span>
+                  <span style="background:#e2e8f0; padding:3px 8px; border-radius:4px; font-size:0.75rem;">📈 Por Año</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="placeholder-captura">
+            <div class="placeholder-captura-head">
+              <strong>📸 Guía para captura real (Texto Alternativo):</strong>
+              <code>capturas/fig-6-1-modulo-clientes-estadisticas.png</code>
+            </div>
+            <img
+              class="img-captura-usuario sin-archivo"
+              src="capturas/fig-6-1-modulo-clientes-estadisticas.png"
+              alt="Recorte del módulo Clientes mostrando arriba los campos de filtro (Teléfono, Destino, Chofer, Estado, Desde y Hasta), en el medio las 4 tarjetas KPI (Viajes realizados, Clientes únicos, Choferes con viajes, Destinos distintos) y abajo la tabla de Estadísticas con los botones 'Por Día', 'Por Mes' y 'Por Año'."
+              onload="this.classList.remove('sin-archivo')"
+            />
+            <div class="caja-alt-texto">
+              <strong>ALT:</strong> "Recorte del módulo Clientes mostrando arriba los campos de filtro (Teléfono, Destino, Chofer, Estado, Desde y Hasta), en el medio las 4 tarjetas KPI (Viajes realizados, Clientes únicos, Choferes con viajes, Destinos distintos) y abajo la tabla de Estadísticas con los botones 'Por Día', 'Por Mes' y 'Por Año'."
+            </div>
+          </div>
+          <figcaption>Figura 6.1: Panel de Clientes con filtros combinados, KPIs y selector de estadísticas por Día, Mes y Año.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SECCIÓN 7: MÓDULO ADMINISTRACIÓN
+         =================================================================== -->
+    <section class="seccion-manual" id="sec-7">
+      <h2><span class="num-seccion">7</span> Módulo 5: Administración (Exclusivo Administradores)</h2>
+      <p>
+        Los usuarios con rol <strong><code>admin</code></strong> disponen de la pestaña <strong>Administración</strong>,
+        dividida en <strong>5 submódulos</strong>:
+      </p>
+
+      <div class="subseccion" id="sec-7-1">
+        <h3>7.1. Submódulo "Choferes" (Alta, Edición y Eliminación)</h3>
+        <ol class="pasos-numerados">
+          <li><strong>7.1.1. Agregar chofer:</strong> Escriba el nombre/móvil en el campo superior y pulse <strong>Agregar</strong>.</li>
+          <li><strong>7.1.2. Editar / Desactivar chofer:</strong> Pulse <strong>Editar</strong> en la fila del chofer para cambiar su nombre o desmarcar la casilla <em>Activo</em> (si un chofer está inactivo no aparece en los turnos nuevos, pero conserva su historial).</li>
+          <li><strong>7.1.3. Eliminar chofer:</strong> Pulse el botón rojo <strong>Eliminar</strong> junto a <em>Editar</em> y confirme el diálogo. (Si el chofer tenía viajes históricos registrados, el sistema desvincula la referencia en esos viajes sin borrar los viajes realizados).</li>
+        </ol>
+      </div>
+
+      <div class="subseccion" id="sec-7-2">
+        <h3>7.2. Submódulo "Operadores"</h3>
+        <ol class="pasos-numerados">
+          <li><strong>7.2.1. Crear operador:</strong> Complete <em>Usuario</em> (login), <em>Nombre visible</em>, <em>Contraseña</em> y <em>Rol</em> (<code>Rol Operador</code> o <code>Rol Admin</code>) y pulse <strong>Crear</strong>.</li>
+          <li><strong>7.2.2. Editar operador o blanquear contraseña:</strong> Pulse <strong>Editar</strong> en la fila correspondiente. Puede cambiar su nombre, rol, estado activo o escribir una nueva contraseña (si deja el campo de nueva contraseña vacío, se mantiene la actual).</li>
+        </ol>
+      </div>
+
+      <div class="subseccion" id="sec-7-3">
+        <h3>7.3. Submódulo "🗺️ Calles San José" (Catálogo Curado de Calles y Sitios)</h3>
+        <p>
+          Este submódulo permite administrar la lista curada de calles, avenidas, bulevares, rutas y sitios de referencia de
+          <strong>San José de Mayo</strong> que alimenta el autocompletado y la canonización de direcciones:
+        </p>
+        <ol class="pasos-numerados">
+          <li><strong>7.3.1. Buscador instantáneo:</strong> Escriba cualquier parte del nombre o alias en el cuadro <em>Buscar calle o alias...</em> (ej. <code>batlle</code>, <code>saravia</code>, <code>amsj</code>, <code>carreton</code>) para filtrar la tabla en el acto.</li>
+          <li><strong>7.3.2. Modificar manualmente una calle o sitio:</strong>
+            <ul class="lista-detalle">
+              <li>Haga click en <strong>Editar</strong> sobre la calle que desee ajustar.</li>
+              <li>Modifique el <strong>Nombre principal</strong> (que es el que se usará siempre al autocompletar, por ejemplo: dejar <code>Batlle y Ordóñez</code> en lugar de <em>José Batlle y Ordóñez</em>, o <code>Aparicio Saravia</code> en lugar de <em>Bvr. Aparicio Saravia</em>).</li>
+              <li>En el campo <strong>Alias / variantes</strong> (separados por coma) puede colocar los nombres oficiales largos, apodos o errores frecuentes para que el sistema los reconozca y los reemplace automáticamente por el nombre principal.</li>
+              <li><strong>Sincronización automática:</strong> Al guardar un cambio de nombre principal en este panel, el nombre anterior pasa automáticamente a la lista de alias y todas las direcciones históricas <code>&lt;número&gt; &lt;nombre anterior&gt;</code> de la base de datos se actualizan al nuevo nombre curado.</li>
+            </ul>
+          </li>
+          <li><strong>7.3.3. Agregar nueva calle o punto de referencia:</strong> Complete <em>Nombre curado principal</em> y <em>Alias / variantes opcionales</em> en el formulario superior y pulse <strong>Agregar calle</strong>.</li>
+          <li><strong>7.3.4. Restaurar faltantes del catálogo base:</strong> El botón <strong>Restaurar faltantes del catálogo base</strong> vuelve a insertar cualquier calle del listado original de San José de Mayo que haya sido eliminada, sin sobrescribir las calles que usted haya personalizado.</li>
+        </ol>
+
+        <figure class="figura-ui">
+          <div class="figura-cabecera">
+            <span>FIGURA 7.1 — Administración: Editor del Catálogo Curado de Calles de San José de Mayo</span>
+            <span>Archivo sugerido: <code>capturas/fig-7-1-admin-calles-sanjose.png</code></span>
+          </div>
+          <div class="recorte-interfaz">
+            <div class="mock-card">
+              <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+                <span class="mock-tab" style="background:#e2e8f0; color:#1e293b;">Choferes</span>
+                <span class="mock-tab" style="background:#e2e8f0; color:#1e293b;">Operadores</span>
+                <span class="mock-tab activa">🗺️ Calles San José</span>
+                <span class="mock-tab" style="background:#e2e8f0; color:#1e293b;">⚙️ Configuración</span>
+                <span class="mock-tab" style="background:#e2e8f0; color:#1e293b;">🎨 Identidad 26000</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px;">
+                <div class="mock-input" style="max-width:280px;">🔍 batlle</div>
+                <span style="font-size:0.8rem; color:#64748b;">Mostrando 2 entradas</span>
+              </div>
+              <table class="tabla-manual" style="margin:0;">
+                <thead>
+                  <tr>
+                    <th>Nombre principal (usado al autocompletar)</th>
+                    <th>Alias / Nombres alternativos reconocidos</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><input value="Batlle y Ordóñez" readonly style="padding:4px 8px; font-weight:700; border:1px solid #ff6600; border-radius:4px; width:100%;" /></td>
+                    <td><input value="José Batlle y Ordóñez, Jose Batlle y Ordoñez, Batlle" readonly style="padding:4px 8px; border:1px solid #cbd5e1; border-radius:4px; width:100%;" /></td>
+                    <td>☑️ Activa</td>
+                    <td><span class="mock-btn-naranja" style="padding:3px 8px; font-size:0.75rem;">Guardar</span></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Batlle Berres</strong></td>
+                    <td><span style="color:#64748b;">Luis Batlle Berres</span></td>
+                    <td><span style="background:#dcfce7; color:#166534; padding:2px 6px; border-radius:4px; font-size:0.75rem; font-weight:700;">Activa</span></td>
+                    <td>
+                      <span style="background:#e2e8f0; padding:3px 8px; border-radius:4px; font-size:0.75rem;">Editar</span>
+                      <span style="background:#fee2e2; color:#b91c1c; padding:3px 8px; border-radius:4px; font-size:0.75rem;">Eliminar</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="placeholder-captura">
+            <div class="placeholder-captura-head">
+              <strong>📸 Guía para captura real (Texto Alternativo):</strong>
+              <code>capturas/fig-7-1-admin-calles-sanjose.png</code>
+            </div>
+            <img
+              class="img-captura-usuario sin-archivo"
+              src="capturas/fig-7-1-admin-calles-sanjose.png"
+              alt="Recorte de Administración en la sub-pestaña '🗺️ Calles San José' mostrando el formulario para agregar calles arriba, el buscador en vivo y la tabla con edición en línea del nombre principal 'Batlle y Ordóñez' y sus alias 'José Batlle y Ordóñez, Batlle'."
+              onload="this.classList.remove('sin-archivo')"
+            />
+            <div class="caja-alt-texto">
+              <strong>ALT:</strong> "Recorte de Administración en la sub-pestaña '🗺️ Calles San José' mostrando el formulario para agregar calles arriba, el buscador en vivo y la tabla con edición en línea del nombre principal 'Batlle y Ordóñez' y sus alias 'José Batlle y Ordóñez, Batlle'."
+            </div>
+          </div>
+          <figcaption>Figura 7.1: Submódulo de Calles de San José de Mayo con búsqueda y edición manual de nombres y alias.</figcaption>
+        </figure>
+      </div>
+
+      <div class="subseccion" id="sec-7-4">
+        <h3>7.4. Submódulo "⚙️ Configuración" (Minutos de aviso previo de programados)</h3>
+        <ol class="pasos-numerados">
+          <li><strong>7.4.1.</strong> Ingrese a <strong>Administración → ⚙️ Configuración</strong>.</li>
+          <li><strong>7.4.2.</strong> Ajuste el valor numérico de <strong>Minutos de aviso previo (0 a 240)</strong> (por ejemplo: <code>5</code> minutos).</li>
+          <li><strong>7.4.3.</strong> Pulse <strong>Guardar configuración</strong>. El cambio se aplica de inmediato a todos los operadores conectados.</li>
+        </ol>
+      </div>
+
+      <div class="subseccion" id="sec-7-5">
+        <h3>7.5. Submódulo "🎨 Identidad 26000"</h3>
+        <p>
+          Permite activar o desactivar de forma global o individual los elementos visuales corporativos de
+          <strong>TAXI 26000 VEINTISEISMIL</strong>:
+        </p>
+        <ul class="lista-detalle">
+          <li><strong>7.5.1. Interruptor Maestro:</strong> Activa o desactiva toda la identidad naranja corporativa.</li>
+          <li><strong>7.5.2. Opciones individuales:</strong>
+            <em>Título Corporativo en Barra Superior</em>,
+            <em>Marcos Naranjas en Paneles y Tarjetas</em>,
+            <em>Bordes en Etiquetas y Pestañas</em> y
+            <em>Botones de Acción Naranjas</em>.
+          </li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    function cambiarModoFiguras(modo, btn) {
+      document.body.setAttribute('data-modo-figuras', modo);
+      document.querySelectorAll('.barra-manual-controles .btn-manual').forEach((b) => {
+        if (b.getAttribute('onclick')?.includes('cambiarModoFiguras')) {
+          b.classList.remove('activo');
+        }
+      });
+      if (btn) btn.classList.add('activo');
+    }
+  </script>
+</body>
+</html>
