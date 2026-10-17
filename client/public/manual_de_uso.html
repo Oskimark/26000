@@ -93,6 +93,150 @@
       color: #ffffff;
     }
 
+    /* Buscador interactivo del manual */
+    .buscador-manual-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      max-width: 420px;
+      min-width: 240px;
+    }
+
+    .input-buscador-manual {
+      width: 100%;
+      padding: 7px 32px 7px 12px;
+      border-radius: 6px;
+      border: 1.5px solid #475569;
+      background: #1e293b;
+      color: #ffffff;
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .input-buscador-manual::placeholder {
+      color: #94a3b8;
+    }
+    .input-buscador-manual:focus {
+      border-color: var(--naranja);
+      box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.25);
+    }
+
+    .btn-limpiar-busqueda {
+      position: absolute;
+      right: 8px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 0.95rem;
+      display: none;
+    }
+    .btn-limpiar-busqueda.visible {
+      display: inline-block;
+    }
+    .btn-limpiar-busqueda:hover {
+      color: #ffffff;
+    }
+
+    .panel-buscador-conceptos {
+      background: var(--bg-hoja);
+      border: 2px solid var(--naranja);
+      border-radius: 12px;
+      padding: 16px 22px;
+      margin-bottom: 22px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    .conceptos-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      align-items: center;
+    }
+
+    .chip-concepto {
+      background: #f1f5f9;
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      padding: 4px 11px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .chip-concepto:hover,
+    .chip-concepto.activo {
+      background: var(--naranja);
+      color: #ffffff;
+      border-color: var(--naranja-oscuro);
+    }
+
+    .resultados-busqueda-panel {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed #cbd5e1;
+      display: none;
+    }
+    .resultados-busqueda-panel.visible {
+      display: block;
+    }
+
+    .lista-resultados-busqueda {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .item-resultado-busqueda {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid var(--naranja);
+      border-radius: 6px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .item-resultado-busqueda:hover {
+      background: #fff7ed;
+      border-color: var(--naranja);
+    }
+    .item-resultado-busqueda strong {
+      display: block;
+      font-size: 0.88rem;
+      color: #0f172a;
+    }
+    .item-resultado-busqueda span {
+      display: block;
+      font-size: 0.78rem;
+      color: #475569;
+      margin-top: 2px;
+    }
+
+    mark.resaltado-busqueda {
+      background-color: #fde047;
+      color: #0f172a;
+      padding: 0 2px;
+      border-radius: 3px;
+      font-weight: 700;
+      box-shadow: 0 0 0 1px #eab308;
+    }
+    mark.resaltado-busqueda.actual {
+      background-color: #ff6600;
+      color: #ffffff;
+      box-shadow: 0 0 0 2px #c2410c;
+    }
+
+    .seccion-manual.oculta-por-busqueda,
+    .subseccion.oculta-por-busqueda {
+      display: none !important;
+    }
+
     /* Contenedor principal */
     .contenedor-manual {
       max-width: 1120px;
@@ -615,20 +759,42 @@
   <header class="barra-manual">
     <div class="barra-manual-Marca">
       <strong>TAXI 26000 VEINTISEISMIL</strong>
-      <span>· Manual Oficial de Operación y Administración</span>
+      <span>· Manual Oficial</span>
     </div>
+
+    <div class="buscador-manual-wrap">
+      <input
+        id="input-buscador"
+        type="search"
+        class="input-buscador-manual"
+        placeholder="🔍 Buscar término o concepto (ej: avisar, turno, km, calle, cada día, whatsapp)..."
+        oninput="ejecutarBusquedaManual(this.value)"
+        autocomplete="off"
+      />
+      <button
+        id="btn-limpiar-buscador"
+        type="button"
+        class="btn-limpiar-busqueda"
+        onclick="limpiarBusquedaManual()"
+        title="Limpiar búsqueda"
+      >
+        ✕
+      </button>
+    </div>
+
     <div class="barra-manual-controles">
+      <span id="contador-busqueda" style="font-size:0.82rem; color:#fde047; font-weight:700; display:none;"></span>
       <button type="button" class="btn-manual activo" onclick="cambiarModoFiguras('ambos', this)">
-        🖼️ Ver Recortes + Guía de Capturas
+        🖼️ Recortes + Guía
       </button>
       <button type="button" class="btn-manual" onclick="cambiarModoFiguras('solo-recortes', this)">
-        ✨ Solo Recortes Integrados
+        ✨ Solo Recortes
       </button>
       <button type="button" class="btn-manual" onclick="cambiarModoFiguras('solo-placeholders', this)">
-        📸 Solo Placeholders (Texto Alternativo)
+        📸 Solo Placeholders
       </button>
       <button type="button" class="btn-manual" onclick="window.print()">
-        🖨️ Imprimir / Guardar PDF
+        🖨️ Imprimir / PDF
       </button>
     </div>
   </header>
@@ -646,8 +812,44 @@
       </p>
       <div class="portada-meta">
         <span>📍 Ciudad de referencia: <strong>San José de Mayo, Uruguay</strong></span>
+        <span>🕒 Régimen de turnos: <strong>2 turnos de 12 hs (03:00 a 15:00 y 15:00 a 03:00)</strong></span>
         <span>⚡ Sincronización: <strong>Tiempo real multi-operador (Socket.IO)</strong></span>
         <span>🌓 Interfaz: <strong>Modo Claro y Modo Oscuro de alto contraste</strong></span>
+      </div>
+    </section>
+
+    <!-- BUSCADOR POR TÉRMINOS Y CONCEPTOS -->
+    <section class="panel-buscador-conceptos" aria-label="Buscador del manual por términos o conceptos">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <strong style="font-size:1.05rem; color:#0f172a;">🔎 Buscador Rápido por Términos o Conceptos</strong>
+          <span style="font-size:0.86rem; color:#475569; margin-left:8px;">
+            Escriba cualquier palabra en la barra superior o haga click en un concepto clave para filtrar y resaltar en el manual:
+          </span>
+        </div>
+        <button type="button" class="btn-manual" onclick="limpiarBusquedaManual()" style="padding:4px 10px; font-size:0.78rem;">
+          Mostrar todo el manual
+        </button>
+      </div>
+
+      <div class="conceptos-chips" id="contenedor-chips-conceptos">
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('03 a 15', this)">🕒 Turnos (03 a 15 y 15 a 03)</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Avisar', this)">🔴 Botón Avisar / Avisado</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Sin asignar', this)">🚕 Chofer Sin asignar</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('número y luego la calle', this)">🔢 Orden &lt;número&gt; &lt;calle&gt;</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Camino Carretón', this)">📍 Sitios y referencias (AMSJ, km, Plaza 33)</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Cada día', this)">🔁 Repetir viaje / Cada día</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Ficha de Viaje', this)">📋 Ficha de Viaje e Historial</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('WhatsApp', this)">🟢 WhatsApp</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Modo Oscuro', this)">🌙 Modo Oscuro</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Estadísticas', this)">📊 Estadísticas Día / Mes / Año</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Calles San José', this)">🗺️ Admin Calles y Alias</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Eliminar', this)">🗑️ Eliminar Chofer</button>
+      </div>
+
+      <div id="panel-resultados-busqueda" class="resultados-busqueda-panel">
+        <div id="resumen-resultados-busqueda" style="font-size:0.88rem; font-weight:700; color:#c2410c;"></div>
+        <ul id="lista-resultados-busqueda" class="lista-resultados-busqueda"></ul>
       </div>
     </section>
 
@@ -660,7 +862,7 @@
           <ul>
             <li><a href="#sec-1-1">1.1. Inicio de sesión (Login) y roles</a></li>
             <li><a href="#sec-1-2">1.2. Cabecera corporativa, reloj y Modo Oscuro</a></li>
-            <li><a href="#sec-1-3">1.3. Régimen automático de turnos (Mañana, Tarde, Noche)</a></li>
+            <li><a href="#sec-1-3">1.3. Régimen automático de 2 turnos de 12 horas (03 a 15 y 15 a 03)</a></li>
           </ul>
         </div>
         <div class="indice-grupo">
@@ -786,7 +988,7 @@
           <li><strong>1.2.3. Controles de estado (derecha):</strong>
             <ul class="lista-detalle">
               <li><strong>Botón <code>🌙 Oscuro</code> / <code>☀️ Claro</code>:</strong> Alterna instantáneamente toda la interfaz entre el modo claro y el modo oscuro de alto contraste (ideal para turnos nocturnos). La preferencia queda guardada en el equipo.</li>
-              <li><strong>Indicador de Turno:</strong> Muestra la fecha y el turno activo (ej. <code>Turno Sáb 17/10 · Noche</code>).</li>
+              <li><strong>Indicador de Turno:</strong> Muestra la fecha y la franja del turno de 12 horas activo (ej. <code>Turno 17/10/2026 03 a 15</code> o <code>Turno 17/10/2026 15 a 03</code>).</li>
               <li><strong>Reloj en tiempo real:</strong> Hora exacta con segundos para referencia de despacho.</li>
               <li><strong>Nombre del operador activo</strong> y botón <strong>Salir</strong> para cerrar sesión.</li>
             </ul>
@@ -810,7 +1012,7 @@
               <div class="mock-marca">TAXI 26000 VEINTISEISMIL</div>
               <div class="mock-derecha">
                 <span class="mock-pill-oscuro">☀️ Claro</span>
-                <span class="mock-turno">Turno Sáb 17/10 · Mañana</span>
+                <span class="mock-turno">Turno 17/10/2026 03 a 15</span>
                 <span class="mock-reloj">09:42:18</span>
                 <span>Administrador</span>
                 <span style="color:#93c5fd; text-decoration:underline;">Salir</span>
@@ -825,47 +1027,41 @@
             <img
               class="img-captura-usuario sin-archivo"
               src="capturas/fig-1-2-barra-superior.png"
-              alt="Recorte horizontal de la cabecera superior mostrando las 5 pestañas de navegación a la izquierda, el título naranja TAXI 26000 VEINTISEISMIL al centro, y a la derecha el botón de modo oscuro/claro, etiqueta del turno actual, reloj digital, nombre del operador y botón Salir."
+              alt="Recorte horizontal de la cabecera superior mostrando las 5 pestañas de navegación a la izquierda, el título naranja TAXI 26000 VEINTISEISMIL al centro, y a la derecha el botón de modo oscuro/claro, etiqueta del turno actual (03 a 15 o 15 a 03), reloj digital, nombre del operador y botón Salir."
               onload="this.classList.remove('sin-archivo')"
             />
             <div class="caja-alt-texto">
-              <strong>ALT:</strong> "Recorte horizontal de la cabecera superior mostrando las 5 pestañas de navegación a la izquierda, el título naranja TAXI 26000 VEINTISEISMIL al centro, y a la derecha el botón de modo oscuro/claro, etiqueta del turno actual, reloj digital, nombre del operador y botón Salir."
+              <strong>ALT:</strong> "Recorte horizontal de la cabecera superior mostrando las 5 pestañas de navegación a la izquierda, el título naranja TAXI 26000 VEINTISEISMIL al centro, y a la derecha el botón de modo oscuro/claro, etiqueta del turno actual (03 a 15 o 15 a 03), reloj digital, nombre del operador y botón Salir."
             </div>
           </div>
-          <figcaption>Figura 1.2: Barra superior con marca corporativa TAXI 26000 VEINTISEISMIL y selector de Modo Oscuro.</figcaption>
+          <figcaption>Figura 1.2: Barra superior con marca corporativa TAXI 26000 VEINTISEISMIL, indicador de turno de 12 hs y selector de Modo Oscuro.</figcaption>
         </figure>
       </div>
 
       <div class="subseccion" id="sec-1-3">
-        <h3>1.3. Régimen automático de turnos</h3>
-        <p>El día operativo se divide automáticamente en <strong>3 turnos de 8 horas</strong> y la numeración de viajes (<code>N° 1, 2, 3...</code>) se reinicia en cada turno:</p>
+        <h3>1.3. Régimen automático de turnos (2 turnos de 12 horas: 03 a 15 y 15 a 03)</h3>
+        <p>El día operativo se divide automáticamente en <strong>dos turnos de 12 horas</strong> y la numeración de viajes (<code>N° 1, 2, 3...</code>) se reinicia automáticamente al comenzar cada turno:</p>
         <table class="tabla-manual">
           <thead>
             <tr>
               <th>Código</th>
-              <th>Nombre del Turno</th>
-              <th>Franja Horaria</th>
+              <th>Etiqueta en Sistema</th>
+              <th>Franja Horaria (12 horas)</th>
               <th>Observaciones</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td><strong>M</strong></td>
-              <td>Mañana</td>
-              <td><code>06:00</code> a <code>13:59</code></td>
-              <td>Inicia la numeración diaria a las 06:00 hs.</td>
+              <td><strong>Turno A</strong></td>
+              <td><strong><code>03 a 15</code></strong></td>
+              <td><code>03:00</code> a <code>15:00</code> hs</td>
+              <td>Comienza a las 03:00 de la madrugada y se extiende hasta las 14:59:59 del mismo día. Reinicia la numeración en N° 1 a las 03:00 hs.</td>
             </tr>
             <tr>
-              <td><strong>T</strong></td>
-              <td>Tarde</td>
-              <td><code>14:00</code> a <code>21:59</code></td>
-              <td>Reinicia numeración en N° 1 a las 14:00 hs.</td>
-            </tr>
-            <tr>
-              <td><strong>N</strong></td>
-              <td>Noche</td>
-              <td><code>22:00</code> a <code>05:59</code> (madrugada siguiente)</td>
-              <td>Los viajes entre las 00:00 y las 05:59 pertenecen al turno Noche iniciado el día anterior a las 22:00.</td>
+              <td><strong>Turno B</strong></td>
+              <td><strong><code>15 a 03</code></strong></td>
+              <td><code>15:00</code> a <code>03:00</code> hs (del día siguiente)</td>
+              <td>Comienza a las 15:00 hs y finaliza a las 02:59:59 de la madrugada siguiente. Los viajes realizados entre las 00:00 y las 03:00 pertenecen al Turno B que inició el día anterior a las 15:00 hs.</td>
             </tr>
           </tbody>
         </table>
@@ -1435,7 +1631,7 @@
           <div class="recorte-interfaz">
             <div class="mock-card">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <strong>Choferes en servicio · Turno Mañana (4 seleccionados)</strong>
+                <strong>Choferes en servicio · Turno 03 a 15 (4 seleccionados)</strong>
                 <span style="background:#e2e8f0; padding:4px 10px; border-radius:6px; font-size:0.8rem; font-weight:600;">Copiar del turno anterior</span>
               </div>
               <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:8px;">
@@ -1454,14 +1650,14 @@
             <img
               class="img-captura-usuario sin-archivo"
               src="capturas/fig-4-1-choferes-turno.png"
-              alt="Recorte del módulo Choferes del turno mostrando las pestañas de turnos arriba, el botón 'Copiar del turno anterior' a la derecha y la grilla de tarjetas con checkboxes de los choferes seleccionados en borde naranja."
+              alt="Recorte del módulo Choferes del turno mostrando las pestañas de turnos (03 a 15 y 15 a 03) arriba, el botón 'Copiar del turno anterior' a la derecha y la grilla de tarjetas con checkboxes de los choferes seleccionados en borde naranja."
               onload="this.classList.remove('sin-archivo')"
             />
             <div class="caja-alt-texto">
-              <strong>ALT:</strong> "Recorte del módulo Choferes del turno mostrando las pestañas de turnos arriba, el botón 'Copiar del turno anterior' a la derecha y la grilla de tarjetas con checkboxes de los choferes seleccionados en borde naranja."
+              <strong>ALT:</strong> "Recorte del módulo Choferes del turno mostrando las pestañas de turnos (03 a 15 y 15 a 03) arriba, el botón 'Copiar del turno anterior' a la derecha y la grilla de tarjetas con checkboxes de los choferes seleccionados en borde naranja."
             </div>
           </div>
-          <figcaption>Figura 4.1: Selección rápida de choferes activos para el turno en curso o turnos siguientes.</figcaption>
+          <figcaption>Figura 4.1: Selección rápida de choferes activos para el turno en curso (03 a 15 o 15 a 03) o turnos siguientes.</figcaption>
         </figure>
       </div>
     </section>
@@ -1475,9 +1671,9 @@
       <div class="subseccion" id="sec-5-1">
         <h3>5.1. Consulta de turnos pasados y descarga de planilla CSV</h3>
         <ol class="pasos-numerados">
-          <li><strong>5.1.1. Selección de Fecha y Turno:</strong> En la pestaña <strong>Historial</strong>, elija cualquier fecha del calendario y el turno deseado (<strong>Mañana 06–14</strong>, <strong>Tarde 14–22</strong> o <strong>Noche 22–06</strong>).</li>
+          <li><strong>5.1.1. Selección de Fecha y Turno:</strong> En la pestaña <strong>Historial</strong>, elija cualquier fecha del calendario y el turno de 12 horas deseado: <strong>Turno A (03:00 a 15:00)</strong> o <strong>Turno B (15:00 a 03:00 día siguiente)</strong>.</li>
           <li><strong>5.1.2. Visualización y Ficha:</strong> Se listan todos los viajes de ese turno. Haciendo click en cualquier fila se abre su <strong>Ficha de Viaje</strong> con todo su historial de auditoría. (Si el usuario tiene rol <code>admin</code>, también puede editar desde allí).</li>
-          <li><strong>5.1.3. Exportar CSV:</strong> Al pulsar el botón <strong>Exportar CSV</strong>, se descarga un archivo compatible con Microsoft Excel / LibreOffice Calc (con codificación UTF-8 y separador <code>;</code>) con todas las columnas del turno.</li>
+          <li><strong>5.1.3. Exportar CSV:</strong> Al pulsar el botón <strong>📥 Exportar CSV</strong>, se descarga un archivo compatible con Microsoft Excel / LibreOffice Calc (<code>viajes_FECHA_turno_A.csv</code> o <code>B.csv</code>) con todas las columnas del turno.</li>
         </ol>
       </div>
     </section>
@@ -1726,6 +1922,187 @@
         }
       });
       if (btn) btn.classList.add('activo');
+    }
+
+    function normalizarTexto(s) {
+      return String(s || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+    }
+
+    function quitarResaltadosPrevios() {
+      document.querySelectorAll('mark.resaltado-busqueda').forEach((mark) => {
+        const parent = mark.parentNode;
+        parent.replaceChild(document.createTextNode(mark.textContent), mark);
+        parent.normalize();
+      });
+    }
+
+    function resaltarEnElemento(raiz, terminoNorm) {
+      if (!terminoNorm || terminoNorm.length < 2) return 0;
+      let total = 0;
+      const walker = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+          const tag = node.parentElement?.tagName;
+          if (!tag || ['SCRIPT', 'STYLE', 'MARK', 'INPUT', 'TEXTAREA'].includes(tag)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          if (node.parentElement.closest('.recorte-interfaz')) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return normalizarTexto(node.nodeValue).includes(terminoNorm)
+            ? NodeFilter.FILTER_ACCEPT
+            : NodeFilter.FILTER_SKIP;
+        },
+      });
+
+      const nodos = [];
+      while (walker.nextNode()) nodos.push(walker.currentNode);
+
+      nodos.forEach((nodo) => {
+        const original = nodo.nodeValue;
+        const norm = original
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
+        const idx = norm.indexOf(terminoNorm);
+        if (idx === -1) return;
+
+        const frag = document.createDocumentFragment();
+        let pos = 0;
+        let i = idx;
+        while (i !== -1) {
+          if (i > pos) {
+            frag.appendChild(document.createTextNode(original.slice(pos, i)));
+          }
+          const mark = document.createElement('mark');
+          mark.className = 'resaltado-busqueda';
+          mark.textContent = original.slice(i, i + terminoNorm.length);
+          frag.appendChild(mark);
+          total++;
+          pos = i + terminoNorm.length;
+          i = norm.indexOf(terminoNorm, pos);
+        }
+        if (pos < original.length) {
+          frag.appendChild(document.createTextNode(original.slice(pos)));
+        }
+        nodo.parentNode.replaceChild(frag, nodo);
+      });
+
+      return total;
+    }
+
+    function ejecutarBusquedaManual(valorRaw) {
+      const input = document.getElementById('input-buscador');
+      const btnLimpiar = document.getElementById('btn-limpiar-buscador');
+      const contador = document.getElementById('contador-busqueda');
+      const panelRes = document.getElementById('panel-resultados-busqueda');
+      const resumenRes = document.getElementById('resumen-resultados-busqueda');
+      const listaRes = document.getElementById('lista-resultados-busqueda');
+
+      if (input && input.value !== valorRaw) input.value = valorRaw;
+      const terminoNorm = normalizarTexto(valorRaw);
+
+      quitarResaltadosPrevios();
+
+      const secciones = document.querySelectorAll('.seccion-manual');
+      const subsecciones = document.querySelectorAll('.subseccion');
+
+      if (!terminoNorm) {
+        btnLimpiar?.classList.remove('visible');
+        if (contador) contador.style.display = 'none';
+        panelRes?.classList.remove('visible');
+        secciones.forEach((s) => s.classList.remove('oculta-por-busqueda'));
+        subsecciones.forEach((sub) => sub.classList.remove('oculta-por-busqueda'));
+        document.querySelectorAll('.chip-concepto').forEach((c) => c.classList.remove('activo'));
+        return;
+      }
+
+      btnLimpiar?.classList.add('visible');
+
+      const coincidenciasSub = [];
+      let totalMarcas = 0;
+
+      secciones.forEach((sec) => {
+        const subs = sec.querySelectorAll('.subseccion');
+        let algunaSubVisible = false;
+
+        subs.forEach((sub) => {
+          const textoSubNorm = normalizarTexto(sub.textContent);
+          if (textoSubNorm.includes(terminoNorm)) {
+            sub.classList.remove('oculta-por-busqueda');
+            algunaSubVisible = true;
+            totalMarcas += resaltarEnElemento(sub, terminoNorm);
+
+            const tituloH3 = sub.querySelector('h3')?.textContent || 'Subsección';
+            const extractoP = sub.querySelector('p, li')?.textContent || '';
+            coincidenciasSub.push({
+              id: sub.id,
+              titulo: tituloH3.trim(),
+              extracto: extractoP.trim().slice(0, 120) + (extractoP.length > 120 ? '…' : ''),
+            });
+          } else {
+            sub.classList.add('oculta-por-busqueda');
+          }
+        });
+
+        const tituloSecNorm = normalizarTexto(sec.querySelector('h2')?.textContent || '');
+        if (algunaSubVisible || tituloSecNorm.includes(terminoNorm)) {
+          sec.classList.remove('oculta-por-busqueda');
+          if (!algunaSubVisible) {
+            subs.forEach((sub) => sub.classList.remove('oculta-por-busqueda'));
+          }
+        } else {
+          sec.classList.add('oculta-por-busqueda');
+        }
+      });
+
+      if (contador) {
+        contador.style.display = 'inline-block';
+        contador.textContent = `${coincidenciasSub.length} subsección(es) · ${totalMarcas} coincidencia(s)`;
+      }
+
+      if (panelRes && resumenRes && listaRes) {
+        panelRes.classList.add('visible');
+        resumenRes.textContent = coincidenciasSub.length
+          ? `Se encontraron ${coincidenciasSub.length} apartados sobre "${valorRaw.trim()}" (${totalMarcas} menciones resaltadas en amarillo):`
+          : `No se encontraron resultados para "${valorRaw.trim()}". Pruebe con otro término o pulse "Mostrar todo el manual".`;
+        listaRes.innerHTML = '';
+        coincidenciasSub.forEach((item) => {
+          const li = document.createElement('li');
+          li.className = 'item-resultado-busqueda';
+          li.onclick = () => {
+            const destino = document.getElementById(item.id);
+            destino?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          };
+          const st = document.createElement('strong');
+          st.textContent = item.titulo;
+          const sp = document.createElement('span');
+          sp.textContent = item.extracto;
+          li.appendChild(st);
+          li.appendChild(sp);
+          listaRes.appendChild(li);
+        });
+      }
+    }
+
+    function buscarConceptoRapido(termino, btnChip) {
+      const yaActivo = btnChip?.classList.contains('activo');
+      document.querySelectorAll('.chip-concepto').forEach((c) => c.classList.remove('activo'));
+      if (yaActivo) {
+        limpiarBusquedaManual();
+        return;
+      }
+      if (btnChip) btnChip.classList.add('activo');
+      ejecutarBusquedaManual(termino);
+    }
+
+    function limpiarBusquedaManual() {
+      const input = document.getElementById('input-buscador');
+      if (input) input.value = '';
+      ejecutarBusquedaManual('');
     }
   </script>
 </body>
