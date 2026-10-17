@@ -30,7 +30,7 @@ export default function Historial({ turnos }) {
 
   function exportarCSV() {
     if (!datos?.viajes?.length) return;
-    const encabezados = ['N°', 'Hora inicio', 'Hora programada', 'Asignado', 'Avisado', 'Teléfono', 'Dirección', 'Chofer', 'Operador', 'Estado'];
+    const encabezados = ['N°', 'Hora inicio', 'Hora programada', 'Asignado', 'Avisado', 'Teléfono', 'Cliente', 'Dirección', 'Chofer', 'Operador', 'Estado'];
     const filas = datos.viajes.map((v) => [
       v.numero ?? '',
       v.hora_toma ? new Date(v.hora_toma).toLocaleTimeString('es-AR') : '',
@@ -38,6 +38,7 @@ export default function Historial({ turnos }) {
       (v.hora_asignacion || v.hora_fin) ? new Date(v.hora_asignacion || v.hora_fin).toLocaleTimeString('es-AR') : '',
       v.hora_avisado ? new Date(v.hora_avisado).toLocaleTimeString('es-AR') : '',
       `"${v.telefono || ''}"`,
+      `"${(v.nombre_cliente || '').replace(/"/g, '""')}"`,
       `"${v.direccion.replace(/"/g, '""')}"`,
       `"${v.chofer || 'Sin asignar'}"`,
       `"${v.operador || ''}"`,

@@ -8,7 +8,10 @@ import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
  * Llegó la hora de un viaje programado: se muestran sus datos y se pide el chofer.
  * Enter asigna · Esc pospone (para atender otro llamado).
  */
-const Despacho = forwardRef(function Despacho({ viaje, choferes, pendientes, onPosponer, onAsignado }, ref) {
+const Despacho = forwardRef(function Despacho(
+  { viaje, choferes, pendientes, mostrarNombre = true, onPosponer, onAsignado },
+  ref,
+) {
   const [choferId, setChoferId] = useState(null);
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
@@ -64,9 +67,9 @@ const Despacho = forwardRef(function Despacho({ viaje, choferes, pendientes, onP
 
       <div className="campos">
         <div className="campo">
-          <span>Teléfono</span>
+          <span>Teléfono / Cliente</span>
           <div className="dato">
-            <TelefonoWhatsApp telefono={viaje.telefono} />
+            <TelefonoWhatsApp telefono={viaje.telefono} nombre={mostrarNombre ? viaje.nombre_cliente : ''} />
           </div>
         </div>
         <div className="campo campo-dir">

@@ -24,8 +24,9 @@ export default function Admin({ operadorId }) {
   // Identidad corporativa
   const [tema, setTema] = useState(leerTema);
 
-  // Configuración general (aviso previo de viajes programados en minutos)
+  // Configuración general (aviso previo y visualización de campo nombre en recepción)
   const [minutosAviso, setMinutosAviso] = useState(5);
+  const [mostrarNombreRecepcion, setMostrarNombreRecepcion] = useState(true);
   const [guardandoConfig, setGuardandoConfig] = useState(false);
 
   function actualizarTema(modificaciones) {
@@ -83,6 +84,9 @@ export default function Admin({ operadorId }) {
       if (cfg?.minutosAvisoProgramado != null) {
         setMinutosAviso(cfg.minutosAvisoProgramado);
       }
+      if (cfg?.mostrarNombreRecepcion != null) {
+        setMostrarNombreRecepcion(cfg.mostrarNombreRecepcion);
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -112,14 +116,36 @@ export default function Admin({ operadorId }) {
     try {
       const cfg = await api('/configuracion', {
         method: 'PUT',
-        body: { minutosAvisoProgramado: Number(minutosAviso) },
+        body: {
+          minutosAvisoProgramado: Number(minutosAviso),
+          mostrarNombreRecepcion: Boolean(mostrarNombreRecepcion),
+        },
       });
       setMinutosAviso(cfg.minutosAvisoProgramado);
-      mostrarExito(`Aviso previo actualizado a ${cfg.minutosAvisoProgramado} minutos antes de la hora programada`);
+      setMostrarNombreRecepcion(cfg.mostrarNombreRecepcion);
+      mostrarExito('Configuración guardada correctamente');
     } catch (err) {
       setError(err.message);
     } finally {
       setGuardandoConfig(false);
+    }
+  }
+
+  async function toggleMostrarNombre(nuevoValor) {
+    setMostrarNombreRecepcion(nuevoValor);
+    try {
+      const cfg = await api('/configuracion', {
+        method: 'PUT',
+        body: { mostrarNombreRecepcion: nuevoValor },
+      });
+      setMostrarNombreRecepcion(cfg.mostrarNombreRecepcion);
+      mostrarExito(
+        cfg.mostrarNombreRecepcion
+          ? 'Campo "Nombre" habilitado en la pantalla de Recepción'
+          : 'Campo "Nombre" oculto en la pantalla de Recepción',
+      );
+    } catch (err) {
+      setError(err.message);
     }
   }
 
@@ -765,6 +791,31 @@ export default function Admin({ operadorId }) {
             <p className="descripcion" style={{ marginTop: 10 }}>
               Valor actual: <b>{minutosAviso} minutos</b> antes de la hora programada (por ejemplo, un viaje programado para las 15:00 avisará a las 14:{String(Math.max(0, 60 - (Number(minutosAviso) || 0)) % 60).padStart(2, '0')}).
             </p>
+          </div>
+
+          <div className="tarjeta admin-form-tarjeta" style={{ marginTop: 16 }}>
+            <h3>👤 Campo "Nombre" en Recepción de Viajes</h3>
+            <p className="descripcion" style={{ marginTop: 4, marginBottom: 16 }}>
+              El campo <b>Nombre</b> permite identificar clientes que así lo deseen o pasajeros habituales (no es obligatorio).
+              <b> Se verá siempre en la Ficha de Viaje y en el listado de Clientes</b> junto al teléfono (si existe).
+              Desde aquí podés elegir si mostrarlo u ocultarlo en el formulario rápido de Recepción de Viajes.
+            </p>
+
+            <label className="opcion-identidad-item" style={{ maxWidth: 580, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={mostrarNombreRecepcion}
+                onChange={(e) => toggleMostrarNombre(e.target.checked)}
+              />
+              <div>
+                <b>Mostrar campo "Nombre" en la Recepción de Viajes</b>
+                <p className="descripcion">
+                  {mostrarNombreRecepcion
+                    ? 'Activado: Los operadores verán el campo "Nombre (opc)" en el formulario de Recepción para asignarlo inmediatamente al crear el viaje.'
+                    : 'Oculto: El formulario de Recepción queda en modo ultrarrápido (Teléfono → Dirección → Chofer → Programado). El nombre se puede seguir viendo y cargando en la Ficha de Viaje y en Clientes.'}
+                </p>
+              </div>
+            </label>
           </div>
         </div>
       )}

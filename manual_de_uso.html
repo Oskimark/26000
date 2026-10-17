@@ -839,6 +839,7 @@
         <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('número y luego la calle', this)">🔢 Orden &lt;número&gt; &lt;calle&gt;</button>
         <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Camino Carretón', this)">📍 Sitios y referencias (AMSJ, km, Plaza 33)</button>
         <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Cada día', this)">🔁 Repetir viaje / Cada día</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Nombre del Cliente', this)">👤 Nombre del Cliente</button>
         <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Ficha de Viaje', this)">📋 Ficha de Viaje e Historial</button>
         <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('WhatsApp', this)">🟢 WhatsApp</button>
         <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Modo Oscuro', this)">🌙 Modo Oscuro</button>
@@ -869,7 +870,7 @@
           <h3><a href="#sec-2">2. Recepción y Despacho de Viajes</a></h3>
           <ul>
             <li><a href="#sec-2-1">2.1. Flujo rápido por teclado para tomar un viaje</a></li>
-            <li><a href="#sec-2-2">2.2. Campo Teléfono y botón directo de WhatsApp</a></li>
+            <li><a href="#sec-2-2">2.2. Campo Teléfono, Nombre de Cliente y botón directo de WhatsApp</a></li>
             <li><a href="#sec-2-3">2.3. Reglas del Campo Dirección (Calles con N° y Sitios con Referencia)</a></li>
             <li><a href="#sec-2-4">2.4. Asignación de Chofer y opción "Sin asignar" por defecto</a></li>
             <li><a href="#sec-2-5">2.5. Viajes programados y ventana de aviso previo</a></li>
@@ -904,7 +905,7 @@
         <div class="indice-grupo">
           <h3><a href="#sec-6">6. Módulo Clientes y Estadísticas</a></h3>
           <ul>
-            <li><a href="#sec-6-1">6.1. Filtros por teléfono, destino, chofer, estado y fechas</a></li>
+            <li><a href="#sec-6-1">6.1. Filtros por teléfono, nombre, destino, chofer, estado y fechas</a></li>
             <li><a href="#sec-6-2">6.2. Estadísticas por Día, por Mes y por Año + Rankings</a></li>
           </ul>
         </div>
@@ -914,7 +915,7 @@
             <li><a href="#sec-7-1">7.1. Gestión y eliminación de Choferes</a></li>
             <li><a href="#sec-7-2">7.2. Gestión de Operadores y permisos</a></li>
             <li><a href="#sec-7-3">7.3. Catálogo curado de Calles de San José de Mayo</a></li>
-            <li><a href="#sec-7-4">7.4. Configuración de minutos de aviso previo</a></li>
+            <li><a href="#sec-7-4">7.4. Configuración (Minutos de aviso previo y campo Nombre en Recepción)</a></li>
             <li><a href="#sec-7-5">7.5. Personalización de Identidad Corporativa 26000</a></li>
           </ul>
         </div>
@@ -1082,10 +1083,11 @@
         </p>
         <ol class="pasos-numerados">
           <li><strong>2.1.1. Teléfono:</strong> El cursor inicia aquí automáticamente (<kbd>F1</kbd> vuelve a este campo en cualquier momento). Escriba el teléfono del cliente y presione <kbd>Enter</kbd> o <kbd>Tab</kbd>.</li>
-          <li><strong>2.1.2. Dirección:</strong> Ingrese la dirección (o elija una sugerencia asociada a ese teléfono con las flechas <kbd>↑</kbd>/<kbd>↓</kbd> y <kbd>Tab</kbd>).</li>
-          <li><strong>2.1.3. Chofer:</strong> Por defecto figura en <strong><code>Sin asignar</code></strong>. Puede dejarlo sin asignar para despacharlo luego, o escribir parte del nombre/móvil del chofer y presionar <kbd>Enter</kbd> o <kbd>Tab</kbd>.</li>
-          <li><strong>2.1.4. Programado:</strong> Si es un viaje inmediato, déjelo vacío y presione <kbd>Enter</kbd> para guardar. Si es para una hora futura, escriba la hora (ej. <code>1430</code> o <code>14:30</code>) y presione <kbd>Enter</kbd>.</li>
-          <li><strong>2.1.5. Guardado inmediato desde cualquier campo:</strong> Presionando <kbd>Ctrl</kbd> + <kbd>Enter</kbd> el viaje se guarda instantáneamente desde cualquiera de los campos.</li>
+          <li><strong>2.1.2. Nombre (Opcional, configurable):</strong> Si en <em>Administración → Configuración</em> está activo el campo Nombre, el cursor avanzará a este campo. Si el teléfono ya registra un nombre en el historial, el sistema lo <strong>autocompleta automáticamente</strong>. Puede dejarlo vacío, confirmarlo o editarlo y presionar <kbd>Enter</kbd> o <kbd>Tab</kbd> para ir a Dirección. (Si el administrador desactivó este campo en Recepción, el foco pasa directo a Dirección).</li>
+          <li><strong>2.1.3. Dirección:</strong> Ingrese la dirección (o elija una sugerencia asociada a ese teléfono con las flechas <kbd>↑</kbd>/<kbd>↓</kbd> y <kbd>Tab</kbd>).</li>
+          <li><strong>2.1.4. Chofer:</strong> Por defecto figura en <strong><code>Sin asignar</code></strong>. Puede dejarlo sin asignar para despacharlo luego, o escribir parte del nombre/móvil del chofer y presionar <kbd>Enter</kbd> o <kbd>Tab</kbd>.</li>
+          <li><strong>2.1.5. Programado:</strong> Si es un viaje inmediato, déjelo vacío y presione <kbd>Enter</kbd> para guardar. Si es para una hora futura, escriba la hora (ej. <code>1430</code> o <code>14:30</code>) y presione <kbd>Enter</kbd>.</li>
+          <li><strong>2.1.6. Guardado inmediato desde cualquier campo:</strong> Presionando <kbd>Ctrl</kbd> + <kbd>Enter</kbd> el viaje se guarda instantáneamente desde cualquiera de los campos.</li>
         </ol>
 
         <figure class="figura-ui">
@@ -1095,12 +1097,18 @@
           </div>
           <div class="recorte-interfaz">
             <div class="mock-card">
-              <div class="mock-form-grid">
+              <div class="mock-form-grid" style="grid-template-columns: 140px 140px 1fr 130px 120px auto;">
                 <div class="mock-label">
                   <span>Teléfono</span>
                   <div class="mock-input">
                     <span>099123456</span>
                     <span class="mock-wa" title="Botón WhatsApp">🟢 WA</span>
+                  </div>
+                </div>
+                <div class="mock-label">
+                  <span>Nombre (opc)</span>
+                  <div class="mock-input">
+                    <span>María Gómez</span>
                   </div>
                 </div>
                 <div class="mock-label">
@@ -1134,22 +1142,23 @@
             <img
               class="img-captura-usuario sin-archivo"
               src="capturas/fig-2-1-formulario-viaje.png"
-              alt="Recorte de la tarjeta superior de nuevo viaje mostrando en una fila los campos Teléfono (con ícono verde de WhatsApp), Dirección, Chofer (con valor por defecto Sin asignar), Programado (indicador NO/SÍ) y el botón naranja Guardar Enter."
+              alt="Recorte de la tarjeta superior de nuevo viaje mostrando en una fila los campos Teléfono (con ícono verde de WhatsApp), Nombre (opcional con autocompletado), Dirección, Chofer (con valor por defecto Sin asignar), Programado (indicador NO/SÍ) y el botón naranja Guardar Enter."
               onload="this.classList.remove('sin-archivo')"
             />
             <div class="caja-alt-texto">
-              <strong>ALT:</strong> "Recorte de la tarjeta superior de nuevo viaje mostrando en una fila los campos Teléfono (con ícono verde de WhatsApp), Dirección, Chofer (con valor por defecto Sin asignar), Programado (indicador NO/SÍ) y el botón naranja Guardar Enter."
+              <strong>ALT:</strong> "Recorte de la tarjeta superior de nuevo viaje mostrando en una fila los campos Teléfono (con ícono verde de WhatsApp), Nombre (opcional con autocompletado), Dirección, Chofer (con valor por defecto Sin asignar), Programado (indicador NO/SÍ) y el botón naranja Guardar Enter."
             </div>
           </div>
-          <figcaption>Figura 2.1: Formulario principal de carga de viajes con opción "Sin asignar" por defecto e ícono de WhatsApp.</figcaption>
+          <figcaption>Figura 2.1: Formulario principal de carga de viajes con campo opcional Nombre, opción "Sin asignar" por defecto e ícono de WhatsApp.</figcaption>
         </figure>
       </div>
 
       <div class="subseccion" id="sec-2-2">
-        <h3>2.2. Campo Teléfono e integración con WhatsApp</h3>
+        <h3>2.2. Campo Teléfono, Nombre de Cliente e integración con WhatsApp</h3>
         <ol class="pasos-numerados">
           <li><strong>2.2.1. Historial automático por teléfono:</strong> Apenas escribe un número de teléfono ya conocido, al pasar al campo <em>Dirección</em> se despliegan automáticamente las direcciones más usadas por ese cliente (ordenadas por cantidad de viajes con una estrella <code>★ X con este tel.</code>).</li>
           <li><strong>2.2.2. Teléfonos clickeables con WhatsApp:</strong> Tanto dentro del campo de teléfono del formulario como en todas las tablas del sistema (<em>Recepción</em>, <em>Ficha de viaje</em>, <em>Historial</em> y <em>Clientes</em>), cada teléfono aparece acompañado del ícono de WhatsApp. Al hacer click sobre él, se abre automáticamente WhatsApp (Web o aplicación de escritorio) dirigido a ese número (normalizando números de Uruguay con prefijo <code>598</code> cuando comienzan con <code>09...</code> o teléfono fijo de 8 dígitos).</li>
+          <li><strong>2.2.3. Identificación visual con Nombre de Cliente:</strong> Cuando un viaje posee nombre cargado (ej. <code>Dra. Silveira</code> o <code>Don Ramón</code>), dicho nombre aparece destacado mediante una etiqueta junto al número de teléfono en las tablas de viajes, en el panel de despacho y en el historial, permitiendo al operador y al despachador identificar al instante al pasajero.</li>
         </ol>
       </div>
 
@@ -1502,9 +1511,9 @@
       </div>
 
       <div class="subseccion" id="sec-3-3">
-        <h3>3.3. Edición de Dirección, Teléfono, Chofer y Reprogramación</h3>
+        <h3>3.3. Edición de Dirección, Teléfono, Nombre de Cliente, Chofer y Reprogramación</h3>
         <ol class="pasos-numerados">
-          <li><strong>3.3.1. Datos editables:</strong> Desde el formulario de la ficha puede corregir la <strong>Dirección</strong> (se canoniza con el catálogo de San José de Mayo), el <strong>Teléfono</strong> y el <strong>Chofer asignado</strong> (recordando que cambiar el chofer reinicia el estado de <em>Avisar</em>).</li>
+          <li><strong>3.3.1. Datos editables:</strong> Desde el formulario de la ficha puede corregir el <strong>Nombre del Cliente</strong> (siempre disponible y editable en la ficha sin importar si está visible u oculto en el formulario de recepción; al guardarlo se vincula al teléfono y actualiza automáticamente los viajes históricos de ese número), la <strong>Dirección</strong> (se canoniza con el catálogo de San José de Mayo), el <strong>Teléfono</strong> y el <strong>Chofer asignado</strong> (recordando que cambiar el chofer reinicia el estado de <em>Avisar</em>).</li>
           <li><strong>3.3.2. Reprogramar viaje:</strong> Marque o desmarque la casilla <strong>⏰ Programar / Reprogramar horario del viaje</strong> e indique la nueva hora en formato 24 hs (ej. <code>18:30</code>). Si desmarca la casilla en un viaje programado pendiente, pasa a ser un viaje inmediato del turno actual.</li>
         </ol>
       </div>
@@ -1691,11 +1700,12 @@
         </p>
         <ol class="pasos-numerados">
           <li><strong>6.1.1. Teléfono:</strong> Busca coincidencias parciales o completas de números telefónicos.</li>
-          <li><strong>6.1.2. Destino / Dirección:</strong> Filtra por calle, número, sitio o punto de referencia (ignorando tildes y mayúsculas/minúsculas).</li>
-          <li><strong>6.1.3. Chofer:</strong> Permite elegir un chofer específico de la lista desplegable.</li>
-          <li><strong>6.1.4. Estado:</strong> Filtra entre <em>Solo realizados (no anulados)</em>, <em>Todos (incluye anulados)</em> o <em>Solo anulados</em>.</li>
-          <li><strong>6.1.5. Rango de fechas (Desde / Hasta):</strong> Acota la búsqueda y las estadísticas a un período determinado.</li>
-          <li><strong>6.1.6. Filtros rápidos desde los resultados (<code>🔍</code>):</strong> En la tabla de resultados o en los rankings, al hacer click sobre una dirección, sobre un chofer o sobre la lupa <code>🔍</code> junto a un teléfono, ese valor se aplica automáticamente como filtro.</li>
+          <li><strong>6.1.2. Nombre del Cliente:</strong> Campo de búsqueda textual para encontrar de inmediato pasajeros por su nombre, apodo o referencia personal, cruzando todos sus viajes realizados.</li>
+          <li><strong>6.1.3. Destino / Dirección:</strong> Filtra por calle, número, sitio o punto de referencia (ignorando tildes y mayúsculas/minúsculas).</li>
+          <li><strong>6.1.4. Chofer:</strong> Permite elegir un chofer específico de la lista desplegable.</li>
+          <li><strong>6.1.5. Estado:</strong> Filtra entre <em>Solo realizados (no anulados)</em>, <em>Todos (incluye anulados)</em> o <em>Solo anulados</em>.</li>
+          <li><strong>6.1.6. Rango de fechas (Desde / Hasta):</strong> Acota la búsqueda y las estadísticas a un período determinado.</li>
+          <li><strong>6.1.7. Filtros rápidos desde los resultados (<code>🔍</code>):</strong> En la tabla de resultados o en los rankings, al hacer click sobre una dirección, sobre un chofer o sobre la lupa <code>🔍</code> junto a un teléfono, ese valor se aplica automáticamente como filtro. Además, la exportación en CSV incluye la columna <em>Cliente</em> con el nombre registrado.</li>
         </ol>
       </div>
 
@@ -1885,11 +1895,19 @@
       </div>
 
       <div class="subseccion" id="sec-7-4">
-        <h3>7.4. Submódulo "⚙️ Configuración" (Minutos de aviso previo de programados)</h3>
+        <h3>7.4. Submódulo "⚙️ Configuración" (Aviso previo y visibilidad de Nombre)</h3>
         <ol class="pasos-numerados">
-          <li><strong>7.4.1.</strong> Ingrese a <strong>Administración → ⚙️ Configuración</strong>.</li>
-          <li><strong>7.4.2.</strong> Ajuste el valor numérico de <strong>Minutos de aviso previo (0 a 240)</strong> (por ejemplo: <code>5</code> minutos).</li>
-          <li><strong>7.4.3.</strong> Pulse <strong>Guardar configuración</strong>. El cambio se aplica de inmediato a todos los operadores conectados.</li>
+          <li><strong>7.4.1. Acceso:</strong> Ingrese a <strong>Administración → ⚙️ Configuración</strong>.</li>
+          <li><strong>7.4.2. Minutos de aviso previo (0 a 240):</strong> Ajuste la cantidad de minutos de antelación con la que los viajes programados ingresan a la ventana de despacho de los telefonistas (por defecto <code>5</code> minutos).</li>
+          <li><strong>7.4.3. Mostrar campo "Nombre" en Recepción:</strong>
+            <ul class="lista-detalle">
+              <li>Permite alternar entre mostrar u ocultar el campo opcional <em>Nombre</em> en el formulario superior y en la tabla del módulo <strong>Recepción</strong>.</li>
+              <li>Si se desactiva, el formulario de recepción queda simplificado a solo <em>Teléfono</em> y <em>Dirección</em> para agilizar la toma en horas pico.</li>
+              <li><strong>Importante:</strong> Aunque el campo se oculte en Recepción, el nombre del cliente se preserva íntegramente y permanece siempre disponible y editable dentro de la <strong>📋 Ficha de Viaje</strong> y en el módulo <strong>Clientes</strong>.</li>
+              <li>Al cambiar este interruptor, el ajuste se guarda y se difunde en tiempo real por WebSockets a todas las pantallas de recepción activas sin necesidad de recargar la página.</li>
+            </ul>
+          </li>
+          <li><strong>7.4.4. Guardar cambios:</strong> Pulse <strong>Guardar configuración</strong> para confirmar los cambios de aviso previo.</li>
         </ol>
       </div>
 

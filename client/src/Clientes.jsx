@@ -25,6 +25,7 @@ function formatearMes(ym) {
 export default function Clientes({ socket }) {
   // Filtros por cada campo
   const [telefono, setTelefono] = useState('');
+  const [nombre, setNombre] = useState('');
   const [destino, setDestino] = useState('');
   const [chofer, setChofer] = useState('');
   const [choferId, setChoferId] = useState('');
@@ -60,6 +61,7 @@ export default function Clientes({ socket }) {
     try {
       const params = new URLSearchParams();
       if (telefono.trim()) params.set('telefono', telefono.trim());
+      if (nombre.trim()) params.set('nombre', nombre.trim());
       if (destino.trim()) params.set('destino', destino.trim());
       if (choferId) params.set('choferId', choferId);
       else if (chofer.trim()) params.set('chofer', chofer.trim());
@@ -81,6 +83,7 @@ export default function Clientes({ socket }) {
     }
   }, [
     telefono,
+    nombre,
     destino,
     chofer,
     choferId,
@@ -112,6 +115,7 @@ export default function Clientes({ socket }) {
 
   function limpiarFiltros() {
     setTelefono('');
+    setNombre('');
     setDestino('');
     setChofer('');
     setChoferId('');
@@ -127,6 +131,7 @@ export default function Clientes({ socket }) {
 
   const hayFiltros =
     telefono ||
+    nombre ||
     destino ||
     chofer ||
     choferId ||
@@ -149,6 +154,7 @@ export default function Clientes({ socket }) {
       'Asignado',
       'Avisado',
       'Teléfono',
+      'Cliente',
       'Destino',
       'Chofer',
       'Operador',
@@ -162,6 +168,7 @@ export default function Clientes({ socket }) {
       v.hora_asignacion || v.hora_fin ? hora(v.hora_asignacion || v.hora_fin) : '',
       v.hora_avisado ? hora(v.hora_avisado) : '',
       `"${v.telefono || ''}"`,
+      `"${(v.nombre_cliente || '').replace(/"/g, '""')}"`,
       `"${(v.direccion || '').replace(/"/g, '""')}"`,
       `"${(v.chofer || 'Sin asignar').replace(/"/g, '""')}"`,
       `"${(v.operador || '').replace(/"/g, '""')}"`,
@@ -232,6 +239,16 @@ export default function Clientes({ socket }) {
               placeholder="Ej: 341555..."
               value={telefono}
               onChange={(e) => setTelefono(e.target.value)}
+            />
+          </label>
+
+          <label className="campo">
+            <span>Nombre del cliente</span>
+            <input
+              type="text"
+              placeholder="Buscar por nombre..."
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
             />
           </label>
 
@@ -589,7 +606,7 @@ export default function Clientes({ socket }) {
                       <tr key={c.telefono}>
                         <td>
                           <div className="celda-tel-acciones">
-                            <TelefonoWhatsApp telefono={c.telefono} />
+                            <TelefonoWhatsApp telefono={c.telefono} nombre={c.nombre_cliente} />
                             <button
                               className="btn-filtro-mini"
                               title="Filtrar por este teléfono"
@@ -710,7 +727,7 @@ export default function Clientes({ socket }) {
                 <th className="col-hora">Hora Inicio</th>
                 <th className="col-fin">Asignado</th>
                 <th className="col-avisado">Avisado</th>
-                <th>Teléfono</th>
+                <th>Teléfono / Cliente</th>
                 <th className="col-dir">Destino</th>
                 <th>Chofer</th>
                 <th>Operador</th>
@@ -737,7 +754,7 @@ export default function Clientes({ socket }) {
                   <td className="col-avisado">{v.hora_avisado ? <b>{hora(v.hora_avisado)}</b> : <span className="tenue">—</span>}</td>
                   <td>
                     <div className="celda-tel-acciones">
-                      <TelefonoWhatsApp telefono={v.telefono} />
+                      <TelefonoWhatsApp telefono={v.telefono} nombre={v.nombre_cliente} />
                       {v.telefono && (
                         <button
                           className="btn-filtro-mini"

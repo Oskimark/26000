@@ -180,6 +180,7 @@ export default function ListaViajes({
   viajes,
   choferes = [],
   minutosAviso = 5,
+  mostrarNombre = true,
   editable = true,
   onAtender,
   onActualizado,
@@ -212,7 +213,7 @@ export default function ListaViajes({
             <th className="col-fin">Asignado</th>
             <th className="col-avisado">Avisado</th>
             <th>Chofer</th>
-            <th>Teléfono</th>
+            <th>{mostrarNombre ? 'Teléfono / Cliente' : 'Teléfono'}</th>
             <th className="col-prog">Programado</th>
             {editable && <th className="col-acc" />}
           </tr>
@@ -257,7 +258,7 @@ export default function ListaViajes({
                 <CeldaAvisado viaje={v} editable={editable} />
                 <CeldaChofer viaje={v} choferes={choferes} editable={editable} onAtender={onAtender} />
                 <td>
-                  <TelefonoWhatsApp telefono={v.telefono} />
+                  <TelefonoWhatsApp telefono={v.telefono} nombre={mostrarNombre ? v.nombre_cliente : ''} />
                 </td>
                 <td className="col-prog">
                   {v.programado ? (

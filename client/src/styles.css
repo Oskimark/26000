@@ -259,6 +259,14 @@ kbd {
   align-items: flex-end;
 }
 
+.form-viaje.con-campo-nombre .campos {
+  grid-template-columns: 130px 145px 1.5fr 1fr 135px auto;
+}
+
+.campo-nombre input {
+  min-width: 0;
+}
+
 .despacho .campos {
   display: grid;
   grid-template-columns: 140px 1.5fr 1fr minmax(130px, auto);
@@ -900,6 +908,39 @@ input:focus, select:focus {
 }
 .enlace-whatsapp:hover .icono-whatsapp {
   color: #ffffff;
+}
+
+.telefono-con-nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.badge-nombre-cliente {
+  display: inline-flex;
+  align-items: center;
+  background-color: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  padding: 1px 7px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cliente-solo-nombre {
+  display: inline-flex;
+  align-items: center;
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 5px;
+  padding: 1px 7px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .input-con-whatsapp {
@@ -1673,6 +1714,18 @@ body.tema-oscuro,
 .tema-oscuro .enlace-whatsapp:hover {
   background-color: #059669;
   color: #ffffff;
+}
+
+.tema-oscuro .badge-nombre-cliente {
+  background-color: #1e293b;
+  color: #ffffff;
+  border-color: #475569;
+}
+
+.tema-oscuro .cliente-solo-nombre {
+  background-color: #172554;
+  color: #93c5fd;
+  border-color: #1e40af;
 }
 
 .tema-oscuro .bloque-ranking,

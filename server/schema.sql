@@ -38,6 +38,7 @@ CREATE INDEX IF NOT EXISTS idx_direcciones_frecuencia ON direcciones (veces_usad
 CREATE TABLE IF NOT EXISTS viajes (
   id              SERIAL PRIMARY KEY,
   telefono        TEXT NOT NULL DEFAULT '',
+  nombre_cliente  TEXT NOT NULL DEFAULT '',
   direccion_id    INTEGER NOT NULL REFERENCES direcciones(id),
   chofer_id       INTEGER REFERENCES choferes(id),
   operador_id     INTEGER REFERENCES operadores(id),      -- quién tomó el llamado
@@ -65,6 +66,7 @@ CREATE TABLE IF NOT EXISTS viajes (
   viaje_origen_id INTEGER REFERENCES viajes(id) ON DELETE SET NULL,
   CONSTRAINT chk_programado CHECK (NOT programado OR hora_programada IS NOT NULL)
 );
+ALTER TABLE viajes ADD COLUMN IF NOT EXISTS nombre_cliente TEXT NOT NULL DEFAULT '';
 ALTER TABLE viajes ADD COLUMN IF NOT EXISTS hora_avisado TIMESTAMPTZ;
 ALTER TABLE viajes ADD COLUMN IF NOT EXISTS avisado_por INTEGER REFERENCES operadores(id);
 ALTER TABLE viajes ADD COLUMN IF NOT EXISTS repetir_activo BOOLEAN NOT NULL DEFAULT FALSE;
@@ -93,7 +95,9 @@ CREATE TABLE IF NOT EXISTS configuracion (
   valor TEXT NOT NULL
 );
 INSERT INTO configuracion (clave, valor)
-VALUES ('minutos_aviso_programado', '5')
+VALUES
+  ('minutos_aviso_programado', '5'),
+  ('mostrar_nombre_recepcion', 'true')
 ON CONFLICT (clave) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS calles (

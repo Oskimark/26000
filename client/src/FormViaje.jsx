@@ -5,9 +5,13 @@ import { parsearHora, proximaOcurrencia } from '../../shared/turnos.js';
 import { horaConDia } from './formato.js';
 import { urlWhatsApp, IconoWhatsApp } from './TelefonoWhatsApp.jsx';
 
-/** Formulario de nuevo viaje: Teléfono → Dirección → Chofer → Programado → Enter guarda. */
-const FormViaje = forwardRef(function FormViaje({ choferes, minutosAviso = 5, onGuardado, onVacioCambio }, ref) {
+/** Formulario de nuevo viaje: Teléfono → (Nombre) → Dirección → Chofer → Programado → Enter guarda. */
+const FormViaje = forwardRef(function FormViaje(
+  { choferes, minutosAviso = 5, mostrarNombre = true, onGuardado, onVacioCambio },
+  ref,
+) {
   const [telefono, setTelefono] = useState('');
+  const [nombre, setNombre] = useState('');
   const [direccion, setDireccion] = useState('');
   const [choferId, setChoferId] = useState(null);
   const [hora, setHora] = useState('');
@@ -15,13 +19,15 @@ const FormViaje = forwardRef(function FormViaje({ choferes, minutosAviso = 5, on
   const [guardando, setGuardando] = useState(false);
 
   const telRef = useRef(null);
+  const nombreRef = useRef(null);
   const dirRef = useRef(null);
   const choferRef = useRef(null);
   const horaRef = useRef(null);
+  const editadoManualRef = useRef(false);
 
   useImperativeHandle(ref, () => ({ focus: () => telRef.current?.focus() }));
 
-  const vacio = !telefono && !direccion && !choferId && !hora;
+  const vacio = !telefono && !nombre && !direccion && !choferId && !hora;
   useEffect(() => { onVacioCambio?.(vacio); }, [vacio, onVacioCambio]);
 
   // Si el chofer elegido deja de estar en el turno, se limpia.
@@ -29,12 +35,28 @@ const FormViaje = forwardRef(function FormViaje({ choferes, minutosAviso = 5, on
     if (choferId && !choferes.some((c) => c.id === choferId)) setChoferId(null);
   }, [choferes, choferId]);
 
+  // Sugerir nombre automáticamente si el teléfono ya tenía un nombre registrado previamente
+  useEffect(() => {
+    const limpioTel = telefono.replace(/\D/g, '');
+    if (!limpioTel || limpioTel.length < 4 || editadoManualRef.current) return;
+    let cancelado = false;
+    api(`/clientes/nombre?telefono=${limpioTel}`)
+      .then((res) => {
+        if (!cancelado && res?.nombre && !editadoManualRef.current && !nombre) {
+          setNombre(res.nombre);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelado = true; };
+  }, [telefono, nombre]);
+
   const programado = hora.trim() !== '';
   const hm = programado ? parsearHora(hora) : null;
   const programadaPara = hm ? proximaOcurrencia(hm, new Date()) : null;
 
   function limpiar() {
-    setTelefono(''); setDireccion(''); setChoferId(null); setHora(''); setError('');
+    setTelefono(''); setNombre(''); setDireccion(''); setChoferId(null); setHora(''); setError('');
+    editadoManualRef.current = false;
     telRef.current?.focus();
   }
 
@@ -47,7 +69,13 @@ const FormViaje = forwardRef(function FormViaje({ choferes, minutosAviso = 5, on
     try {
       const viaje = await api('/viajes', {
         method: 'POST',
-        body: { telefono, direccion, choferId, horaProgramada: hora },
+        body: {
+          telefono,
+          nombreCliente: nombre,
+          direccion,
+          choferId,
+          horaProgramada: hora,
+        },
       });
       onGuardado?.(viaje);
       limpiar();
@@ -66,7 +94,7 @@ const FormViaje = forwardRef(function FormViaje({ choferes, minutosAviso = 5, on
   const linkWA = urlWhatsApp(telefono);
 
   return (
-    <div className="form-viaje" onKeyDown={onKeyDownForm}>
+    <div className={`form-viaje ${mostrarNombre ? 'con-campo-nombre' : ''}`} onKeyDown={onKeyDownForm}>
       <div className="campos">
         <label className="campo campo-tel">
           <span>Teléfono</span>
@@ -78,7 +106,11 @@ const FormViaje = forwardRef(function FormViaje({ choferes, minutosAviso = 5, on
               onKeyDown={(e) => {
                 if ((e.key === 'Enter' && !e.ctrlKey) || (e.key === 'Tab' && !e.shiftKey)) {
                   e.preventDefault();
-                  dirRef.current?.focus();
+                  if (mostrarNombre) {
+                    nombreRef.current?.focus();
+                  } else {
+                    dirRef.current?.focus();
+                  }
                 }
               }}
               placeholder="Número"
@@ -100,6 +132,28 @@ const FormViaje = forwardRef(function FormViaje({ choferes, minutosAviso = 5, on
             )}
           </div>
         </label>
+
+        {mostrarNombre && (
+          <label className="campo campo-nombre">
+            <span>Nombre (opc)</span>
+            <input
+              ref={nombreRef}
+              value={nombre}
+              onChange={(e) => {
+                editadoManualRef.current = true;
+                setNombre(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if ((e.key === 'Enter' && !e.ctrlKey) || (e.key === 'Tab' && !e.shiftKey)) {
+                  e.preventDefault();
+                  dirRef.current?.focus();
+                }
+              }}
+              placeholder="Opcional"
+              autoComplete="off"
+            />
+          </label>
+        )}
 
         <label className="campo campo-dir">
           <span>Dirección</span>

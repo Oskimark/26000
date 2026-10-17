@@ -5,7 +5,7 @@ import { firmarToken, requiereAuth, requiereAdmin } from './auth.js';
 import {
   ErrorNegocio, crearViaje, listarTurno, listarProgramadosFuturos, asignarChofer,
   registrarFin, registrarAvisado, cambiarCancelacion, sugerirDirecciones, obtenerViaje,
-  obtenerFichaViaje, editarFichaViaje,
+  obtenerFichaViaje, editarFichaViaje, obtenerNombrePorTelefono,
   buscarViajesClientes, obtenerConfiguracion, actualizarConfiguracion, ejecutarProgramadosVencidos,
   listarCalles, crearCalle, actualizarCalle, eliminarCalle, restaurarCatalogoCalles,
 } from './viajes.js';
@@ -146,6 +146,11 @@ export function crearApi({ notificar }) {
   }));
 
   // ---------- Clientes y Estadísticas ----------
+  api.get('/clientes/nombre', a(async (req, res) => {
+    const nombre = await obtenerNombrePorTelefono(req.query.telefono);
+    res.json({ nombre });
+  }));
+
   api.get('/clientes', a(async (req, res) => {
     res.json(await buscarViajesClientes(req.query));
   }));

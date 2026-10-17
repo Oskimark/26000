@@ -25,21 +25,37 @@ export function IconoWhatsApp({ size = 16 }) {
   );
 }
 
-export default function TelefonoWhatsApp({ telefono }) {
+export default function TelefonoWhatsApp({ telefono, nombre }) {
   const url = urlWhatsApp(telefono);
-  if (!url) return <span className="tenue">—</span>;
+  const nomLimpio = String(nombre || '').trim();
+
+  if (!url && !nomLimpio) return <span className="tenue">—</span>;
+
+  if (!url) {
+    return (
+      <span className="cliente-solo-nombre" title={`Cliente: ${nomLimpio}`}>
+        👤 {nomLimpio}
+      </span>
+    );
+  }
 
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="enlace-whatsapp"
-      title={`Enviar mensaje por WhatsApp al ${telefono}`}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <IconoWhatsApp size={16} />
-      <span className="numero-telefono">{telefono}</span>
-    </a>
+    <div className="telefono-con-nombre" onClick={(e) => e.stopPropagation()}>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="enlace-whatsapp"
+        title={`Enviar mensaje por WhatsApp al ${telefono}`}
+      >
+        <IconoWhatsApp size={16} />
+        <span className="numero-telefono">{telefono}</span>
+      </a>
+      {nomLimpio && (
+        <span className="badge-nombre-cliente" title={`Cliente: ${nomLimpio}`}>
+          👤 {nomLimpio}
+        </span>
+      )}
+    </div>
   );
 }

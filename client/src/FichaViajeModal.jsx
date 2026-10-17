@@ -42,6 +42,7 @@ export default function FichaViajeModal({
   // Campos editables de la ficha
   const [direccion, setDireccion] = useState('');
   const [telefono, setTelefono] = useState('');
+  const [nombreCliente, setNombreCliente] = useState('');
   const [choferId, setChoferId] = useState('');
   const [programado, setProgramado] = useState(false);
   const [horaProgramada, setHoraProgramada] = useState('');
@@ -68,6 +69,7 @@ export default function FichaViajeModal({
 
       setDireccion(v.direccion || '');
       setTelefono(v.telefono || '');
+      setNombreCliente(v.nombre_cliente || '');
       setChoferId(v.chofer_id ?? '');
       setProgramado(Boolean(v.programado));
       const hProg = v.hora_programada ? hora(v.hora_programada) : '';
@@ -168,6 +170,7 @@ export default function FichaViajeModal({
         body: {
           direccion,
           telefono,
+          nombreCliente,
           choferId: choferId ? Number(choferId) : null,
           programado,
           horaProgramada: programado ? horaProgramada : '',
@@ -219,6 +222,9 @@ export default function FichaViajeModal({
             {viaje && (
               <div className="modal-ficha-sub">
                 <span>Turno {viaje.fecha_turno} ({viaje.tipo_turno})</span>
+                {viaje.nombre_cliente && (
+                  <span className="chip prog">👤 {viaje.nombre_cliente}</span>
+                )}
                 {viaje.cancelado ? (
                   <span className="chip alerta">Anulado</span>
                 ) : viaje.programado ? (
@@ -295,12 +301,12 @@ export default function FichaViajeModal({
             <form onSubmit={guardarCambios} className="ficha-form">
               <div className="ficha-grilla-campos">
                 <label className="campo">
-                  <span>Dirección / Destino</span>
+                  <span>Nombre del Cliente (Opcional)</span>
                   <input
                     type="text"
-                    value={direccion}
-                    onChange={(e) => setDireccion(e.target.value)}
-                    required
+                    value={nombreCliente}
+                    onChange={(e) => setNombreCliente(e.target.value)}
+                    placeholder="Identificador o nombre del cliente"
                   />
                 </label>
 
@@ -313,9 +319,19 @@ export default function FichaViajeModal({
                       onChange={(e) => setTelefono(e.target.value.replace(/[^\d\s+-]/g, ''))}
                       placeholder="Sin teléfono"
                     />
-                    {telefono && <TelefonoWhatsApp telefono={telefono} />}
+                    {telefono && <TelefonoWhatsApp telefono={telefono} nombre={nombreCliente} />}
                   </div>
                 </div>
+
+                <label className="campo">
+                  <span>Dirección / Destino</span>
+                  <input
+                    type="text"
+                    value={direccion}
+                    onChange={(e) => setDireccion(e.target.value)}
+                    required
+                  />
+                </label>
 
                 <label className="campo">
                   <span>Chofer Asignado (cambiar resetea Avisar)</span>

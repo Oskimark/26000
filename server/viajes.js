@@ -273,7 +273,7 @@ function formatearReferenciaPunto(restoRef, callesActivas) {
 const DIAS_NOMBRES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 const SELECT_VIAJE = `
-  SELECT v.id, v.numero, v.telefono, v.direccion_id, d.texto AS direccion,
+  SELECT v.id, v.numero, v.telefono, v.nombre_cliente, v.direccion_id, d.texto AS direccion,
          v.chofer_id, c.nombre AS chofer,
          v.operador_id, o.nombre AS operador,
          v.hora_toma, v.programado, v.hora_programada, v.hora_ejecucion,
@@ -292,6 +292,26 @@ const SELECT_VIAJE = `
 
 // Ejecutados primero (por N°), luego los programados pendientes por hora.
 const ORDEN_LISTADO = `ORDER BY v.numero IS NULL, v.numero, v.hora_programada, v.id`;
+
+export function limpiarNombreCliente(texto) {
+  return String(texto ?? '').replace(/\s+/g, ' ').trim();
+}
+
+export async function obtenerNombrePorTelefono(telefono, db = { query }) {
+  const tel = normalizarTelefono(telefono);
+  if (!tel) return '';
+  try {
+    const { rows } = await db.query(
+      `SELECT nombre_cliente FROM viajes
+       WHERE telefono = $1 AND nombre_cliente <> ''
+       ORDER BY id DESC LIMIT 1`,
+      [tel],
+    );
+    return rows[0]?.nombre_cliente || '';
+  } catch {
+    return '';
+  }
+}
 
 async function registrarHistorial(client, viajeId, operadorId, accion, detalle) {
   await client.query(
@@ -317,28 +337,45 @@ export async function obtenerHistorialViaje(viajeId, db = { query }) {
 export async function obtenerConfiguracion(db = { query }) {
   try {
     const { rows } = await db.query(
-      `SELECT valor FROM configuracion WHERE clave = 'minutos_aviso_programado'`,
+      `SELECT clave, valor FROM configuracion
+       WHERE clave IN ('minutos_aviso_programado', 'mostrar_nombre_recepcion')`,
     );
-    const min = Number(rows[0]?.valor);
-    return { minutosAvisoProgramado: Number.isFinite(min) && min >= 0 ? min : 5 };
+    const mapa = Object.fromEntries(rows.map((r) => [r.clave, r.valor]));
+    const min = Number(mapa.minutos_aviso_programado);
+    const mostrarNombre = mapa.mostrar_nombre_recepcion !== 'false';
+    return {
+      minutosAvisoProgramado: Number.isFinite(min) && min >= 0 ? min : 5,
+      mostrarNombreRecepcion: mostrarNombre,
+    };
   } catch {
-    return { minutosAvisoProgramado: 5 };
+    return { minutosAvisoProgramado: 5, mostrarNombreRecepcion: true };
   }
 }
 
-export async function actualizarConfiguracion({ minutosAvisoProgramado }) {
-  const min = Number(minutosAvisoProgramado);
-  if (!Number.isFinite(min) || min < 0 || min > 240) {
-    throw new ErrorNegocio('Los minutos de aviso previo deben estar entre 0 y 240');
+export async function actualizarConfiguracion(datos = {}) {
+  if (datos.minutosAvisoProgramado !== undefined) {
+    const min = Number(datos.minutosAvisoProgramado);
+    if (!Number.isFinite(min) || min < 0 || min > 240) {
+      throw new ErrorNegocio('Los minutos de aviso previo deben estar entre 0 y 240');
+    }
+    const valor = Math.round(min);
+    await query(
+      `INSERT INTO configuracion (clave, valor)
+       VALUES ('minutos_aviso_programado', $1)
+       ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
+      [String(valor)],
+    );
   }
-  const valor = Math.round(min);
-  await query(
-    `INSERT INTO configuracion (clave, valor)
-     VALUES ('minutos_aviso_programado', $1)
-     ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
-    [String(valor)],
-  );
-  return { minutosAvisoProgramado: valor };
+  if (datos.mostrarNombreRecepcion !== undefined) {
+    const mostrar = Boolean(datos.mostrarNombreRecepcion);
+    await query(
+      `INSERT INTO configuracion (clave, valor)
+       VALUES ('mostrar_nombre_recepcion', $1)
+       ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
+      [mostrar ? 'true' : 'false'],
+    );
+  }
+  return obtenerConfiguracion();
 }
 
 export async function obtenerViaje(id, db = { query }) {
@@ -445,8 +482,13 @@ async function validarChofer(client, choferId) {
  *  - Se puede asignar un chofer al crear el viaje o en cualquier momento posterior,
  *    tanto en viajes inmediatos como en viajes programados.
  */
-export async function crearViaje({ telefono, direccion, choferId, horaProgramada }, operadorId, ahora = new Date()) {
+export async function crearViaje(
+  { telefono, nombreCliente, nombre, direccion, choferId, horaProgramada },
+  operadorId,
+  ahora = new Date(),
+) {
   const tel = normalizarTelefono(telefono);
+  let nomCliente = limpiarNombreCliente(nombreCliente ?? nombre);
   const textoHora = String(horaProgramada ?? '').trim();
   let programada = null;
   if (textoHora) {
@@ -460,29 +502,42 @@ export async function crearViaje({ telefono, direccion, choferId, horaProgramada
     const direccionId = await registrarDireccion(client, direccion);
     const infoChofer = chofer ? await validarChofer(client, chofer) : null;
 
+    if (!nomCliente && tel) {
+      nomCliente = await obtenerNombrePorTelefono(tel, client);
+    }
+
     const turno = turnoDe(programada ?? ahora);
     const numero = programada ? null : await siguienteNumero(client, turno);
     const horaAsig = chofer ? ahora : null;
     const { rows } = await client.query(
-      `INSERT INTO viajes (telefono, direccion_id, chofer_id, operador_id, hora_toma,
+      `INSERT INTO viajes (telefono, nombre_cliente, direccion_id, chofer_id, operador_id, hora_toma,
                            programado, hora_programada, fecha_turno, tipo_turno,
                            numero, hora_ejecucion, hora_asignacion, asignado_por, hora_fin)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING id`,
       [
-        tel, direccionId, chofer, operadorId, ahora,
+        tel, nomCliente, direccionId, chofer, operadorId, ahora,
         !!programada, programada, turno.fecha, turno.tipo,
         numero, programada ? null : ahora,
         horaAsig, chofer ? operadorId : null, horaAsig,
       ],
     );
     const viajeId = rows[0].id;
+
+    if (nomCliente && tel) {
+      await client.query(
+        `UPDATE viajes SET nombre_cliente = $1 WHERE telefono = $2 AND (nombre_cliente IS NULL OR nombre_cliente = '')`,
+        [nomCliente, tel],
+      );
+    }
+
     const resumenCreacion = [
       `Dirección: "${limpiarDireccion(direccion)}"`,
       tel ? `Tel: ${tel}` : 'Sin teléfono',
+      nomCliente ? `Cliente: ${nomCliente}` : null,
       infoChofer ? `Chofer asignado: ${infoChofer.nombre}` : 'Chofer: Sin asignar',
       programada ? `Programado para ${textoHora}` : 'Viaje inmediato',
-    ].join(' · ');
+    ].filter(Boolean).join(' · ');
     await registrarHistorial(client, viajeId, operadorId, 'Creación de viaje', resumenCreacion);
     return viajeId;
   });
@@ -528,12 +583,12 @@ export async function generarViajesRepetidos(ahora = new Date()) {
 
       const turno = turnoDe(prox);
       const { rows: nuevo } = await client.query(
-        `INSERT INTO viajes (telefono, direccion_id, chofer_id, operador_id, hora_toma,
+        `INSERT INTO viajes (telefono, nombre_cliente, direccion_id, chofer_id, operador_id, hora_toma,
                              programado, hora_programada, fecha_turno, tipo_turno,
                              numero, hora_ejecucion, viaje_origen_id)
-         VALUES ($1, $2, NULL, $3, $4, TRUE, $5, $6, $7, NULL, NULL, $8)
+         VALUES ($1, $2, $3, NULL, $4, $5, TRUE, $6, $7, $8, NULL, NULL, $9)
          RETURNING id`,
-        [p.telefono, p.direccion_id, p.operador_id, ahora, prox, turno.fecha, turno.tipo, p.id],
+        [p.telefono, p.nombre_cliente || '', p.direccion_id, p.operador_id, ahora, prox, turno.fecha, turno.tipo, p.id],
       );
       await registrarHistorial(
         client,
@@ -688,6 +743,15 @@ export async function editarFichaViaje(viajeId, datos, operadorId, ahora = new D
       }
     }
 
+    // 1.b Nombre del cliente (no obligatorio)
+    let nuevoNombreCliente = actual.nombre_cliente || '';
+    if (datos.nombreCliente !== undefined || datos.nombre !== undefined) {
+      nuevoNombreCliente = limpiarNombreCliente(datos.nombreCliente ?? datos.nombre);
+      if (nuevoNombreCliente !== (actual.nombre_cliente || '')) {
+        cambios.push(`Nombre: "${actual.nombre_cliente || '—'}" → "${nuevoNombreCliente || '—'}"`);
+      }
+    }
+
     // 2. Dirección
     let nuevaDirId = actual.direccion_id;
     if (datos.direccion !== undefined) {
@@ -833,26 +897,28 @@ export async function editarFichaViaje(viajeId, datos, operadorId, ahora = new D
     await client.query(
       `UPDATE viajes
        SET telefono = $1,
-           direccion_id = $2,
-           chofer_id = $3,
-           hora_asignacion = $4,
-           hora_fin = $4,
-           asignado_por = $5,
-           hora_avisado = $6,
-           avisado_por = $7,
-           programado = $8,
-           hora_programada = $9,
-           fecha_turno = $10,
-           tipo_turno = $11,
-           numero = $12,
-           hora_ejecucion = $13,
-           repetir_activo = $14,
-           repetir_modo = $15,
-           repetir_dias = $16,
-           repetir_hora = $17
-       WHERE id = $18`,
+           nombre_cliente = $2,
+           direccion_id = $3,
+           chofer_id = $4,
+           hora_asignacion = $5,
+           hora_fin = $5,
+           asignado_por = $6,
+           hora_avisado = $7,
+           avisado_por = $8,
+           programado = $9,
+           hora_programada = $10,
+           fecha_turno = $11,
+           tipo_turno = $12,
+           numero = $13,
+           hora_ejecucion = $14,
+           repetir_activo = $15,
+           repetir_modo = $16,
+           repetir_dias = $17,
+           repetir_hora = $18
+       WHERE id = $19`,
       [
         nuevoTel,
+        nuevoNombreCliente,
         nuevaDirId,
         nuevoChoferId,
         nuevaHoraAsig,
@@ -872,6 +938,14 @@ export async function editarFichaViaje(viajeId, datos, operadorId, ahora = new D
         viajeId,
       ],
     );
+
+    if (nuevoNombreCliente && nuevoTel) {
+      await client.query(
+        `UPDATE viajes SET nombre_cliente = $1
+         WHERE telefono = $2 AND (nombre_cliente IS NULL OR nombre_cliente = '' OR nombre_cliente = $3)`,
+        [nuevoNombreCliente, nuevoTel, actual.nombre_cliente || ''],
+      );
+    }
 
     if (cambios.length > 0) {
       await registrarHistorial(client, viajeId, operadorId, 'Edición en ficha de viaje', cambios.join(' · '));
@@ -1200,6 +1274,11 @@ export async function buscarViajesClientes(filtros = {}) {
     condiciones.push(`v.telefono LIKE ${p}`);
   }
 
+  if (filtros.nombre && String(filtros.nombre).trim()) {
+    const p = addParam(`%${String(filtros.nombre).trim()}%`);
+    condiciones.push(`v.nombre_cliente ILIKE ${p}`);
+  }
+
   const dest = normalizarDireccion(filtros.destino);
   if (dest) {
     const p = addParam(`%${dest.replace(/[%_\\]/g, '\\$&')}%`);
@@ -1352,6 +1431,7 @@ export async function buscarViajesClientes(filtros = {}) {
          v.telefono,
          COUNT(*)::int AS realizados,
          MAX(COALESCE(v.hora_ejecucion, v.hora_toma)) AS ultimo_viaje,
+         (ARRAY_AGG(v.nombre_cliente ORDER BY COALESCE(v.hora_ejecucion, v.hora_toma) DESC) FILTER (WHERE v.nombre_cliente <> ''))[1] AS nombre_cliente,
          (ARRAY_AGG(d.texto ORDER BY COALESCE(v.hora_ejecucion, v.hora_toma) DESC))[1] AS ultimo_destino,
          MODE() WITHIN GROUP (ORDER BY d.texto) AS destino_frecuente,
          MODE() WITHIN GROUP (ORDER BY c.nombre) AS chofer_frecuente

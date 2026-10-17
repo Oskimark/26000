@@ -17,6 +17,7 @@ export default function Recepcion({ turnos, socket, activa }) {
   const [viajes, setViajes] = useState([]);
   const [futuros, setFuturos] = useState([]);
   const [minutosAviso, setMinutosAviso] = useState(5);
+  const [mostrarNombre, setMostrarNombre] = useState(true);
   const [pospuestos, setPospuestos] = useState(new Set());
   const [atendiendoManual, setAtendiendoManual] = useState(null);
   const [formVacio, setFormVacio] = useState(true);
@@ -40,6 +41,9 @@ export default function Recepcion({ turnos, socket, activa }) {
       if (datosViajes.configuracion?.minutosAvisoProgramado != null) {
         setMinutosAviso(datosViajes.configuracion.minutosAvisoProgramado);
       }
+      if (datosViajes.configuracion?.mostrarNombreRecepcion != null) {
+        setMostrarNombre(datosViajes.configuracion.mostrarNombreRecepcion);
+      }
     } catch (err) {
       console.error('Error al cargar datos del turno:', err);
     }
@@ -55,6 +59,7 @@ export default function Recepcion({ turnos, socket, activa }) {
     const alRecibirChoferes = () => cargarDatos();
     const alRecibirConfig = (cfg) => {
       if (cfg?.minutosAvisoProgramado != null) setMinutosAviso(cfg.minutosAvisoProgramado);
+      if (cfg?.mostrarNombreRecepcion != null) setMostrarNombre(cfg.mostrarNombreRecepcion);
       cargarDatos();
     };
 
@@ -204,6 +209,7 @@ export default function Recepcion({ turnos, socket, activa }) {
             ref={despachoRef}
             viaje={viajeADespachar}
             choferes={choferes}
+            mostrarNombre={mostrarNombre}
             pendientes={todosSinChofer.length}
             onPosponer={handlePosponer}
             onAsignado={handleAsignado}
@@ -213,6 +219,7 @@ export default function Recepcion({ turnos, socket, activa }) {
             ref={formRef}
             choferes={choferes}
             minutosAviso={minutosAviso}
+            mostrarNombre={mostrarNombre}
             onGuardado={() => {
               cargarDatos();
             }}
@@ -245,6 +252,7 @@ export default function Recepcion({ turnos, socket, activa }) {
             viajes={viajes}
             choferes={choferes}
             minutosAviso={minutosAviso}
+            mostrarNombre={mostrarNombre}
             editable={true}
             onAtender={handleAtenderManual}
             onActualizado={cargarDatos}
@@ -319,7 +327,12 @@ export default function Recepcion({ turnos, socket, activa }) {
                           ))}
                         </select>
                       </td>
-                      <td><TelefonoWhatsApp telefono={f.telefono} /></td>
+                      <td>
+                        <TelefonoWhatsApp
+                          telefono={f.telefono}
+                          nombre={mostrarNombre ? f.nombre_cliente : ''}
+                        />
+                      </td>
                       <td>
                         <span className="badge-prog">
                           {horaConDia(f.hora_programada)} · Turno {f.fecha_turno} ({f.tipo_turno})
