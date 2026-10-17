@@ -95,13 +95,49 @@ test('Flujo completo del sistema de recepción de viajes', async () => {
   const listado = await req(`/turnos/${t.fecha}/${t.tipo}/viajes`, { token });
   assert.ok(listado.viajes.some((v) => v.id === viaje1.id));
 
-  // 9. Registrar fin de viaje
+  // 9. Registrar hora de asignación y estado de avisado
   const viajeFinalizado = await req(`/viajes/${viaje1.id}/fin`, {
     token,
     method: 'PUT',
     body: {},
   });
-  assert.ok(viajeFinalizado.hora_fin, 'Debe registrar la hora de fin');
+  assert.ok(viajeFinalizado.hora_asignacion, 'Debe registrar la hora de asignación');
+
+  const viajeAvisado = await req(`/viajes/${viaje1.id}/avisado`, {
+    token,
+    method: 'PUT',
+    body: { avisado: true },
+  });
+  assert.ok(viajeAvisado.hora_avisado, 'Debe registrar la hora en que fue avisado al chofer');
+
+  // 9b. Crear viaje "Sin asignar" por defecto y asignarle chofer luego (y también en un programado)
+  const viajeSinChofer = await req('/viajes', {
+    token,
+    method: 'POST',
+    body: {
+      telefono: '3415550000',
+      direccion: 'Belgrano 800',
+      choferId: null,
+      horaProgramada: '',
+    },
+  });
+  assert.equal(viajeSinChofer.chofer_id, null, 'Permite crear viaje inmediato Sin asignar');
+
+  const progAsignado = await req(`/viajes/${viajeProg.id}/chofer`, {
+    token,
+    method: 'PUT',
+    body: { choferId: chofer.id },
+  });
+  assert.equal(progAsignado.chofer_id, chofer.id, 'Permite asignar chofer a un programado en cualquier momento');
+  assert.ok(progAsignado.hora_asignacion, 'Registra hora de asignación en viaje programado');
+
+  // 9c. Configuración de minutos de aviso previo
+  const cfg = await req('/configuracion', {
+    token,
+    method: 'PUT',
+    body: { minutosAvisoProgramado: 5 },
+  });
+  assert.equal(cfg.minutosAvisoProgramado, 5, 'Permite configurar los minutos de aviso previo');
 
   // 10. Consultar módulo Clientes con filtros y estadísticas por día, mes y año
   const clientesRes = await req('/clientes?telefono=3415551234&destino=San%20Martin', { token });

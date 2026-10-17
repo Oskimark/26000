@@ -4,12 +4,18 @@ import FormViaje from './FormViaje.jsx';
 import Despacho from './Despacho.jsx';
 import ListaViajes from './ListaViajes.jsx';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
-import { horaConDia } from './formato.js';
+import { hora, horaConDia } from './formato.js';
+
+function minutosHasta(iso) {
+  if (!iso) return null;
+  return Math.round((new Date(iso).getTime() - Date.now()) / 60_000);
+}
 
 export default function Recepcion({ turnos, socket, activa }) {
   const [choferes, setChoferes] = useState([]);
   const [viajes, setViajes] = useState([]);
   const [futuros, setFuturos] = useState([]);
+  const [minutosAviso, setMinutosAviso] = useState(5);
   const [pospuestos, setPospuestos] = useState(new Set());
   const [atendiendoManual, setAtendiendoManual] = useState(null);
   const [formVacio, setFormVacio] = useState(true);
@@ -29,6 +35,9 @@ export default function Recepcion({ turnos, socket, activa }) {
       setChoferes(listaChoferes);
       setViajes(datosViajes.viajes || []);
       setFuturos(datosViajes.futuros || []);
+      if (datosViajes.configuracion?.minutosAvisoProgramado != null) {
+        setMinutosAviso(datosViajes.configuracion.minutosAvisoProgramado);
+      }
     } catch (err) {
       console.error('Error al cargar datos del turno:', err);
     }
@@ -39,33 +48,58 @@ export default function Recepcion({ turnos, socket, activa }) {
   }, [cargarDatos]);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) return undefined;
     const alRecibirViajes = () => cargarDatos();
     const alRecibirChoferes = () => cargarDatos();
+    const alRecibirConfig = (cfg) => {
+      if (cfg?.minutosAvisoProgramado != null) setMinutosAviso(cfg.minutosAvisoProgramado);
+      cargarDatos();
+    };
 
     socket.on('viajes', alRecibirViajes);
     socket.on('choferes', alRecibirChoferes);
+    socket.on('configuracion', alRecibirConfig);
     return () => {
       socket.off('viajes', alRecibirViajes);
       socket.off('choferes', alRecibirChoferes);
+      socket.off('configuracion', alRecibirConfig);
     };
   }, [socket, cargarDatos]);
 
-  // Viajes ya ejecutados en este turno que aún no tienen chofer asignado y no están cancelados
-  const sinChofer = useMemo(() => {
-    return viajes.filter((v) => v.numero != null && !v.chofer_id && !v.cancelado);
-  }, [viajes]);
+  // Todos los viajes del turno (y futuros) sin chofer y no cancelados
+  const todosSinChofer = useMemo(() => {
+    return [...viajes, ...futuros].filter((v) => !v.chofer_id && !v.cancelado);
+  }, [viajes, futuros]);
 
-  // El viaje a despachar: o el seleccionado manualmente, o el primer sinChofer que no esté pospuesto
-  // SIEMPRE que el formulario no tenga texto a medio escribir por el operador (salvo que lo fuerce con click/F2)
+  // Programados que entraron en la ventana de aviso previo (o cuya hora ya llegó) y aún no tienen chofer
+  const programadosEnAvisoSinChofer = useMemo(() => {
+    return [...viajes, ...futuros].filter((v) => {
+      if (!v.programado || v.cancelado || v.chofer_id) return false;
+      const mins = minutosHasta(v.hora_programada);
+      return v.numero != null || (mins != null && mins <= minutosAviso);
+    });
+  }, [viajes, futuros, minutosAviso]);
+
+  // Programados que entraron en ventana de aviso previo pero aún no fueron avisados al chofer
+  const programadosEnAvisoSinAvisar = useMemo(() => {
+    return [...viajes, ...futuros].filter((v) => {
+      if (!v.programado || v.cancelado || v.hora_avisado) return false;
+      const mins = minutosHasta(v.hora_programada);
+      return v.numero != null || (mins != null && mins <= minutosAviso);
+    });
+  }, [viajes, futuros, minutosAviso]);
+
+  // El viaje a despachar automáticamente:
+  // - O el seleccionado manualmente (con click en F2),
+  // - O el primer programado en ventana de aviso sin chofer que no esté pospuesto
   const viajeADespachar = useMemo(() => {
     if (atendiendoManual) {
-      const sigue = sinChofer.find((v) => v.id === atendiendoManual.id);
+      const sigue = todosSinChofer.find((v) => v.id === atendiendoManual.id);
       if (sigue) return sigue;
     }
     if (!formVacio) return null; // No interrumpir al operador si está tipeando un viaje nuevo
-    return sinChofer.find((v) => !pospuestos.has(v.id)) || null;
-  }, [atendiendoManual, sinChofer, formVacio, pospuestos]);
+    return programadosEnAvisoSinChofer.find((v) => !pospuestos.has(v.id)) || null;
+  }, [atendiendoManual, todosSinChofer, programadosEnAvisoSinChofer, formVacio, pospuestos]);
 
   function handlePosponer(v) {
     setPospuestos((prev) => new Set([...prev, v.id]));
@@ -93,16 +127,15 @@ export default function Recepcion({ turnos, socket, activa }) {
   }
 
   // Atajos de teclado globales en Recepción:
-  // F2: atender el primer viaje sin chofer / pospuesto
-  // F1 o Esc (cuando no está en despacho): foco al formulario
+  // F2: atender el primer viaje en aviso o sin chofer
+  // F1: volver el foco al formulario
   useEffect(() => {
-    if (!activa) return;
+    if (!activa) return undefined;
     function onKeyDown(e) {
       if (e.key === 'F2') {
         e.preventDefault();
-        if (sinChofer.length > 0) {
-          handleAtenderManual(sinChofer[0]);
-        }
+        const objetivo = programadosEnAvisoSinChofer[0] || todosSinChofer[0];
+        if (objetivo) handleAtenderManual(objetivo);
       } else if (e.key === 'F1') {
         e.preventDefault();
         setAtendiendoManual(null);
@@ -111,22 +144,49 @@ export default function Recepcion({ turnos, socket, activa }) {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activa, sinChofer]);
+  }, [activa, programadosEnAvisoSinChofer, todosSinChofer]);
 
-  const pospuestosCount = sinChofer.filter((v) => pospuestos.has(v.id)).length;
   const totalViajes = viajes.filter((v) => v.numero != null && !v.cancelado).length;
+  const sinAvisarCount = viajes.filter((v) => !v.cancelado && v.chofer_id && !v.hora_avisado).length;
+
+  async function cambiarChoferFuturo(viajeId, nuevoChoferId) {
+    try {
+      await api(`/viajes/${viajeId}/chofer`, {
+        method: 'PUT',
+        body: { choferId: nuevoChoferId ? Number(nuevoChoferId) : null },
+      });
+    } catch (err) {
+      window.alert(err.message);
+    }
+  }
+
+  async function toggleAvisadoFuturo(f) {
+    try {
+      await api(`/viajes/${f.id}/avisado`, {
+        method: 'PUT',
+        body: { avisado: !f.hora_avisado },
+      });
+    } catch (err) {
+      window.alert(err.message);
+    }
+  }
 
   return (
     <div className="recepcion-contenedor">
-      {/* Barra superior de alertas de despacho */}
-      {sinChofer.length > 0 && !viajeADespachar && (
+      {/* Barra superior de alertas de viajes programados dentro del aviso previo */}
+      {programadosEnAvisoSinAvisar.length > 0 && !viajeADespachar && (
         <div className="barra-aviso-despacho">
           <span>
-            ⚠️ Hay <b>{sinChofer.length}</b> viaje(s) programado(s) pendientes de asignar chofer.
+            ⏰ <b>Aviso previo ({minutosAviso} min):</b> Hay <b>{programadosEnAvisoSinAvisar.length}</b> viaje(s) programado(s) próximo(s) a su hora
+            {programadosEnAvisoSinChofer.length > 0
+              ? ` (${programadosEnAvisoSinChofer.length} sin chofer asignado).`
+              : ' pendientes de avisar al chofer.'}
           </span>
-          <button className="btn chico alerta" onClick={() => handleAtenderManual(sinChofer[0])}>
-            Atender despacho <kbd>F2</kbd>
-          </button>
+          {programadosEnAvisoSinChofer.length > 0 && (
+            <button className="btn chico alerta" onClick={() => handleAtenderManual(programadosEnAvisoSinChofer[0])}>
+              Asignar chofer <kbd>F2</kbd>
+            </button>
+          )}
         </div>
       )}
 
@@ -137,7 +197,7 @@ export default function Recepcion({ turnos, socket, activa }) {
             ref={despachoRef}
             viaje={viajeADespachar}
             choferes={choferes}
-            pendientes={sinChofer.length}
+            pendientes={todosSinChofer.length}
             onPosponer={handlePosponer}
             onAsignado={handleAsignado}
           />
@@ -145,6 +205,7 @@ export default function Recepcion({ turnos, socket, activa }) {
           <FormViaje
             ref={formRef}
             choferes={choferes}
+            minutosAviso={minutosAviso}
             onGuardado={() => {
               cargarDatos();
             }}
@@ -159,7 +220,10 @@ export default function Recepcion({ turnos, socket, activa }) {
           <div className="titulos-listado">
             <h2>Viajes del turno actual</h2>
             <span className="resumen-viajes">
-              <b>{totalViajes}</b> realizados · <b>{choferes.length}</b> choferes en turno
+              <b>{totalViajes}</b> activos · <b>{choferes.length}</b> choferes en turno
+              {sinAvisarCount > 0 && (
+                <> · <b style={{ color: '#dc2626' }}>{sinAvisarCount}</b> por avisar</>
+              )}
             </span>
           </div>
           {choferes.length === 0 && (
@@ -170,7 +234,13 @@ export default function Recepcion({ turnos, socket, activa }) {
         </div>
 
         <div className="tarjeta listado-tarjeta">
-          <ListaViajes viajes={viajes} editable={true} onAtender={handleAtenderManual} />
+          <ListaViajes
+            viajes={viajes}
+            choferes={choferes}
+            minutosAviso={minutosAviso}
+            editable={true}
+            onAtender={handleAtenderManual}
+          />
         </div>
       </section>
 
@@ -182,23 +252,64 @@ export default function Recepcion({ turnos, socket, activa }) {
             <table className="tabla-viajes">
               <thead>
                 <tr>
-                  <th>Fecha/Hora</th>
-                  <th>Turno</th>
-                  <th>Teléfono</th>
                   <th>Dirección</th>
-                  <th>Tomado por</th>
+                  <th className="col-hora">Hora Inicio</th>
+                  <th className="col-fin">Asignado</th>
+                  <th className="col-avisado">Avisado</th>
+                  <th>Chofer</th>
+                  <th>Teléfono</th>
+                  <th>Hora Programada / Turno</th>
                 </tr>
               </thead>
               <tbody>
-                {futuros.map((f) => (
-                  <tr key={f.id} className="fila-pendiente">
-                    <td>{horaConDia(f.hora_programada)}</td>
-                    <td>{f.fecha_turno} ({f.tipo_turno === 'A' ? '03 a 15' : '15 a 03'})</td>
-                    <td><TelefonoWhatsApp telefono={f.telefono} /></td>
-                    <td className="col-dir">{f.direccion}</td>
-                    <td className="tenue">{f.operador || '—'} a las {horaConDia(f.hora_toma)}</td>
-                  </tr>
-                ))}
+                {futuros.map((f) => {
+                  const horaAsig = f.hora_asignacion || f.hora_fin;
+                  const fueAvisado = Boolean(f.hora_avisado);
+                  return (
+                    <tr key={f.id} className="fila-pendiente">
+                      <td className="col-dir">
+                        <span className="texto-direccion">{f.direccion}</span>
+                      </td>
+                      <td className="col-hora" title={`Creado por ${f.operador || '—'}`}>
+                        <b>{hora(f.hora_toma)}</b>
+                        <div className="subtexto-op">{f.operador}</div>
+                      </td>
+                      <td className="col-fin">{horaAsig ? <b>{hora(horaAsig)}</b> : <span className="tenue">—</span>}</td>
+                      <td className="col-avisado">
+                        <div className="celda-avisado-wrap">
+                          <button
+                            type="button"
+                            className={fueAvisado ? 'btn-avisado' : 'btn-avisar'}
+                            onClick={() => toggleAvisadoFuturo(f)}
+                          >
+                            {fueAvisado ? 'Avisado' : 'Avisar'}
+                          </button>
+                          {fueAvisado && <b className="hora-avisado-texto">{hora(f.hora_avisado)}</b>}
+                        </div>
+                      </td>
+                      <td>
+                        <select
+                          className={f.chofer_id ? 'select-chofer-tabla asignado' : 'select-chofer-tabla sin-asignar'}
+                          value={f.chofer_id ?? ''}
+                          onChange={(e) => cambiarChoferFuturo(f.id, e.target.value)}
+                        >
+                          <option value="">Sin asignar</option>
+                          {choferes.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td><TelefonoWhatsApp telefono={f.telefono} /></td>
+                      <td>
+                        <span className="badge-prog">
+                          {horaConDia(f.hora_programada)} · Turno {f.fecha_turno} ({f.tipo_turno})
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

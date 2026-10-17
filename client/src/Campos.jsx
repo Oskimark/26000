@@ -118,32 +118,41 @@ export const CampoDireccion = forwardRef(function CampoDireccion({ valor, onCamb
   );
 });
 
-/** Selector de chofer filtrable con teclado. */
-export const CampoChofer = forwardRef(function CampoChofer({ choferes, choferId, onCambio, onListo, deshabilitado }, ref) {
+const OPCION_SIN_ASIGNAR = { id: null, nombre: 'Sin asignar' };
+
+/** Selector de chofer filtrable con teclado, con "Sin asignar" por defecto. */
+export const CampoChofer = forwardRef(function CampoChofer(
+  { choferes, choferId, onCambio, onListo, deshabilitado, incluirSinAsignar = true },
+  ref,
+) {
   const inputRef = useRef(null);
-  const [texto, setTexto] = useState('');
+  const opciones = incluirSinAsignar ? [OPCION_SIN_ASIGNAR, ...choferes] : choferes;
+  const seleccionado = opciones.find((c) => c.id === (choferId ?? null));
+
+  const [texto, setTexto] = useState(seleccionado?.nombre ?? '');
   const [indice, setIndice] = useState(0);
   const [abierto, setAbierto] = useState(false);
   const [interactuado, setInteractuado] = useState(false);
 
   useImperativeHandle(ref, () => ({ focus: () => inputRef.current?.focus() }));
 
-  const seleccionado = choferes.find((c) => c.id === choferId);
-  useEffect(() => { setTexto(seleccionado?.nombre ?? ''); }, [choferId, seleccionado?.nombre]);
+  useEffect(() => {
+    setTexto(seleccionado?.nombre ?? (incluirSinAsignar ? 'Sin asignar' : ''));
+  }, [choferId, seleccionado?.nombre, incluirSinAsignar]);
 
   const filtro = normalizar(texto);
   const filtrados =
     abierto && filtro && filtro !== normalizar(seleccionado?.nombre)
-      ? choferes
+      ? opciones
           .filter((c) => normalizar(c.nombre).includes(filtro))
           .sort((a, b) => normalizar(b.nombre).startsWith(filtro) - normalizar(a.nombre).startsWith(filtro))
-      : choferes;
+      : opciones;
 
   useEffect(() => {
-    const i = filtrados.findIndex((c) => c.id === choferId);
+    const i = filtrados.findIndex((c) => c.id === (choferId ?? null));
     setIndice(i >= 0 ? i : 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [texto, choferes.length]);
+  }, [texto, choferes.length, choferId]);
 
   function elegir(c) {
     onCambio(c.id);
@@ -188,7 +197,7 @@ export const CampoChofer = forwardRef(function CampoChofer({ choferes, choferId,
       <input
         ref={inputRef}
         value={texto}
-        placeholder={deshabilitado ? 'Se asigna al llegar la hora' : choferes.length ? 'Elegí chofer' : 'Sin choferes en el turno'}
+        placeholder={deshabilitado ? 'Sin asignar' : 'Sin asignar'}
         onChange={(e) => {
           setTexto(e.target.value);
           setAbierto(true);
@@ -196,7 +205,13 @@ export const CampoChofer = forwardRef(function CampoChofer({ choferes, choferId,
           if (seleccionado && e.target.value !== seleccionado.nombre) onCambio(null);
         }}
         onFocus={(e) => { setAbierto(true); setInteractuado(false); e.target.select(); }}
-        onBlur={() => setTimeout(() => setAbierto(false), 150)}
+        onBlur={() => {
+          setTimeout(() => {
+            setAbierto(false);
+            const actual = opciones.find((c) => c.id === (choferId ?? null));
+            setTexto(actual?.nombre ?? (incluirSinAsignar ? 'Sin asignar' : ''));
+          }, 150);
+        }}
         onKeyDown={onKeyDown}
         className={deshabilitado ? 'atenuado' : ''}
         autoComplete="off"
@@ -206,11 +221,12 @@ export const CampoChofer = forwardRef(function CampoChofer({ choferes, choferId,
         <ul className="sugerencias">
           {filtrados.map((c, i) => (
             <li
-              key={c.id}
-              className={`${i === indice ? 'activa' : ''} ${c.id === choferId ? 'elegida' : ''}`}
+              key={c.id ?? 'sin-asignar'}
+              className={`${i === indice ? 'activa' : ''} ${c.id === (choferId ?? null) ? 'elegida' : ''}`}
               onMouseDown={(e) => { e.preventDefault(); elegir(c); }}
             >
-              {c.nombre}
+              <span>{c.nombre}</span>
+              {c.id === null && <small>por defecto</small>}
             </li>
           ))}
         </ul>

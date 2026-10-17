@@ -1090,4 +1090,94 @@ input:focus, select:focus {
   text-decoration: underline;
 }
 
+/* Columna y Botón Avisar / Avisado */
+.col-avisado {
+  width: 155px;
+  white-space: nowrap;
+}
+.celda-avisado-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-avisar {
+  background-color: #dc2626;
+  color: #ffffff;
+  border: 1px solid #b91c1c;
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.3);
+}
+.btn-avisar:hover:not(:disabled) {
+  background-color: #b91c1c;
+  border-color: #991b1b;
+}
+
+.btn-avisado,
+.btn-estado-avisado {
+  background-color: #94a3b8;
+  color: #ffffff;
+  border: 1px solid #64748b;
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-avisado:hover:not(:disabled) {
+  background-color: #64748b;
+}
+.btn-estado-avisado {
+  cursor: default;
+}
+
+.hora-avisado-texto {
+  font-size: 0.88rem;
+  color: #334155;
+}
+
+/* Selector de chofer en la tabla de viajes */
+.chofer-celda-acciones {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.select-chofer-tabla {
+  padding: 5px 8px;
+  font-size: 0.88rem;
+  border-radius: 5px;
+  min-width: 150px;
+  max-width: 220px;
+  cursor: pointer;
+}
+.select-chofer-tabla.sin-asignar {
+  background-color: #fffbeb;
+  border-color: #f59e0b;
+  color: #92400e;
+  font-weight: 600;
+}
+.select-chofer-tabla.asignado {
+  background-color: #ffffff;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+/* Aviso previo en viajes programados */
+.badge-prog.aviso-previo {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1.5px solid #f59e0b;
+  animation: pulso 1.8s infinite;
+}
+.fila-aviso-programado {
+  background-color: #fffbeb !important;
+}
+
+
 

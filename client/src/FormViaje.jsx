@@ -6,7 +6,7 @@ import { horaConDia } from './formato.js';
 import { urlWhatsApp, IconoWhatsApp } from './TelefonoWhatsApp.jsx';
 
 /** Formulario de nuevo viaje: Teléfono → Dirección → Chofer → Programado → Enter guarda. */
-const FormViaje = forwardRef(function FormViaje({ choferes, onGuardado, onVacioCambio }, ref) {
+const FormViaje = forwardRef(function FormViaje({ choferes, minutosAviso = 5, onGuardado, onVacioCambio }, ref) {
   const [telefono, setTelefono] = useState('');
   const [direccion, setDireccion] = useState('');
   const [choferId, setChoferId] = useState(null);
@@ -43,12 +43,11 @@ const FormViaje = forwardRef(function FormViaje({ choferes, onGuardado, onVacioC
     setError('');
     if (!direccion.trim()) { setError('Falta la dirección'); dirRef.current?.focus(); return; }
     if (programado && !hm) { setError('Hora programada inválida (ej: 1830)'); horaRef.current?.focus(); return; }
-    if (!programado && !choferId) { setError('Elegí un chofer'); choferRef.current?.focus(); return; }
     setGuardando(true);
     try {
       const viaje = await api('/viajes', {
         method: 'POST',
-        body: { telefono, direccion, choferId: programado ? null : choferId, horaProgramada: hora },
+        body: { telefono, direccion, choferId, horaProgramada: hora },
       });
       onGuardado?.(viaje);
       limpiar();
@@ -120,7 +119,6 @@ const FormViaje = forwardRef(function FormViaje({ choferes, onGuardado, onVacioC
             choferes={choferes}
             choferId={choferId}
             onCambio={setChoferId}
-            deshabilitado={programado}
             onListo={() => horaRef.current?.focus()}
           />
         </label>
@@ -154,14 +152,16 @@ const FormViaje = forwardRef(function FormViaje({ choferes, onGuardado, onVacioC
           <span className="error">{error}</span>
         ) : programado ? (
           programadaPara ? (
-            <span className="info">⏰ Programado para las <b>{horaConDia(programadaPara)}</b>. El chofer se asigna al llegar la hora.</span>
+            <span className="info">
+              ⏰ Programado para las <b>{horaConDia(programadaPara)}</b> (aviso previo: {minutosAviso} min antes). Podés asignar chofer ahora o más tarde.
+            </span>
           ) : (
             <span className="error">Hora inválida (ej: 1830, 9, 0130)</span>
           )
         ) : (
           <span className="ayuda">
             <kbd>Tab</kbd> usar sugerencia · <kbd>↑</kbd><kbd>↓</kbd> elegir · <kbd>Enter</kbd> siguiente / guardar ·
-            escribí una hora en <i>Programado</i> para agendar
+            chofer por defecto: <b>Sin asignar</b>
           </span>
         )}
         {!vacio && <button className="btn-link" onClick={limpiar}>Limpiar</button>}

@@ -33,15 +33,44 @@ const SELECT_VIAJE = `
          v.operador_id, o.nombre AS operador,
          v.hora_toma, v.programado, v.hora_programada, v.hora_ejecucion,
          v.hora_asignacion, v.asignado_por, oa.nombre AS asignado_por_nombre,
+         v.hora_avisado, v.avisado_por, oav.nombre AS avisado_por_nombre,
          v.hora_fin, v.cancelado, v.fecha_turno, v.tipo_turno
   FROM viajes v
   JOIN direcciones d ON d.id = v.direccion_id
   LEFT JOIN choferes c ON c.id = v.chofer_id
   LEFT JOIN operadores o ON o.id = v.operador_id
-  LEFT JOIN operadores oa ON oa.id = v.asignado_por`;
+  LEFT JOIN operadores oa ON oa.id = v.asignado_por
+  LEFT JOIN operadores oav ON oav.id = v.avisado_por`;
 
 // Ejecutados primero (por N°), luego los programados pendientes por hora.
 const ORDEN_LISTADO = `ORDER BY v.numero IS NULL, v.numero, v.hora_programada, v.id`;
+
+export async function obtenerConfiguracion(db = { query }) {
+  try {
+    const { rows } = await db.query(
+      `SELECT valor FROM configuracion WHERE clave = 'minutos_aviso_programado'`,
+    );
+    const min = Number(rows[0]?.valor);
+    return { minutosAvisoProgramado: Number.isFinite(min) && min >= 0 ? min : 5 };
+  } catch {
+    return { minutosAvisoProgramado: 5 };
+  }
+}
+
+export async function actualizarConfiguracion({ minutosAvisoProgramado }) {
+  const min = Number(minutosAvisoProgramado);
+  if (!Number.isFinite(min) || min < 0 || min > 240) {
+    throw new ErrorNegocio('Los minutos de aviso previo deben estar entre 0 y 240');
+  }
+  const valor = Math.round(min);
+  await query(
+    `INSERT INTO configuracion (clave, valor)
+     VALUES ('minutos_aviso_programado', $1)
+     ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
+    [String(valor)],
+  );
+  return { minutosAvisoProgramado: valor };
+}
 
 export async function obtenerViaje(id, db = { query }) {
   const { rows } = await db.query(`${SELECT_VIAJE} WHERE v.id = $1`, [id]);
@@ -100,9 +129,9 @@ async function validarChofer(client, choferId) {
 
 /**
  * Crea un viaje.
- *  - Sin hora programada: es inmediato, requiere chofer y recibe N° al instante.
- *  - Con hora programada: queda pendiente (sin N°) en el turno de esa hora.
- *    El chofer es opcional; se pide cuando llega la hora.
+ *  - El chofer es opcional en todos los viajes ("Sin asignar" por defecto).
+ *  - Se puede asignar un chofer al crear el viaje o en cualquier momento posterior,
+ *    tanto en viajes inmediatos como en viajes programados.
  */
 export async function crearViaje({ telefono, direccion, choferId, horaProgramada }, operadorId, ahora = new Date()) {
   const tel = normalizarTelefono(telefono);
@@ -113,9 +142,7 @@ export async function crearViaje({ telefono, direccion, choferId, horaProgramada
     if (!hm) throw new ErrorNegocio('Hora programada inválida');
     programada = proximaOcurrencia(hm, ahora);
   }
-  // Los choferes se asignan siempre en el momento: en un programado, al llegar la hora.
-  const chofer = !programada && choferId ? Number(choferId) : null;
-  if (!programada && !chofer) throw new ErrorNegocio('Elegí un chofer');
+  const chofer = choferId ? Number(choferId) : null;
 
   const id = await transaccion(async (client) => {
     const direccionId = await registrarDireccion(client, direccion);
@@ -123,17 +150,18 @@ export async function crearViaje({ telefono, direccion, choferId, horaProgramada
 
     const turno = turnoDe(programada ?? ahora);
     const numero = programada ? null : await siguienteNumero(client, turno);
+    const horaAsig = chofer ? ahora : null;
     const { rows } = await client.query(
       `INSERT INTO viajes (telefono, direccion_id, chofer_id, operador_id, hora_toma,
                            programado, hora_programada, fecha_turno, tipo_turno,
-                           numero, hora_ejecucion, hora_asignacion, asignado_por)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                           numero, hora_ejecucion, hora_asignacion, asignado_por, hora_fin)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING id`,
       [
         tel, direccionId, chofer, operadorId, ahora,
         !!programada, programada, turno.fecha, turno.tipo,
         numero, programada ? null : ahora,
-        chofer ? ahora : null, chofer ? operadorId : null,
+        horaAsig, chofer ? operadorId : null, horaAsig,
       ],
     );
     return rows[0].id;
@@ -142,17 +170,20 @@ export async function crearViaje({ telefono, direccion, choferId, horaProgramada
 }
 
 /**
- * Los programados cuya hora llegó pasan a la cola: reciben el siguiente N° del turno.
- * Devuelve los viajes ejecutados.
+ * Los programados cuya hora está dentro de la ventana de aviso previo (minutos_aviso_programado)
+ * pasan a la cola activa: reciben el siguiente N° del turno.
+ * Devuelve los viajes activados.
  */
 export async function ejecutarProgramadosVencidos(ahora = new Date()) {
   const ids = await transaccion(async (client) => {
+    const { minutosAvisoProgramado } = await obtenerConfiguracion(client);
+    const limiteAviso = new Date(ahora.getTime() + minutosAvisoProgramado * 60_000);
     const { rows } = await client.query(
       `SELECT id, fecha_turno, tipo_turno FROM viajes
        WHERE numero IS NULL AND NOT cancelado AND hora_programada <= $1
        ORDER BY hora_programada, id
        FOR UPDATE SKIP LOCKED`,
-      [ahora],
+      [limiteAviso],
     );
     for (const v of rows) {
       const numero = await siguienteNumero(client, { fecha: v.fecha_turno, tipo: v.tipo_turno });
@@ -165,26 +196,48 @@ export async function ejecutarProgramadosVencidos(ahora = new Date()) {
 
 export async function asignarChofer(viajeId, choferId, operadorId) {
   return transaccion(async (client) => {
-    await validarChofer(client, Number(choferId));
-    const { rowCount } = await client.query(
-      `UPDATE viajes SET chofer_id = $1, hora_asignacion = now(), asignado_por = $2
-       WHERE id = $3 AND NOT cancelado`,
-      [Number(choferId), operadorId, viajeId],
-    );
-    if (!rowCount) throw new ErrorNegocio('Viaje inexistente o anulado', 404);
+    const limpioId = choferId ? Number(choferId) : null;
+    if (limpioId) {
+      await validarChofer(client, limpioId);
+      const { rowCount } = await client.query(
+        `UPDATE viajes
+         SET hora_avisado = CASE WHEN chofer_id IS DISTINCT FROM $1 THEN NULL ELSE hora_avisado END,
+             avisado_por = CASE WHEN chofer_id IS DISTINCT FROM $1 THEN NULL ELSE avisado_por END,
+             chofer_id = $1,
+             hora_asignacion = now(),
+             hora_fin = now(),
+             asignado_por = $2
+         WHERE id = $3 AND NOT cancelado`,
+        [limpioId, operadorId, viajeId],
+      );
+      if (!rowCount) throw new ErrorNegocio('Viaje inexistente o anulado', 404);
+    } else {
+      const { rowCount } = await client.query(
+        `UPDATE viajes
+         SET chofer_id = NULL,
+             hora_asignacion = NULL,
+             hora_fin = NULL,
+             asignado_por = NULL,
+             hora_avisado = NULL,
+             avisado_por = NULL
+         WHERE id = $1 AND NOT cancelado`,
+        [viajeId],
+      );
+      if (!rowCount) throw new ErrorNegocio('Viaje inexistente o anulado', 404);
+    }
     return obtenerViaje(viajeId, client);
   });
 }
 
 /**
- * Hora de fin. Sin texto = ahora. Con texto "HH:MM" = la última vez que fue esa hora
+ * Hora manual (para Asignado o Avisado). Sin texto = ahora. Con texto "HH:MM" = la última vez que fue esa hora
  * (se admite hasta 10 minutos hacia adelante por diferencias de reloj).
  */
 export function calcularHoraFin(texto, ahora = new Date()) {
   const s = String(texto ?? '').trim();
   if (!s) return ahora;
   const hm = parsearHora(s);
-  if (!hm) throw new ErrorNegocio('Hora de fin inválida');
+  if (!hm) throw new ErrorNegocio('Hora inválida');
   const d = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), hm.h, hm.m);
   if (d.getTime() > ahora.getTime() + 10 * 60_000) d.setDate(d.getDate() - 1);
   return d;
@@ -192,8 +245,22 @@ export function calcularHoraFin(texto, ahora = new Date()) {
 
 export async function registrarFin(viajeId, { hora, borrar }) {
   const valor = borrar ? null : calcularHoraFin(hora);
-  const { rowCount } = await query('UPDATE viajes SET hora_fin = $1 WHERE id = $2 AND numero IS NOT NULL', [valor, viajeId]);
-  if (!rowCount) throw new ErrorNegocio('Solo se puede finalizar un viaje ya ejecutado');
+  const { rowCount } = await query(
+    'UPDATE viajes SET hora_asignacion = $1, hora_fin = $1 WHERE id = $2 AND NOT cancelado',
+    [valor, viajeId],
+  );
+  if (!rowCount) throw new ErrorNegocio('Viaje inexistente o anulado');
+  return obtenerViaje(viajeId);
+}
+
+export async function registrarAvisado(viajeId, { avisado = true, hora, borrar }, operadorId) {
+  const limpiar = borrar || avisado === false;
+  const valor = limpiar ? null : calcularHoraFin(hora);
+  const { rowCount } = await query(
+    'UPDATE viajes SET hora_avisado = $1, avisado_por = $2 WHERE id = $3 AND NOT cancelado',
+    [valor, limpiar ? null : operadorId, viajeId],
+  );
+  if (!rowCount) throw new ErrorNegocio('Viaje inexistente o anulado', 404);
   return obtenerViaje(viajeId);
 }
 

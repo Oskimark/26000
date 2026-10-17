@@ -53,12 +53,26 @@ CREATE TABLE IF NOT EXISTS viajes (
   -- Despacho: cuándo y quién asignó el chofer
   hora_asignacion TIMESTAMPTZ,
   asignado_por    INTEGER REFERENCES operadores(id),
+  hora_avisado    TIMESTAMPTZ,
+  avisado_por     INTEGER REFERENCES operadores(id),
   hora_fin        TIMESTAMPTZ,
   cancelado       BOOLEAN NOT NULL DEFAULT FALSE,
   cancelado_por   INTEGER REFERENCES operadores(id),
   CONSTRAINT chk_programado CHECK (NOT programado OR hora_programada IS NOT NULL)
 );
+ALTER TABLE viajes ADD COLUMN IF NOT EXISTS hora_avisado TIMESTAMPTZ;
+ALTER TABLE viajes ADD COLUMN IF NOT EXISTS avisado_por INTEGER REFERENCES operadores(id);
+
 CREATE INDEX IF NOT EXISTS idx_viajes_turno ON viajes (fecha_turno, tipo_turno);
 CREATE INDEX IF NOT EXISTS idx_viajes_telefono ON viajes (telefono);
 CREATE INDEX IF NOT EXISTS idx_viajes_pendientes ON viajes (hora_programada) WHERE numero IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_viajes_numero ON viajes (fecha_turno, tipo_turno, numero);
+
+CREATE TABLE IF NOT EXISTS configuracion (
+  clave TEXT PRIMARY KEY,
+  valor TEXT NOT NULL
+);
+INSERT INTO configuracion (clave, valor)
+VALUES ('minutos_aviso_programado', '5')
+ON CONFLICT (clave) DO NOTHING;
+

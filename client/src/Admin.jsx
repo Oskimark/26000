@@ -18,6 +18,10 @@ export default function Admin({ operadorId }) {
   // Identidad corporativa
   const [tema, setTema] = useState(leerTema);
 
+  // Configuración general (aviso previo de viajes programados en minutos)
+  const [minutosAviso, setMinutosAviso] = useState(5);
+  const [guardandoConfig, setGuardandoConfig] = useState(false);
+
   function actualizarTema(modificaciones) {
     const nuevo = { ...tema, ...modificaciones };
     setTema(nuevo);
@@ -57,15 +61,48 @@ export default function Admin({ operadorId }) {
     }
   }, []);
 
+  const cargarConfiguracion = useCallback(async () => {
+    try {
+      const cfg = await api('/configuracion');
+      if (cfg?.minutosAvisoProgramado != null) {
+        setMinutosAviso(cfg.minutosAvisoProgramado);
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    cargarConfiguracion();
+  }, [cargarConfiguracion]);
+
   useEffect(() => {
     if (subtab === 'choferes') cargarChoferes();
     else if (subtab === 'operadores') cargarOperadores();
-  }, [subtab, cargarChoferes, cargarOperadores]);
+    else if (subtab === 'configuracion') cargarConfiguracion();
+  }, [subtab, cargarChoferes, cargarOperadores, cargarConfiguracion]);
 
   function mostrarExito(txt) {
     setMensaje(txt);
     setError('');
     setTimeout(() => setMensaje(''), 3000);
+  }
+
+  async function guardarConfiguracion(e) {
+    e.preventDefault();
+    setGuardandoConfig(true);
+    try {
+      const cfg = await api('/configuracion', {
+        method: 'PUT',
+        body: { minutosAvisoProgramado: Number(minutosAviso) },
+      });
+      setMinutosAviso(cfg.minutosAvisoProgramado);
+      mostrarExito(`Aviso previo actualizado a ${cfg.minutosAvisoProgramado} minutos antes de la hora programada`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGuardandoConfig(false);
+    }
   }
 
   // --- Choferes Handlers ---
@@ -157,6 +194,12 @@ export default function Admin({ operadorId }) {
           onClick={() => { setSubtab('operadores'); setError(''); }}
         >
           Operadores ({operadores.length})
+        </button>
+        <button
+          className={subtab === 'configuracion' ? 'tab activa' : 'tab'}
+          onClick={() => { setSubtab('configuracion'); setError(''); }}
+        >
+          ⚙️ Configuración
         </button>
         <button
           className={subtab === 'identidad' ? 'tab activa' : 'tab'}
@@ -460,6 +503,36 @@ export default function Admin({ operadorId }) {
                 ℹ️ <b>Modo normal:</b> El sistema utilizará marcos neutros estándar y paleta de colores habitual.
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {subtab === 'configuracion' && (
+        <div className="seccion-admin">
+          <div className="tarjeta admin-form-tarjeta">
+            <h3>⏰ Configuración de Viajes Programados</h3>
+            <p className="descripcion" style={{ marginTop: 4, marginBottom: 14 }}>
+              Definí con cuántos minutos de anticipación a la hora programada el sistema debe emitir el aviso previo y activar el viaje en la cola de despacho.
+            </p>
+            <form onSubmit={guardarConfiguracion} className="form-horizontal" style={{ alignItems: 'flex-end' }}>
+              <label className="campo" style={{ maxWidth: 260 }}>
+                <span>Minutos de aviso previo</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={240}
+                  value={minutosAviso}
+                  onChange={(e) => setMinutosAviso(e.target.value)}
+                  required
+                />
+              </label>
+              <button className="btn primario" type="submit" disabled={guardandoConfig}>
+                {guardandoConfig ? 'Guardando…' : 'Guardar configuración'}
+              </button>
+            </form>
+            <p className="descripcion" style={{ marginTop: 10 }}>
+              Valor actual: <b>{minutosAviso} minutos</b> antes de la hora programada (por ejemplo, un viaje programado para las 15:00 avisará a las 14:{String(Math.max(0, 60 - (Number(minutosAviso) || 0)) % 60).padStart(2, '0')}).
+            </p>
           </div>
         </div>
       )}

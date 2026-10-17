@@ -48,9 +48,18 @@ const Despacho = forwardRef(function Despacho({ viaje, choferes, pendientes, onP
     >
       <div className="despacho-titulo">
         <span className="alerta-pulso">⏰</span>
-        <b>VIAJE PROGRAMADO · N° {viaje.numero}</b>
-        <span>para las {hora(viaje.hora_programada)}</span>
-        {pendientes > 1 && <span className="chip">{pendientes - 1} más en espera</span>}
+        {viaje.programado ? (
+          <>
+            <b>AVISO DE VIAJE PROGRAMADO {viaje.numero ? `· N° ${viaje.numero}` : ''}</b>
+            <span>para las <b>{hora(viaje.hora_programada)}</b> (inicio: {hora(viaje.hora_toma)})</span>
+          </>
+        ) : (
+          <>
+            <b>ASIGNAR CHOFER · VIAJE N° {viaje.numero}</b>
+            <span>iniciado a las {hora(viaje.hora_toma)}</span>
+          </>
+        )}
+        {pendientes > 1 && <span className="chip">{pendientes - 1} más sin asignar</span>}
       </div>
 
       <div className="campos">
@@ -70,6 +79,7 @@ const Despacho = forwardRef(function Despacho({ viaje, choferes, pendientes, onP
             ref={choferRef}
             choferes={choferes}
             choferId={choferId}
+            incluirSinAsignar={false}
             onCambio={setChoferId}
             onListo={() => { if (choferIdPrevio.current) asignar(choferIdPrevio.current); }}
           />

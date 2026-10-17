@@ -4,7 +4,8 @@ import { query, transaccion } from './db.js';
 import { firmarToken, requiereAuth, requiereAdmin } from './auth.js';
 import {
   ErrorNegocio, crearViaje, listarTurno, listarProgramadosFuturos, asignarChofer,
-  registrarFin, cambiarCancelacion, sugerirDirecciones, obtenerViaje, buscarViajesClientes,
+  registrarFin, registrarAvisado, cambiarCancelacion, sugerirDirecciones, obtenerViaje,
+  buscarViajesClientes, obtenerConfiguracion, actualizarConfiguracion, ejecutarProgramadosVencidos,
 } from './viajes.js';
 import { turnoDe, turnoSiguiente, turnoAnterior, describirTurno, validarTurno } from '../shared/turnos.js';
 
@@ -29,6 +30,19 @@ export function crearApi({ notificar }) {
   api.use(requiereAuth);
 
   api.get('/yo', (req, res) => res.json(req.operador));
+
+  // ---------- Configuración ----------
+  api.get('/configuracion', a(async (req, res) => {
+    res.json(await obtenerConfiguracion());
+  }));
+
+  api.put('/configuracion', requiereAdmin, a(async (req, res) => {
+    const cfg = await actualizarConfiguracion(req.body || {});
+    await ejecutarProgramadosVencidos();
+    notificar('configuracion', cfg);
+    notificar('viajes');
+    res.json(cfg);
+  }));
 
   // ---------- Turnos ----------
   api.get('/turnos/actual', (req, res) => {
@@ -74,8 +88,12 @@ export function crearApi({ notificar }) {
 
   api.get('/turnos/:fecha/:tipo/viajes', a(async (req, res) => {
     const t = turnoDeParams(req);
-    const [viajes, futuros] = await Promise.all([listarTurno(t), listarProgramadosFuturos(t)]);
-    res.json({ turno: describirTurno(t), viajes, futuros });
+    const [viajes, futuros, cfg] = await Promise.all([
+      listarTurno(t),
+      listarProgramadosFuturos(t),
+      obtenerConfiguracion(),
+    ]);
+    res.json({ turno: describirTurno(t), viajes, futuros, configuracion: cfg });
   }));
 
   // ---------- Viajes ----------
@@ -95,6 +113,12 @@ export function crearApi({ notificar }) {
 
   api.put('/viajes/:id/fin', a(async (req, res) => {
     const viaje = await registrarFin(Number(req.params.id), req.body || {});
+    notificar('viajes', { id: viaje.id });
+    res.json(viaje);
+  }));
+
+  api.put('/viajes/:id/avisado', a(async (req, res) => {
+    const viaje = await registrarAvisado(Number(req.params.id), req.body || {}, req.operador.id);
     notificar('viajes', { id: viaje.id });
     res.json(viaje);
   }));

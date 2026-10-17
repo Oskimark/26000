@@ -144,7 +144,8 @@ export default function Clientes({ socket }) {
       'Turno',
       'N°',
       'Hora inicio',
-      'Hora fin',
+      'Asignado',
+      'Avisado',
       'Teléfono',
       'Destino',
       'Chofer',
@@ -155,11 +156,12 @@ export default function Clientes({ socket }) {
       v.fecha_turno,
       v.tipo_turno,
       v.numero ?? '',
-      v.hora_ejecucion || v.hora_toma ? hora(v.hora_ejecucion || v.hora_toma) : '',
-      v.hora_fin ? hora(v.hora_fin) : '',
+      v.hora_toma ? hora(v.hora_toma) : '',
+      v.hora_asignacion || v.hora_fin ? hora(v.hora_asignacion || v.hora_fin) : '',
+      v.hora_avisado ? hora(v.hora_avisado) : '',
       `"${v.telefono || ''}"`,
       `"${(v.direccion || '').replace(/"/g, '""')}"`,
-      `"${(v.chofer || '').replace(/"/g, '""')}"`,
+      `"${(v.chofer || 'Sin asignar').replace(/"/g, '""')}"`,
       `"${(v.operador || '').replace(/"/g, '""')}"`,
       v.cancelado ? 'Anulado' : v.numero != null ? 'Realizado' : 'Pendiente',
     ]);
@@ -704,7 +706,8 @@ export default function Clientes({ socket }) {
                 <th>Fecha / Turno</th>
                 <th className="col-num">N°</th>
                 <th className="col-hora">Hora Inicio</th>
-                <th className="col-fin">Hora Fin</th>
+                <th className="col-fin">Asignado</th>
+                <th className="col-avisado">Avisado</th>
                 <th>Teléfono</th>
                 <th className="col-dir">Destino</th>
                 <th>Chofer</th>
@@ -721,9 +724,10 @@ export default function Clientes({ socket }) {
                   </td>
                   <td className="col-num">{v.numero ?? '—'}</td>
                   <td className="col-hora">
-                    <b>{hora(v.hora_ejecucion || v.hora_toma)}</b>
+                    <b>{hora(v.hora_toma)}</b>
                   </td>
-                  <td className="col-fin">{v.hora_fin ? hora(v.hora_fin) : '—'}</td>
+                  <td className="col-fin">{v.hora_asignacion || v.hora_fin ? hora(v.hora_asignacion || v.hora_fin) : '—'}</td>
+                  <td className="col-avisado">{v.hora_avisado ? <b>{hora(v.hora_avisado)}</b> : <span className="tenue">—</span>}</td>
                   <td>
                     <div className="celda-tel-acciones">
                       <TelefonoWhatsApp telefono={v.telefono} />
