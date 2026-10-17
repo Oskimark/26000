@@ -44,8 +44,23 @@ export const CampoDireccion = forwardRef(function CampoDireccion({ valor, onCamb
       ? resaltada.texto.slice(valor.length)
       : '';
 
-  function elegir(s) {
-    onCambio(s.texto);
+  function elegir(s, { forzarAvance = false } = {}) {
+    if (s.es_sitio_base && !forzarAvance) {
+      const yaCompletadoConEspacio =
+        /\s$/.test(valor) && normalizar(valor.trim()) === normalizar(s.texto.trim());
+      if (yaCompletadoConEspacio) {
+        onCambio(s.texto.trim());
+        setAbierto(false);
+        onListo?.();
+        return;
+      }
+      const conEspacio = s.texto.endsWith(' ') ? s.texto : `${s.texto} `;
+      onCambio(conEspacio);
+      setAbierto(true);
+      inputRef.current?.focus();
+      return;
+    }
+    onCambio(s.texto.trim());
     setAbierto(false);
     onListo?.();
   }
@@ -67,13 +82,19 @@ export const CampoDireccion = forwardRef(function CampoDireccion({ valor, onCamb
         elegir(resaltada);
       } else if (valor.trim()) {
         e.preventDefault();
+        onCambio(valor.trim());
         setAbierto(false);
         onListo?.();
       }
     } else if (e.key === 'Enter' && !e.ctrlKey) {
       e.preventDefault();
-      if (hay && resaltada && (navegado || !valor.trim())) elegir(resaltada);
-      else if (valor.trim()) { setAbierto(false); onListo?.(); }
+      if (hay && resaltada && (navegado || !valor.trim() || resaltada.es_canonica_exacta)) {
+        elegir(resaltada, { forzarAvance: !resaltada.texto.endsWith(' ') });
+      } else if (valor.trim()) {
+        onCambio(valor.trim());
+        setAbierto(false);
+        onListo?.();
+      }
     } else if (e.key === 'Escape' && abierto) {
       e.stopPropagation();
       setAbierto(false);
@@ -86,7 +107,7 @@ export const CampoDireccion = forwardRef(function CampoDireccion({ valor, onCamb
         <input
           ref={inputRef}
           value={valor}
-          placeholder="Número y calle (ej: 450 Artigas)"
+          placeholder="N° y calle (450 Artigas) o sitio y ref. (AMSJ Artigas)"
           onChange={(e) => { onCambio(e.target.value); setAbierto(true); }}
           onFocus={() => setAbierto(true)}
           onBlur={() => setTimeout(() => setAbierto(false), 150)}
@@ -112,9 +133,13 @@ export const CampoDireccion = forwardRef(function CampoDireccion({ valor, onCamb
               <small>
                 {s.usos_telefono
                   ? `★ ${s.usos_telefono} con este tel.`
-                  : s.es_catalogo
-                    ? '🗺️ Calle San José'
-                    : `${s.veces_usada} usos`}
+                  : s.es_sitio_referencia
+                    ? '📍 Sitio + ref.'
+                    : s.es_catalogo
+                      ? s.es_sitio_base
+                        ? '🗺️ Sitio / Calle (Tab + ref.)'
+                        : '🗺️ Calle San José'
+                      : `${s.veces_usada} usos`}
               </small>
             </li>
           ))}

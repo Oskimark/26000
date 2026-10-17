@@ -223,5 +223,31 @@ test('Flujo completo del sistema de recepción de viajes', async () => {
     sugAlias.some((s) => s.texto === '820 Aparicio Saravia'),
     'Debe sugerir el nombre curado ("820 Aparicio Saravia") al buscar por su alias',
   );
+
+  // 13. Sitios sin número con referencia del punto del pasajero ("Camaino carreton km 28", "amsj artigas", "amsj emergencia", "plaza 33 asamblea")
+  const sugCarreton = await req('/direcciones?q=Camaino%20carreton%20km%2028', { token });
+  assert.ok(
+    sugCarreton.some((s) => s.texto === 'Camino Carretón km 28'),
+    'Debe corregir "Camaino carreton km 28" a "Camino Carretón km 28"',
+  );
+
+  const sugAmsjArtigas = await req('/direcciones?q=amsj%20artigas', { token });
+  assert.ok(
+    sugAmsjArtigas.some((s) => s.texto === 'AMSJ Artigas'),
+    'Debe sugerir "AMSJ Artigas" para "amsj artigas"',
+  );
+
+  const sugAmsjEmergencia = await req('/direcciones?q=amsj%20emergencia', { token });
+  assert.ok(
+    sugAmsjEmergencia.some((s) => s.texto === 'AMSJ Emergencia'),
+    'Debe sugerir "AMSJ Emergencia" para "amsj emergencia"',
+  );
+
+  const sugPlazaAsamblea = await req('/direcciones?q=plaza%2033%20asamblea', { token });
+  assert.ok(
+    sugPlazaAsamblea.some((s) => s.texto === 'Plaza 33 Asamblea'),
+    'Debe sugerir "Plaza 33 Asamblea" para "plaza 33 asamblea"',
+  );
 });
+
 

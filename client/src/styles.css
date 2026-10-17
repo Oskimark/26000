@@ -1695,3 +1695,70 @@ body.tema-oscuro,
   background-color: rgba(255, 102, 0, 0.15);
 }
 
+/* Alto contraste para desplegable de sugerencias de direcciones/calles y choferes en modo oscuro */
+.tema-oscuro .sugerencias {
+  background-color: #1e293b;
+  border: 1.5px solid #475569;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7);
+}
+
+.tema-oscuro .sugerencias li {
+  background-color: #1e293b;
+  color: #ffffff;
+  border-bottom: 1px solid #334155;
+}
+
+.tema-oscuro .sugerencias li span {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.tema-oscuro .sugerencias li small {
+  color: #cbd5e1;
+}
+
+.tema-oscuro .sugerencias li:hover {
+  background-color: #29384e;
+  color: #ffffff;
+}
+
+.tema-oscuro .sugerencias li.activa,
+.tema-oscuro.tema-botones-naranja .sugerencias li.activa,
+.tema-oscuro .tema-botones-naranja .sugerencias li.activa {
+  background-color: #ea580c !important;
+  color: #ffffff !important;
+}
+
+.tema-oscuro .sugerencias li.activa span,
+.tema-oscuro .sugerencias li.activa small {
+  color: #ffffff !important;
+}
+
+.tema-oscuro .fantasma {
+  color: #94a3b8;
+}
+
+.tema-oscuro .prog {
+  background-color: #0f172a;
+  border-color: #475569;
+}
+.tema-oscuro .prog.no b {
+  background-color: #1e293b;
+  color: #cbd5e1;
+  border-right-color: #475569;
+}
+
+.tema-oscuro .despacho {
+  background-color: #1e293b;
+  border-color: #f59e0b;
+}
+.tema-oscuro .despacho-titulo {
+  color: #fbbf24;
+}
+.tema-oscuro .dato {
+  background-color: #0f172a;
+  color: #ffffff;
+  border-color: #475569;
+}
+
+

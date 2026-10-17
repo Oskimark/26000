@@ -93,6 +93,183 @@ export function desglosarNumeroYCalle(texto) {
   return { numero: '', calle: limpio };
 }
 
+const CONECTORES_CALLE = new Set(['de', 'del', 'la', 'las', 'los', 'el', 'al', 'a', 'y']);
+
+function palabrasSignificativas(textoNorm) {
+  return String(textoNorm || '')
+    .split(' ')
+    .filter((p) => p.length > 0 && !CONECTORES_CALLE.has(p));
+}
+
+/**
+ * Referencias habituales de ubicación de pasajeros cuando la dirección es un sitio (sin número de puerta).
+ */
+const REFERENCIAS_PUNTO_COMUNES = [
+  { id: 'ref-emergencia', nombre: 'Emergencia', nombre_normalizado: 'emergencia', alias: 'emergencias, urgencia, urgencias, puerta emergencia' },
+  { id: 'ref-policlinica', nombre: 'Policlínica', nombre_normalizado: 'policlinica', alias: 'policlinicas, policlinico, consultorios' },
+  { id: 'ref-entrada', nombre: 'Entrada Principal', nombre_normalizado: 'entrada principal', alias: 'entrada, puerta principal, acceso principal' },
+  { id: 'ref-maternidad', nombre: 'Maternidad', nombre_normalizado: 'maternidad', alias: '' },
+  { id: 'ref-internacion', nombre: 'Internación', nombre_normalizado: 'internacion', alias: 'salas' },
+  { id: 'ref-laboratorio', nombre: 'Laboratorio', nombre_normalizado: 'laboratorio', alias: '' },
+  { id: 'ref-boleterias', nombre: 'Boleterías', nombre_normalizado: 'boleterias', alias: 'boleteria, andenes, anden' },
+  { id: 'ref-administracion', nombre: 'Administración', nombre_normalizado: 'administracion', alias: '' },
+  { id: 'ref-piscina', nombre: 'Piscina', nombre_normalizado: 'piscina', alias: 'piscinas' },
+  { id: 'ref-kartodromo', nombre: 'Kartódromo', nombre_normalizado: 'kartodromo', alias: '' },
+  { id: 'ref-cancha', nombre: 'Cancha', nombre_normalizado: 'cancha', alias: 'canchas' },
+  { id: 'ref-porton', nombre: 'Portón', nombre_normalizado: 'porton', alias: 'puerta' },
+  { id: 'ref-parada', nombre: 'Parada', nombre_normalizado: 'parada', alias: '' },
+];
+
+/**
+ * Compara palabra por palabra (ignorando conectores como "de"/"del") tolerando errores de tipeo
+ * como "Camaino carreton" -> "Camino Carretón" / "Camino del Carretón".
+ */
+function evaluarCoincidenciaPalabras(fragNorm, candNorm) {
+  const pFrag = palabrasSignificativas(fragNorm);
+  const pCand = palabrasSignificativas(candNorm);
+  if (!pFrag.length || !pCand.length || pFrag.length > pCand.length) {
+    return { esCompleta: false, puntaje: 0 };
+  }
+
+  let totalDist = 0;
+  let ultimaCompleta = false;
+
+  for (let i = 0; i < pFrag.length; i++) {
+    const wf = pFrag[i];
+    const wc = pCand[i];
+    const esUltima = i === pFrag.length - 1;
+    let wordDist = 99;
+    let wordCompleta = false;
+
+    if (wf === wc) {
+      wordDist = 0;
+      wordCompleta = true;
+    } else if (claveFonetica(wf) === claveFonetica(wc)) {
+      wordDist = 0.5;
+      wordCompleta = true;
+    } else if (wf.length >= 4 && wc.length >= 4) {
+      const d = distanciaEdicion(wf, wc);
+      if (d <= 1 || (wf.length >= 6 && d <= 2)) {
+        wordDist = d;
+        wordCompleta = true;
+      }
+    }
+
+    if (!wordCompleta && esUltima) {
+      if (wc.startsWith(wf)) {
+        wordDist = 0.5;
+      } else if (wf.length >= 2 && claveFonetica(wc).startsWith(claveFonetica(wf))) {
+        wordDist = 1;
+      } else if (wf.length >= 4 && distanciaEdicion(wf, wc.slice(0, wf.length)) <= 1) {
+        wordDist = 1.5;
+      }
+    }
+
+    if (wordDist >= 99) return { esCompleta: false, puntaje: 0 };
+    totalDist += wordDist;
+    if (esUltima) ultimaCompleta = wordCompleta;
+  }
+
+  if (totalDist > 2.5) return { esCompleta: false, puntaje: 0 };
+
+  const esCompleta = pFrag.length === pCand.length && ultimaCompleta;
+  if (esCompleta) {
+    if (totalDist === 0) return { esCompleta: true, puntaje: 112 };
+    if (totalDist <= 1) return { esCompleta: true, puntaje: 95 };
+    return { esCompleta: true, puntaje: 86 };
+  }
+
+  return { esCompleta: false, puntaje: Math.max(55, 84 - Math.round(totalDist * 10)) };
+}
+
+/**
+ * Busca si un fragmento corresponde de forma completa (exacta, por alias, fonética o con error de tipeo)
+ * a una calle o sitio del catálogo.
+ */
+function buscarSitioCompleto(frag, listaCatalogo) {
+  const fNorm = normalizarDireccion(frag);
+  const fFon = claveFonetica(frag);
+  if (!fNorm) return null;
+
+  let mejor = null;
+  let mejorPuntaje = 0;
+
+  for (const c of listaCatalogo) {
+    const listaAlias = String(c.alias || '')
+      .split(',')
+      .map((a) => normalizarDireccion(a))
+      .filter(Boolean);
+    const candidatos = [c.nombre_normalizado, ...listaAlias];
+
+    for (let idx = 0; idx < candidatos.length; idx++) {
+      const candNorm = candidatos[idx];
+      let pt = 0;
+      if (candNorm === fNorm) {
+        pt = idx === 0 ? 120 : 118;
+      } else if (claveFonetica(candNorm) === fFon) {
+        pt = idx === 0 ? 110 : 108;
+      } else {
+        const ev = evaluarCoincidenciaPalabras(fNorm, candNorm);
+        if (ev.esCompleta) pt = ev.puntaje;
+      }
+      if (pt > mejorPuntaje) {
+        mejorPuntaje = pt;
+        mejor = c;
+      }
+    }
+  }
+
+  return mejor;
+}
+
+/**
+ * Cuando una dirección no comienza con número de puerta, suele ser un sitio o camino seguido
+ * de la referencia del punto donde se encuentra el pasajero:
+ * ej: "Camaino carreton km 28", "amsj artigas", "amsj emergencia", "plaza 33 asamblea".
+ */
+function desglosarSitioYReferencia(textoLimpio, callesActivas) {
+  const palabras = limpiarDireccion(textoLimpio).split(' ').filter(Boolean);
+  if (palabras.length < 2) return null;
+
+  for (let k = palabras.length - 1; k >= 1; k--) {
+    const parteSitio = palabras.slice(0, k).join(' ');
+    const parteRef = palabras.slice(k).join(' ');
+    const sitio = buscarSitioCompleto(parteSitio, callesActivas);
+    if (sitio) {
+      const mCon = parteRef.match(/^(por|esq\.?|esquina|y|frente\s+a)\s+(.+)$/i);
+      const conector = mCon ? mCon[1].toLowerCase().replace(/\.$/, '') : '';
+      const restoRef = mCon ? mCon[2].trim() : parteRef.trim();
+      return { sitio, parteSitio, parteRef, conector, restoRef };
+    }
+  }
+  return null;
+}
+
+function formatearReferenciaPunto(restoRef, callesActivas) {
+  const limpio = limpiarDireccion(restoRef);
+  if (!limpio) return { texto: '', esReconocida: false };
+
+  // Referencia de kilómetro: ej "km 28", "km28", "kilometro 28"
+  const mKm = limpio.match(/^k(?:m|il[oó]metros?)?\.?\s*(\d+(?:[.,]\d+)?(?:\s+.*)?)$/i);
+  if (mKm) {
+    return { texto: `km ${mKm[1].trim()}`, esReconocida: true };
+  }
+
+  // Referencia común de punto (Emergencia, Policlínica, Entrada Principal, etc.)
+  const refComun = buscarSitioCompleto(limpio, REFERENCIAS_PUNTO_COMUNES);
+  if (refComun) {
+    return { texto: refComun.nombre, esReconocida: true };
+  }
+
+  // Calle de referencia (ej: "amsj artigas" -> "Artigas", "plaza 33 asamblea" -> "Asamblea")
+  const calleRef = buscarSitioCompleto(limpio, callesActivas);
+  if (calleRef) {
+    return { texto: calleRef.nombre, esReconocida: true };
+  }
+
+  return { texto: limpio, esReconocida: false };
+}
+
 const DIAS_NOMBRES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 const SELECT_VIAJE = `
@@ -216,35 +393,23 @@ async function canonizarDireccionConCatalogo(client, texto) {
     );
     if (!calles.length) return limpia;
 
-    const buscarCoincidenciaExacta = (frag) => {
-      const fNorm = normalizarDireccion(frag);
-      const fFon = claveFonetica(frag);
-      if (!fNorm) return null;
-
-      // 1. Nombre exacto normalizado
-      for (const c of calles) {
-        if (c.nombre_normalizado === fNorm) return c;
-      }
-      // 2. Alias exacto normalizado (ej: "jose batlle y ordoñez" -> "Batlle y Ordóñez")
-      for (const c of calles) {
-        const listaAlias = String(c.alias || '')
-          .split(',')
-          .map((a) => normalizarDireccion(a))
-          .filter(Boolean);
-        if (listaAlias.includes(fNorm)) return c;
-      }
-      // 3. Coincidencia fonética exacta del nombre (ej: "sorriya de san martin" o "itusango")
-      for (const c of calles) {
-        if (claveFonetica(c.nombre) === fFon) return c;
-      }
-      return null;
-    };
-
     const { numero, calle } = desglosarNumeroYCalle(limpia);
     if (calle) {
-      const match = buscarCoincidenciaExacta(calle);
+      // 1. Coincidencia completa con una calle o sitio del catálogo
+      const match = buscarSitioCompleto(calle, calles);
       if (match) {
         return numero ? `${numero} ${match.nombre}` : match.nombre;
+      }
+
+      // 2. Si no empieza con número (es un sitio + referencia de punto, ej: "Camaino carreton km 28",
+      //    "amsj artigas", "amsj emergencia", "plaza 33 asamblea"), o si tiene número + calle + apto/ref
+      const desglose = desglosarSitioYReferencia(calle, calles);
+      if (desglose) {
+        const { sitio, conector, restoRef } = desglose;
+        const { texto: refCanon } = formatearReferenciaPunto(restoRef, calles);
+        const baseSitio = numero ? `${numero} ${sitio.nombre}` : sitio.nombre;
+        const union = conector ? ` ${conector} ` : ' ';
+        return refCanon ? `${baseSitio}${union}${refCanon}` : baseSitio;
       }
     }
   } catch {
@@ -741,7 +906,7 @@ export async function cambiarCancelacion(viajeId, cancelado, operadorId) {
 
 /**
  * Puntúa qué tan bien coincide un fragmento escrito por el operador con una calle del catálogo curado.
- * Contempla prefijos, alias, palabras internas y errores de ortografía/tipeo.
+ * Contempla prefijos, alias, palabras internas y errores de ortografía/tipeo (incluyendo múltiples palabras).
  */
 function puntuarCalleCatalogo(calleRow, fragNorm, fragFon) {
   const nomNorm = calleRow.nombre_normalizado;
@@ -756,11 +921,21 @@ function puntuarCalleCatalogo(calleRow, fragNorm, fragFon) {
   if (listaAlias.some((a) => a === fragNorm)) return 98;
   if (listaAlias.some((a) => a.startsWith(fragNorm))) return 92;
 
+  // Evaluación multicriterio palabra por palabra (ej: "camaino carreton" -> "Camino Carretón")
+  let mejorPalabras = 0;
+  for (const cand of [nomNorm, ...listaAlias]) {
+    const ev = evaluarCoincidenciaPalabras(fragNorm, cand);
+    if (ev.puntaje > mejorPalabras) mejorPalabras = ev.puntaje;
+  }
+  if (mejorPalabras >= 85) return mejorPalabras;
+
   const palabrasNom = nomNorm.split(' ').filter((p) => p.length > 1);
   if (palabrasNom.some((p) => p.startsWith(fragNorm))) return 88;
 
   const palabrasAlias = listaAlias.flatMap((a) => a.split(' ')).filter((p) => p.length > 1);
   if (palabrasAlias.some((p) => p.startsWith(fragNorm))) return 82;
+
+  if (mejorPalabras > 0) return mejorPalabras;
 
   if (nomNorm.includes(fragNorm)) return 75;
   if (listaAlias.some((a) => a.includes(fragNorm))) return 70;
@@ -773,7 +948,7 @@ function puntuarCalleCatalogo(calleRow, fragNorm, fragFon) {
     if (nomFon.includes(fragFon)) return 55;
   }
 
-  // Tolerancia a errores de tipeo (Levenshtein <= 1 o 2 sobre prefijos o palabras)
+  // Tolerancia a errores de tipeo en una palabra individual (Levenshtein <= 1 o 2)
   if (fragNorm.length >= 4) {
     for (const p of [...palabrasNom, ...palabrasAlias]) {
       const recorte = p.slice(0, fragNorm.length);
@@ -786,14 +961,38 @@ function puntuarCalleCatalogo(calleRow, fragNorm, fragFon) {
   return 0;
 }
 
+function referenciasSugeridasParaSitio(nombreSitioNorm) {
+  if (nombreSitioNorm === 'amsj' || nombreSitioNorm.includes('hospital') || nombreSitioNorm.includes('sanatorio')) {
+    return ['Emergencia', 'Artigas', 'Policlínica', 'Entrada Principal'];
+  }
+  if (nombreSitioNorm === 'plaza 33' || nombreSitioNorm.includes('treinta y tres')) {
+    return ['Asamblea', '18 de Julio', 'Artigas', 'Ciganda'];
+  }
+  if (nombreSitioNorm.startsWith('camino') || nombreSitioNorm.startsWith('ruta')) {
+    return ['km '];
+  }
+  if (nombreSitioNorm.includes('parque rodo')) {
+    return ['Kartódromo', 'Piscina', 'Entrada Principal'];
+  }
+  if (nombreSitioNorm.includes('terminal')) {
+    return ['Boleterías', 'Parada'];
+  }
+  return ['Emergencia', 'Entrada Principal'];
+}
+
 /**
  * Sugerencias de direcciones mientras se escribe.
  * 1) Primero las direcciones ya existentes en la BD usadas por ese teléfono (por asiduidad) y luego por frecuencia general.
- * 2) A continuación, completa con el catálogo curado de calles de San José de Mayo respetando SIEMPRE
- *    el orden de ingreso: <número> <calle> (ej: al escribir "450 art" o "450 batlle" sugiere "450 Artigas" o "450 Batlle y Ordóñez").
+ * 2) A continuación, completa con el catálogo curado de calles de San José de Mayo:
+ *    - Si comienza con número: respeta SIEMPRE <número> <calle> (ej: "450 art" -> "450 Artigas").
+ *    - Si NO comienza con número: contempla tanto el sitio/calle base como la combinación
+ *      <sitio> <referencia del punto> (ej: "Camaino carreton km 28" -> "Camino Carretón km 28",
+ *      "amsj artigas" -> "AMSJ Artigas", "amsj emergencia" -> "AMSJ Emergencia", "plaza 33 asamblea" -> "Plaza 33 Asamblea").
  */
 export async function sugerirDirecciones({ q, telefono, limite = 8 }) {
-  const texto = normalizarDireccion(q);
+  const rawQ = String(q ?? '');
+  const terminaEnEspacio = /\s$/.test(rawQ);
+  const texto = normalizarDireccion(rawQ);
   const tel = normalizarTelefono(telefono);
   const patron = `%${texto.replace(/[%_\\]/g, '\\$&')}%`;
   const prefijo = `${texto.replace(/[%_\\]/g, '\\$&')}%`;
@@ -807,7 +1006,10 @@ export async function sugerirDirecciones({ q, telefono, limite = 8 }) {
      )
      SELECT d.id, d.texto, d.veces_usada,
             COALESCE(t.usos, 0)::int AS usos_telefono,
-            FALSE AS es_catalogo
+            FALSE AS es_catalogo,
+            FALSE AS es_sitio_base,
+            FALSE AS es_sitio_referencia,
+            FALSE AS es_canonica_exacta
      FROM direcciones d
      LEFT JOIN del_telefono t ON t.direccion_id = d.id
      WHERE ($2 = '' AND t.direccion_id IS NOT NULL)
@@ -820,7 +1022,7 @@ export async function sugerirDirecciones({ q, telefono, limite = 8 }) {
 
   if (!texto) return historicas;
 
-  const { numero, calle } = desglosarNumeroYCalle(q);
+  const { numero, calle } = desglosarNumeroYCalle(rawQ);
   const fragNorm = normalizarDireccion(calle);
   const fragFon = claveFonetica(calle);
 
@@ -831,10 +1033,116 @@ export async function sugerirDirecciones({ q, telefono, limite = 8 }) {
   );
 
   const candidatos = [];
+  const matchSitioDirecto = buscarSitioCompleto(calle, callesActivas);
+
+  // A) Si el operador escribió un sitio sin número y agregó un espacio al final (ej: "AMSJ ", "Plaza 33 "),
+  //    ofrecer sugerencias rápidas de referencia para ese sitio.
+  if (!numero && terminaEnEspacio && matchSitioDirecto) {
+    const refsRapidas = referenciasSugeridasParaSitio(matchSitioDirecto.nombre_normalizado);
+    refsRapidas.forEach((r, idx) => {
+      const textoSug = `${matchSitioDirecto.nombre} ${r}`;
+      candidatos.push({
+        id: `sitio-quick-${matchSitioDirecto.id}-${idx}`,
+        texto: textoSug,
+        textoNorm: normalizarDireccion(textoSug),
+        veces_usada: 0,
+        usos_telefono: 0,
+        es_catalogo: true,
+        es_sitio_base: r.endsWith(' '),
+        es_sitio_referencia: true,
+        es_canonica_exacta: false,
+        calle_nombre: textoSug,
+        puntaje: 160 - idx,
+      });
+    });
+  }
+
+  // B) Si escribió <sitio> + <referencia del punto> (ej: "Camaino carreton km 28", "amsj artigas",
+  //    "amsj emergencia", "plaza 33 asamblea"), desglosar sitio y referencia.
+  if (!matchSitioDirecto) {
+    const desglose = desglosarSitioYReferencia(calle, callesActivas);
+    if (desglose) {
+      const { sitio, conector, restoRef } = desglose;
+      const baseSitio = numero ? `${numero} ${sitio.nombre}` : sitio.nombre;
+      const prefijoSitio = conector ? `${baseSitio} ${conector}` : baseSitio;
+      const rNorm = normalizarDireccion(restoRef);
+      const rFon = claveFonetica(restoRef);
+
+      if (rNorm) {
+        // 1. Coincidencias con referencias comunes de sitios (Emergencia, Policlínica, Entrada, etc.)
+        for (const refItem of REFERENCIAS_PUNTO_COMUNES) {
+          const pRef = puntuarCalleCatalogo(refItem, rNorm, rFon);
+          if (pRef > 0) {
+            const textoSug = `${prefijoSitio} ${refItem.nombre}`;
+            const exacta = Boolean(buscarSitioCompleto(restoRef, [refItem]));
+            candidatos.push({
+              id: `sitio-${sitio.id}-${refItem.id}`,
+              texto: textoSug,
+              textoNorm: normalizarDireccion(textoSug),
+              veces_usada: 0,
+              usos_telefono: 0,
+              es_catalogo: true,
+              es_sitio_base: false,
+              es_sitio_referencia: true,
+              es_canonica_exacta: exacta,
+              calle_nombre: textoSug,
+              puntaje: 135 + pRef,
+            });
+          }
+        }
+
+        // 2. Coincidencias donde la referencia es una calle del catálogo (ej: "amsj artigas", "plaza 33 asamblea")
+        for (const cRef of callesActivas) {
+          if (cRef.id === sitio.id) continue;
+          const pCalle = puntuarCalleCatalogo(cRef, rNorm, rFon);
+          if (pCalle > 0) {
+            const textoSug = `${prefijoSitio} ${cRef.nombre}`;
+            const exacta = Boolean(buscarSitioCompleto(restoRef, [cRef]));
+            candidatos.push({
+              id: `sitio-${sitio.id}-calle-${cRef.id}`,
+              texto: textoSug,
+              textoNorm: normalizarDireccion(textoSug),
+              veces_usada: 0,
+              usos_telefono: 0,
+              es_catalogo: true,
+              es_sitio_base: false,
+              es_sitio_referencia: true,
+              es_canonica_exacta: exacta,
+              calle_nombre: textoSug,
+              puntaje: 130 + pCalle,
+            });
+          }
+        }
+
+        // 3. Referencia libre o kilométrica con el nombre del sitio ya corregido/canonizado
+        //    (ej: "Camaino carreton km 28" -> "Camino Carretón km 28")
+        const refFmt = formatearReferenciaPunto(restoRef, callesActivas);
+        if (refFmt.texto) {
+          const textoSug = `${prefijoSitio} ${refFmt.texto}`;
+          candidatos.push({
+            id: `sitio-${sitio.id}-libre`,
+            texto: textoSug,
+            textoNorm: normalizarDireccion(textoSug),
+            veces_usada: 0,
+            usos_telefono: 0,
+            es_catalogo: true,
+            es_sitio_base: false,
+            es_sitio_referencia: true,
+            es_canonica_exacta: true,
+            calle_nombre: textoSug,
+            puntaje: refFmt.esReconocida ? 255 : 150,
+          });
+        }
+      }
+    }
+  }
+
+  // C) Coincidencias directas de una calle o sitio del catálogo (con o sin número de puerta adelante)
   for (const c of callesActivas) {
     const puntaje = puntuarCalleCatalogo(c, fragNorm, fragFon);
     if (puntaje > 0) {
       const textoSugerido = numero ? `${numero} ${c.nombre}` : c.nombre;
+      const esExacta = matchSitioDirecto?.id === c.id;
       candidatos.push({
         id: `calle-${c.id}`,
         texto: textoSugerido,
@@ -842,6 +1150,9 @@ export async function sugerirDirecciones({ q, telefono, limite = 8 }) {
         veces_usada: 0,
         usos_telefono: 0,
         es_catalogo: true,
+        es_sitio_base: !numero,
+        es_sitio_referencia: false,
+        es_canonica_exacta: esExacta,
         calle_nombre: c.nombre,
         puntaje,
       });
@@ -863,6 +1174,9 @@ export async function sugerirDirecciones({ q, telefono, limite = 8 }) {
       veces_usada: 0,
       usos_telefono: 0,
       es_catalogo: true,
+      es_sitio_base: Boolean(cand.es_sitio_base),
+      es_sitio_referencia: Boolean(cand.es_sitio_referencia),
+      es_canonica_exacta: Boolean(cand.es_canonica_exacta),
     });
   }
 

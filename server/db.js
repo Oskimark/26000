@@ -47,6 +47,51 @@ function normTexto(s) {
 
 export async function sembrarCallesIniciales(clientOrPool = pool) {
   let insertadas = 0;
+
+  // Normalizar nombres cortos habituales si aún figuraban con el nombre largo inicial
+  const reemplazosCortos = [
+    {
+      viejoNorm: 'camino del carreton',
+      nombre: 'Camino Carretón',
+      nombreNorm: 'camino carreton',
+      alias: 'Camino del Carretón, Carretón, Carreton, Camaino Carreton',
+    },
+    {
+      viejoNorm: 'hospital san jose',
+      nombre: 'Hospital',
+      nombreNorm: 'hospital',
+      alias: 'Hospital San José, ASSE San José, Hospital Departamental',
+    },
+    {
+      viejoNorm: 'sanatorio amsj',
+      nombre: 'AMSJ',
+      nombreNorm: 'amsj',
+      alias: 'Sanatorio AMSJ, Asociación Médica, Mutualista, Sanatorio, AMJS',
+    },
+    {
+      viejoNorm: 'terminal de omnibus',
+      nombre: 'Terminal',
+      nombreNorm: 'terminal',
+      alias: 'Terminal de Ómnibus, Terminal San José',
+    },
+    {
+      viejoNorm: 'plaza de los treinta y tres',
+      nombre: 'Plaza 33',
+      nombreNorm: 'plaza 33',
+      alias: 'Plaza de los Treinta y Tres, Plaza Treinta y Tres, Plaza Principal',
+    },
+  ];
+
+  for (const r of reemplazosCortos) {
+    await clientOrPool.query(
+      `UPDATE calles
+       SET nombre = $1, nombre_normalizado = $2, alias = $3, alias_normalizado = $4
+       WHERE nombre_normalizado = $5
+         AND NOT EXISTS (SELECT 1 FROM calles WHERE nombre_normalizado = $2)`,
+      [r.nombre, r.nombreNorm, r.alias, normTexto(r.alias), r.viejoNorm],
+    );
+  }
+
   for (const item of CALLES_SAN_JOSE_INICIALES) {
     const nombre = String(item.nombre || '').trim();
     if (!nombre) continue;
@@ -79,11 +124,10 @@ export async function migrar() {
     console.log(`Usuario administrador inicial creado: "${config.adminUsuario}"`);
   }
 
-  // Si la tabla de calles curadas está vacía, precarga el nomenclátor de San José de Mayo.
-  const { rows: rCalles } = await pool.query('SELECT count(*)::int AS n FROM calles');
-  if (rCalles[0].n === 0) {
-    const n = await sembrarCallesIniciales(pool);
-    console.log(`Catálogo de calles de San José de Mayo inicializado (${n} entradas).`);
+  // Sembrar o actualizar sitios frecuentes del catálogo de San José de Mayo.
+  const n = await sembrarCallesIniciales(pool);
+  if (n > 0) {
+    console.log(`Catálogo de calles de San José de Mayo actualizado (+${n} entradas).`);
   }
 }
 
