@@ -101,11 +101,48 @@ export default function FichaViajeModal({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [cerrar]);
 
-  function toggleDia(diaId) {
-    setRepetirDias((prev) =>
-      prev.includes(diaId) ? prev.filter((d) => d !== diaId) : [...prev, diaId].sort(),
-    );
+  function toggleCadaDia(marcado) {
+    if (marcado) {
+      setRepetirModo('diario');
+      setRepetirDias([1, 2, 3, 4, 5, 6, 0]);
+    } else {
+      setRepetirModo('dias');
+      setRepetirDias([1, 2, 3, 4, 5]);
+    }
   }
+
+  function toggleDia(diaId) {
+    setRepetirDias((prev) => {
+      const base = repetirModo === 'diario' ? [1, 2, 3, 4, 5, 6, 0] : prev;
+      const nuevos = base.includes(diaId) ? base.filter((d) => d !== diaId) : [...base, diaId];
+      if (nuevos.length === 7) {
+        setRepetirModo('diario');
+      } else {
+        setRepetirModo('dias');
+      }
+      return nuevos;
+    });
+  }
+
+  function elegirAtajoDias(lista) {
+    if (lista.length === 7) {
+      setRepetirModo('diario');
+      setRepetirDias([1, 2, 3, 4, 5, 6, 0]);
+    } else {
+      setRepetirModo('dias');
+      setRepetirDias(lista);
+    }
+  }
+
+  const diasActivosEfectivos = repetirModo === 'diario' ? [1, 2, 3, 4, 5, 6, 0] : repetirDias;
+  const textoFeedbackDias =
+    repetirModo === 'diario' || diasActivosEfectivos.length === 7
+      ? 'CADA DÍA (Lunes a Domingo)'
+      : diasActivosEfectivos.length === 0
+        ? 'Ningún día seleccionado (elegí al menos uno)'
+        : DIAS_SEMANA.filter((d) => diasActivosEfectivos.includes(d.id))
+            .map((d) => d.largo)
+            .join(', ');
 
   async function guardarCambios(e) {
     e?.preventDefault();
@@ -136,7 +173,7 @@ export default function FichaViajeModal({
           horaProgramada: programado ? horaProgramada : '',
           repetirActivo,
           repetirModo,
-          repetirDias,
+          repetirDias: diasActivosEfectivos,
           repetirHora: repetirHora || horaProgramada,
         },
       });
@@ -345,22 +382,22 @@ export default function FichaViajeModal({
                     <div className="ficha-repeticion-fila">
                       <div className="campo">
                         <span>Frecuencia de repetición</span>
-                        <div className="ficha-modos-repetir">
-                          <button
-                            type="button"
-                            className={repetirModo === 'diario' ? 'btn chico primario' : 'btn chico'}
-                            onClick={() => setRepetirModo('diario')}
-                          >
-                            📅 Cada día
-                          </button>
-                          <button
-                            type="button"
-                            className={repetirModo === 'dias' ? 'btn chico primario' : 'btn chico'}
-                            onClick={() => setRepetirModo('dias')}
-                          >
-                            🗓️ Seleccionar días
-                          </button>
-                        </div>
+                        <label
+                          className={
+                            repetirModo === 'diario'
+                              ? 'ficha-check-cada-dia activo'
+                              : 'ficha-check-cada-dia'
+                          }
+                        >
+                          <input
+                            type="checkbox"
+                            checked={repetirModo === 'diario'}
+                            onChange={(e) => toggleCadaDia(e.target.checked)}
+                          />
+                          <span>
+                            <b>📅 Cada día</b> (repetir todos los días de la semana)
+                          </span>
+                        </label>
                       </div>
 
                       <label className="campo">
@@ -375,66 +412,88 @@ export default function FichaViajeModal({
                       </label>
                     </div>
 
-                    {repetirModo === 'dias' && (
-                      <div className="ficha-dias-semana">
-                        <span className="ficha-dias-etiqueta">
-                          Días de la semana en que se repetirá (una vez por semana, X días, toda la semana, etc.):
-                        </span>
-                        <div className="ficha-dias-grilla">
-                          {DIAS_SEMANA.map((d) => {
-                            const activo = repetirDias.includes(d.id);
-                            return (
-                              <button
-                                key={d.id}
-                                type="button"
-                                className={activo ? 'btn-dia-semana activo' : 'btn-dia-semana'}
-                                onClick={() => toggleDia(d.id)}
-                                title={d.largo}
-                              >
-                                {d.corto}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <div className="ficha-dias-atajos">
-                          <button
-                            type="button"
-                            className="btn-link chico"
-                            onClick={() => setRepetirDias([1, 2, 3, 4, 5])}
-                          >
-                            Lunes a Viernes
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-link chico"
-                            onClick={() => setRepetirDias([1, 3, 5])}
-                          >
-                            Lun, Mié y Vie
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-link chico"
-                            onClick={() => setRepetirDias([2, 4])}
-                          >
-                            Mar y Jue
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-link chico"
-                            onClick={() => setRepetirDias([6, 0])}
-                          >
-                            Fin de semana
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-link chico"
-                            onClick={() => setRepetirDias([new Date().getDay()])}
-                          >
-                            1 vez por semana (hoy)
-                          </button>
-                        </div>
+                    <div className="ficha-dias-semana">
+                      <span className="ficha-dias-etiqueta">
+                        Seleccionar días en que se repetirá (o desmarcá "Cada día" para elegir días específicos):
+                      </span>
+                      <div className="ficha-dias-grilla">
+                        {DIAS_SEMANA.map((d) => {
+                          const activo = diasActivosEfectivos.includes(d.id);
+                          return (
+                            <button
+                              key={d.id}
+                              type="button"
+                              className={activo ? 'btn-dia-semana activo' : 'btn-dia-semana'}
+                              onClick={() => toggleDia(d.id)}
+                              title={d.largo}
+                            >
+                              {activo ? `✓ ${d.corto}` : d.corto}
+                            </button>
+                          );
+                        })}
                       </div>
-                    )}
+                      <div className="ficha-dias-atajos">
+                        <button
+                          type="button"
+                          className="btn-link chico"
+                          onClick={() => elegirAtajoDias([1, 2, 3, 4, 5, 6, 0])}
+                        >
+                          Toda la semana (Cada día)
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-link chico"
+                          onClick={() => elegirAtajoDias([1, 2, 3, 4, 5])}
+                        >
+                          Lunes a Viernes
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-link chico"
+                          onClick={() => elegirAtajoDias([1, 3, 5])}
+                        >
+                          Lun, Mié y Vie
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-link chico"
+                          onClick={() => elegirAtajoDias([2, 4])}
+                        >
+                          Mar y Jue
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-link chico"
+                          onClick={() => elegirAtajoDias([6, 0])}
+                        >
+                          Fin de semana
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-link chico"
+                          onClick={() => elegirAtajoDias([new Date().getDay()])}
+                        >
+                          1 vez por semana (hoy)
+                        </button>
+                      </div>
+                    </div>
+
+                    <div
+                      className={
+                        diasActivosEfectivos.length > 0
+                          ? 'ficha-feedback-repeticion activo'
+                          : 'ficha-feedback-repeticion alerta'
+                      }
+                    >
+                      {diasActivosEfectivos.length > 0 ? (
+                        <>
+                          ✅ <b>Programación activa:</b> Se repetirá <b>{textoFeedbackDias}</b> a las{' '}
+                          <b>{repetirHora || horaProgramada || '—'} hs</b>.
+                        </>
+                      ) : (
+                        <>⚠️ Seleccioná al menos un día o marcá el checkbox "Cada día".</>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

@@ -96,7 +96,7 @@ export default function App() {
 
         {(!tema.usarIdentidad || tema.elementos.mostrarTitulo) && (
           <div className="marca-corporativa">
-            26000 VEINTISEISMIL
+            TAXI 26000 VEINTISEISMIL
           </div>
         )}
 

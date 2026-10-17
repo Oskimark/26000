@@ -1394,6 +1394,51 @@ input:focus, select:focus {
   flex-wrap: wrap;
 }
 
+.ficha-check-cada-dia {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 7px;
+  border: 1.5px solid var(--borde);
+  background: var(--bg-superficie);
+  color: var(--texto);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.ficha-check-cada-dia input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--corporativo-naranja);
+  cursor: pointer;
+}
+
+.ficha-check-cada-dia.activo {
+  border-color: var(--corporativo-naranja);
+  background: rgba(255, 102, 0, 0.12);
+}
+
+.ficha-feedback-repeticion {
+  padding: 10px 12px;
+  border-radius: 7px;
+  font-size: 0.88rem;
+  border: 1px solid var(--borde);
+}
+
+.ficha-feedback-repeticion.activo {
+  background: var(--exito-bg);
+  color: var(--exito-texto);
+  border-color: #10b981;
+}
+
+.ficha-feedback-repeticion.alerta {
+  background: var(--alerta-bg);
+  color: var(--alerta-texto);
+  border-color: var(--alerta-borde);
+}
+
 .ficha-dias-semana {
   display: flex;
   flex-direction: column;
@@ -1510,8 +1555,8 @@ body.tema-oscuro,
   --bg-destacado: #273549;
   --borde: #334155;
   --borde-suave: #293548;
-  --texto: #f1f5f9;
-  --texto-secundario: #94a3b8;
+  --texto: #ffffff;
+  --texto-secundario: #cbd5e1;
   --primario-suave: #1e3a5f;
   --alerta-bg: #422006;
   --alerta-texto: #fde68a;
@@ -1537,13 +1582,13 @@ body.tema-oscuro,
 .tema-oscuro select,
 .tema-oscuro textarea {
   background-color: #0f172a;
-  color: #f1f5f9;
+  color: #ffffff;
   border-color: #475569;
 }
 
 .tema-oscuro .btn {
   background-color: #334155;
-  color: #f1f5f9;
+  color: #ffffff;
   border-color: #475569;
 }
 .tema-oscuro .btn:hover:not(:disabled) {
@@ -1552,12 +1597,33 @@ body.tema-oscuro,
 
 .tema-oscuro .tabla-viajes th {
   background-color: #162032;
-  color: #cbd5e1;
+  color: #e2e8f0;
   border-bottom-color: #334155;
 }
 
 .tema-oscuro .tabla-viajes td {
   border-bottom-color: #293548;
+  color: #ffffff;
+}
+
+.tema-oscuro .texto-direccion {
+  color: #ffffff !important;
+}
+
+.tema-oscuro .col-hora,
+.tema-oscuro .col-hora b,
+.tema-oscuro .col-fin,
+.tema-oscuro .col-fin b,
+.tema-oscuro .seccion-futuros .col-hora,
+.tema-oscuro .seccion-futuros .col-hora b,
+.tema-oscuro .dato-grande {
+  color: #ffffff !important;
+}
+
+.tema-oscuro .badge-prog {
+  background-color: rgba(255, 102, 0, 0.22) !important;
+  border: 1.5px solid var(--corporativo-borde) !important;
+  color: #ffffff !important;
 }
 
 .tema-oscuro .tabla-filas-clickeables .fila-clickeable:hover {
@@ -1566,23 +1632,27 @@ body.tema-oscuro,
 
 .tema-oscuro .fila-pendiente {
   background-color: rgba(251, 146, 60, 0.08);
+  color: #ffffff;
 }
 
 .tema-oscuro .fila-sin-chofer {
   background-color: rgba(234, 179, 8, 0.12);
+  color: #ffffff;
 }
 
 .tema-oscuro .fila-aviso-programado {
   background-color: rgba(245, 158, 11, 0.2) !important;
+  color: #ffffff;
 }
 
 .tema-oscuro .fila-en-curso {
   background-color: rgba(56, 189, 248, 0.08);
+  color: #ffffff;
 }
 
 .tema-oscuro .select-chofer-tabla.asignado {
   background-color: #0f172a;
-  color: #f1f5f9;
+  color: #ffffff;
 }
 
 .tema-oscuro .select-chofer-tabla.sin-asignar {
@@ -1592,7 +1662,7 @@ body.tema-oscuro,
 }
 
 .tema-oscuro .hora-avisado-texto {
-  color: #cbd5e1;
+  color: #ffffff;
 }
 
 .tema-oscuro .enlace-whatsapp {
@@ -1624,3 +1694,4 @@ body.tema-oscuro,
 .tema-oscuro .tarjeta-chofer.seleccionado {
   background-color: rgba(255, 102, 0, 0.15);
 }
+

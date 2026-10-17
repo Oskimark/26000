@@ -464,7 +464,7 @@ export default function Admin({ operadorId }) {
                       onChange={() => toggleElemento('mostrarTitulo')}
                     />
                     <div>
-                      <b>Título corporativo "26000 VEINTISEISMIL"</b>
+                      <b>Título corporativo "TAXI 26000 VEINTISEISMIL"</b>
                       <p className="descripcion">Muestra el texto institucional en naranja en la barra superior.</p>
                     </div>
                   </label>
