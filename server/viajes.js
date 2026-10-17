@@ -27,6 +27,8 @@ export function normalizarTelefono(texto) {
   return String(texto ?? '').replace(/\D/g, '');
 }
 
+const DIAS_NOMBRES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
 const SELECT_VIAJE = `
   SELECT v.id, v.numero, v.telefono, v.direccion_id, d.texto AS direccion,
          v.chofer_id, c.nombre AS chofer,
@@ -34,16 +36,40 @@ const SELECT_VIAJE = `
          v.hora_toma, v.programado, v.hora_programada, v.hora_ejecucion,
          v.hora_asignacion, v.asignado_por, oa.nombre AS asignado_por_nombre,
          v.hora_avisado, v.avisado_por, oav.nombre AS avisado_por_nombre,
-         v.hora_fin, v.cancelado, v.fecha_turno, v.tipo_turno
+         v.hora_fin, v.cancelado, v.cancelado_por, oc.nombre AS cancelado_por_nombre,
+         v.repetir_activo, v.repetir_modo, v.repetir_dias, v.repetir_hora, v.viaje_origen_id,
+         v.fecha_turno, v.tipo_turno
   FROM viajes v
   JOIN direcciones d ON d.id = v.direccion_id
   LEFT JOIN choferes c ON c.id = v.chofer_id
   LEFT JOIN operadores o ON o.id = v.operador_id
   LEFT JOIN operadores oa ON oa.id = v.asignado_por
-  LEFT JOIN operadores oav ON oav.id = v.avisado_por`;
+  LEFT JOIN operadores oav ON oav.id = v.avisado_por
+  LEFT JOIN operadores oc ON oc.id = v.cancelado_por`;
 
 // Ejecutados primero (por N°), luego los programados pendientes por hora.
 const ORDEN_LISTADO = `ORDER BY v.numero IS NULL, v.numero, v.hora_programada, v.id`;
+
+async function registrarHistorial(client, viajeId, operadorId, accion, detalle) {
+  await client.query(
+    `INSERT INTO viaje_historial (viaje_id, operador_id, accion, detalle)
+     VALUES ($1, $2, $3, $4)`,
+    [viajeId, operadorId || null, accion, detalle],
+  );
+}
+
+export async function obtenerHistorialViaje(viajeId, db = { query }) {
+  const { rows } = await db.query(
+    `SELECT vh.id, vh.viaje_id, vh.operador_id, o.nombre AS operador,
+            vh.fecha, vh.accion, vh.detalle
+     FROM viaje_historial vh
+     LEFT JOIN operadores o ON o.id = vh.operador_id
+     WHERE vh.viaje_id = $1
+     ORDER BY vh.fecha DESC, vh.id DESC`,
+    [viajeId],
+  );
+  return rows;
+}
 
 export async function obtenerConfiguracion(db = { query }) {
   try {
@@ -76,6 +102,14 @@ export async function obtenerViaje(id, db = { query }) {
   const { rows } = await db.query(`${SELECT_VIAJE} WHERE v.id = $1`, [id]);
   if (!rows[0]) throw new ErrorNegocio('Viaje inexistente', 404);
   return rows[0];
+}
+
+export async function obtenerFichaViaje(id) {
+  const [viaje, historial] = await Promise.all([
+    obtenerViaje(id),
+    obtenerHistorialViaje(id),
+  ]);
+  return { viaje, historial };
 }
 
 export async function listarTurno({ fecha, tipo }) {
@@ -123,8 +157,9 @@ async function registrarDireccion(client, texto) {
 }
 
 async function validarChofer(client, choferId) {
-  const { rows } = await client.query('SELECT id FROM choferes WHERE id = $1 AND activo', [choferId]);
+  const { rows } = await client.query('SELECT id, nombre FROM choferes WHERE id = $1 AND activo', [choferId]);
   if (!rows[0]) throw new ErrorNegocio('Chofer inválido');
+  return rows[0];
 }
 
 /**
@@ -146,7 +181,7 @@ export async function crearViaje({ telefono, direccion, choferId, horaProgramada
 
   const id = await transaccion(async (client) => {
     const direccionId = await registrarDireccion(client, direccion);
-    if (chofer) await validarChofer(client, chofer);
+    const infoChofer = chofer ? await validarChofer(client, chofer) : null;
 
     const turno = turnoDe(programada ?? ahora);
     const numero = programada ? null : await siguienteNumero(client, turno);
@@ -164,9 +199,76 @@ export async function crearViaje({ telefono, direccion, choferId, horaProgramada
         horaAsig, chofer ? operadorId : null, horaAsig,
       ],
     );
-    return rows[0].id;
+    const viajeId = rows[0].id;
+    const resumenCreacion = [
+      `Dirección: "${limpiarDireccion(direccion)}"`,
+      tel ? `Tel: ${tel}` : 'Sin teléfono',
+      infoChofer ? `Chofer asignado: ${infoChofer.nombre}` : 'Chofer: Sin asignar',
+      programada ? `Programado para ${textoHora}` : 'Viaje inmediato',
+    ].join(' · ');
+    await registrarHistorial(client, viajeId, operadorId, 'Creación de viaje', resumenCreacion);
+    return viajeId;
   });
   return obtenerViaje(id);
+}
+
+/**
+ * Genera instancias programadas para los viajes que tienen activada la repetición programática.
+ */
+export async function generarViajesRepetidos(ahora = new Date()) {
+  return transaccion(async (client) => {
+    const { rows: plantillas } = await client.query(
+      `SELECT * FROM viajes WHERE repetir_activo = TRUE AND NOT cancelado`,
+    );
+    const creados = [];
+    for (const p of plantillas) {
+      const hm = parsearHora(p.repetir_hora);
+      if (!hm) continue;
+      const prox = proximaOcurrencia(hm, ahora);
+      const diaSemana = prox.getDay(); // 0=Dom .. 6=Sáb
+      const diasPermitidos =
+        p.repetir_modo === 'diario'
+          ? [0, 1, 2, 3, 4, 5, 6]
+          : String(p.repetir_dias || '')
+              .split(',')
+              .map((x) => Number(x.trim()))
+              .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
+
+      if (!diasPermitidos.includes(diaSemana)) continue;
+
+      // Verificar si ya existe el viaje para esta ocurrencia (o si el propio viaje origen ya apunta a esa hora)
+      const ventanaIni = new Date(prox.getTime() - 30 * 60_000);
+      const ventanaFin = new Date(prox.getTime() + 30 * 60_000);
+      const { rows: existentes } = await client.query(
+        `SELECT id FROM viajes
+         WHERE (id = $1 OR viaje_origen_id = $1)
+           AND NOT cancelado
+           AND hora_programada BETWEEN $2 AND $3
+         LIMIT 1`,
+        [p.id, ventanaIni, ventanaFin],
+      );
+      if (existentes.length > 0) continue;
+
+      const turno = turnoDe(prox);
+      const { rows: nuevo } = await client.query(
+        `INSERT INTO viajes (telefono, direccion_id, chofer_id, operador_id, hora_toma,
+                             programado, hora_programada, fecha_turno, tipo_turno,
+                             numero, hora_ejecucion, viaje_origen_id)
+         VALUES ($1, $2, NULL, $3, $4, TRUE, $5, $6, $7, NULL, NULL, $8)
+         RETURNING id`,
+        [p.telefono, p.direccion_id, p.operador_id, ahora, prox, turno.fecha, turno.tipo, p.id],
+      );
+      await registrarHistorial(
+        client,
+        nuevo[0].id,
+        p.operador_id,
+        'Repetición automática',
+        `Generado automáticamente a partir de la programación repetitiva del viaje #${p.id} (${p.repetir_hora}).`,
+      );
+      creados.push(nuevo[0].id);
+    }
+    return creados;
+  });
 }
 
 /**
@@ -175,6 +277,7 @@ export async function crearViaje({ telefono, direccion, choferId, horaProgramada
  * Devuelve los viajes activados.
  */
 export async function ejecutarProgramadosVencidos(ahora = new Date()) {
+  const repetidos = await generarViajesRepetidos(ahora).catch(() => []);
   const ids = await transaccion(async (client) => {
     const { minutosAvisoProgramado } = await obtenerConfiguracion(client);
     const limiteAviso = new Date(ahora.getTime() + minutosAvisoProgramado * 60_000);
@@ -191,28 +294,34 @@ export async function ejecutarProgramadosVencidos(ahora = new Date()) {
     }
     return rows.map((r) => r.id);
   });
-  return ids;
+  return [...repetidos, ...ids];
 }
 
 export async function asignarChofer(viajeId, choferId, operadorId) {
   return transaccion(async (client) => {
+    const previo = await obtenerViaje(viajeId, client);
+    if (previo.cancelado) throw new ErrorNegocio('Viaje anulado', 400);
+
     const limpioId = choferId ? Number(choferId) : null;
     if (limpioId) {
-      await validarChofer(client, limpioId);
-      const { rowCount } = await client.query(
+      const infoChofer = await validarChofer(client, limpioId);
+      await client.query(
         `UPDATE viajes
-         SET hora_avisado = CASE WHEN chofer_id IS DISTINCT FROM $1 THEN NULL ELSE hora_avisado END,
-             avisado_por = CASE WHEN chofer_id IS DISTINCT FROM $1 THEN NULL ELSE avisado_por END,
-             chofer_id = $1,
+         SET chofer_id = $1,
              hora_asignacion = now(),
              hora_fin = now(),
-             asignado_por = $2
+             asignado_por = $2,
+             hora_avisado = NULL,
+             avisado_por = NULL
          WHERE id = $3 AND NOT cancelado`,
         [limpioId, operadorId, viajeId],
       );
-      if (!rowCount) throw new ErrorNegocio('Viaje inexistente o anulado', 404);
+      const detalle = previo.chofer
+        ? `Cambió chofer de "${previo.chofer}" a "${infoChofer.nombre}" (se reinició el botón de Avisar).`
+        : `Asignó chofer "${infoChofer.nombre}".`;
+      await registrarHistorial(client, viajeId, operadorId, 'Asignación de chofer', detalle);
     } else {
-      const { rowCount } = await client.query(
+      await client.query(
         `UPDATE viajes
          SET chofer_id = NULL,
              hora_asignacion = NULL,
@@ -223,16 +332,20 @@ export async function asignarChofer(viajeId, choferId, operadorId) {
          WHERE id = $1 AND NOT cancelado`,
         [viajeId],
       );
-      if (!rowCount) throw new ErrorNegocio('Viaje inexistente o anulado', 404);
+      if (previo.chofer) {
+        await registrarHistorial(
+          client,
+          viajeId,
+          operadorId,
+          'Cambio de chofer',
+          `Pasó chofer de "${previo.chofer}" a "Sin asignar" (se reinició el estado de aviso).`,
+        );
+      }
     }
     return obtenerViaje(viajeId, client);
   });
 }
 
-/**
- * Hora manual (para Asignado o Avisado). Sin texto = ahora. Con texto "HH:MM" = la última vez que fue esa hora
- * (se admite hasta 10 minutos hacia adelante por diferencias de reloj).
- */
 export function calcularHoraFin(texto, ahora = new Date()) {
   const s = String(texto ?? '').trim();
   if (!s) return ahora;
@@ -253,24 +366,265 @@ export async function registrarFin(viajeId, { hora, borrar }) {
   return obtenerViaje(viajeId);
 }
 
-export async function registrarAvisado(viajeId, { avisado = true, hora, borrar }, operadorId) {
-  const limpiar = borrar || avisado === false;
-  const valor = limpiar ? null : calcularHoraFin(hora);
-  const { rowCount } = await query(
-    'UPDATE viajes SET hora_avisado = $1, avisado_por = $2 WHERE id = $3 AND NOT cancelado',
-    [valor, limpiar ? null : operadorId, viajeId],
-  );
-  if (!rowCount) throw new ErrorNegocio('Viaje inexistente o anulado', 404);
-  return obtenerViaje(viajeId);
+export async function registrarAvisado(viajeId, { avisado = true, borrar }, operadorId) {
+  return transaccion(async (client) => {
+    const actual = await obtenerViaje(viajeId, client);
+    if (actual.cancelado) throw new ErrorNegocio('No se puede avisar un viaje anulado', 400);
+    if (!actual.chofer_id) {
+      throw new ErrorNegocio('Primero tenés que asignar un chofer antes de avisar');
+    }
+    const limpiar = borrar || avisado === false;
+    const valor = limpiar ? null : new Date();
+    await client.query(
+      'UPDATE viajes SET hora_avisado = $1, avisado_por = $2 WHERE id = $3',
+      [valor, limpiar ? null : operadorId, viajeId],
+    );
+    await registrarHistorial(
+      client,
+      viajeId,
+      operadorId,
+      limpiar ? 'Reinicio de aviso' : 'Chofer avisado',
+      limpiar
+        ? `Se desmarcó el aviso al chofer "${actual.chofer}".`
+        : `Se avisó al chofer "${actual.chofer}".`,
+    );
+    return obtenerViaje(viajeId, client);
+  });
+}
+
+/**
+ * Edita los datos permitidos en la Ficha de Viaje:
+ * dirección, teléfono, chofer, reprogramación y configuración de repetición.
+ * No permite editar los registros de tiempos ni los operadores que actuaron.
+ */
+export async function editarFichaViaje(viajeId, datos, operadorId, ahora = new Date()) {
+  const resultado = await transaccion(async (client) => {
+    const actual = await obtenerViaje(viajeId, client);
+    const cambios = [];
+
+    // 1. Teléfono
+    let nuevoTel = actual.telefono;
+    if (datos.telefono !== undefined) {
+      nuevoTel = normalizarTelefono(datos.telefono);
+      if (nuevoTel !== actual.telefono) {
+        cambios.push(`Teléfono: "${actual.telefono || '—'}" → "${nuevoTel || '—'}"`);
+      }
+    }
+
+    // 2. Dirección
+    let nuevaDirId = actual.direccion_id;
+    if (datos.direccion !== undefined) {
+      const limpia = limpiarDireccion(datos.direccion);
+      if (!limpia) throw new ErrorNegocio('Falta la dirección');
+      if (limpia !== actual.direccion) {
+        nuevaDirId = await registrarDireccion(client, limpia);
+        cambios.push(`Dirección: "${actual.direccion}" → "${limpia}"`);
+      }
+    }
+
+    // 3. Chofer (si cambia, actualiza hora_asignacion y resetea hora_avisado)
+    let nuevoChoferId = actual.chofer_id;
+    let nuevaHoraAsig = actual.hora_asignacion;
+    let nuevoAsigPor = actual.asignado_por;
+    let nuevaHoraAvisado = actual.hora_avisado;
+    let nuevoAvisadoPor = actual.avisado_por;
+
+    if (datos.choferId !== undefined) {
+      const limpioChofer = datos.choferId ? Number(datos.choferId) : null;
+      if (limpioChofer !== actual.chofer_id) {
+        if (limpioChofer) {
+          const infoChofer = await validarChofer(client, limpioChofer);
+          nuevoChoferId = limpioChofer;
+          nuevaHoraAsig = ahora;
+          nuevoAsigPor = operadorId;
+          nuevaHoraAvisado = null;
+          nuevoAvisadoPor = null;
+          cambios.push(
+            `Chofer: "${actual.chofer || 'Sin asignar'}" → "${infoChofer.nombre}" (se reinició el botón de Avisar)`,
+          );
+        } else {
+          nuevoChoferId = null;
+          nuevaHoraAsig = null;
+          nuevoAsigPor = null;
+          nuevaHoraAvisado = null;
+          nuevoAvisadoPor = null;
+          cambios.push(`Chofer: "${actual.chofer}" → "Sin asignar" (se reinició el estado de aviso)`);
+        }
+      }
+    }
+
+    // 4. Reprogramación
+    let nuevoProgramado = actual.programado;
+    let nuevaHoraProg = actual.hora_programada;
+    let nuevaFechaTurno = actual.fecha_turno;
+    let nuevoTipoTurno = actual.tipo_turno;
+    let nuevoNumero = actual.numero;
+    let nuevaHoraEjec = actual.hora_ejecucion;
+
+    if (datos.horaProgramada !== undefined) {
+      const textoHora = String(datos.horaProgramada ?? '').trim();
+      if (textoHora) {
+        const hm = parsearHora(textoHora);
+        if (!hm) throw new ErrorNegocio('Hora programada inválida (ej: 18:30)');
+        const horaAntStr = actual.hora_programada
+          ? new Date(actual.hora_programada).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
+          : '';
+        if (!actual.programado || textoHora !== horaAntStr) {
+          nuevaHoraProg = proximaOcurrencia(hm, ahora);
+          nuevoProgramado = true;
+          const t = turnoDe(nuevaHoraProg);
+          nuevaFechaTurno = t.fecha;
+          nuevoTipoTurno = t.tipo;
+          const { minutosAvisoProgramado } = await obtenerConfiguracion(client);
+          if (nuevaHoraProg.getTime() > ahora.getTime() + minutosAvisoProgramado * 60_000) {
+            nuevoNumero = null;
+            nuevaHoraEjec = null;
+          }
+          cambios.push(`Reprogramado para las ${ String(hm.h).padStart(2, '0') }:${ String(hm.m).padStart(2, '0') }`);
+        }
+      } else if (actual.programado && datos.programado === false) {
+        nuevoProgramado = false;
+        nuevaHoraProg = null;
+        if (nuevoNumero == null) {
+          const t = turnoDe(ahora);
+          nuevaFechaTurno = t.fecha;
+          nuevoTipoTurno = t.tipo;
+          nuevoNumero = await siguienteNumero(client, t);
+          nuevaHoraEjec = ahora;
+        }
+        cambios.push('Quitó la programación horaria (pasó a viaje inmediato)');
+      }
+    }
+
+    // 5. Repetición programática ("cada día" o selección de días de la semana)
+    let repActivo = actual.repetir_activo;
+    let repModo = actual.repetir_modo || 'diario';
+    let repDias = actual.repetir_dias || '';
+    let repHora = actual.repetir_hora || '';
+
+    if (datos.repetirActivo !== undefined) {
+      repActivo = Boolean(datos.repetirActivo);
+      if (repActivo) {
+        repModo = datos.repetirModo === 'dias' ? 'dias' : 'diario';
+        const listaDias = Array.isArray(datos.repetirDias)
+          ? datos.repetirDias.map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
+          : String(datos.repetirDias || '')
+              .split(',')
+              .filter((x) => x.trim() !== '')
+              .map(Number)
+              .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
+
+        if (repModo === 'dias' && listaDias.length === 0) {
+          throw new ErrorNegocio('Seleccioná al menos un día de la semana para repetir el viaje');
+        }
+        repDias = repModo === 'diario' ? '0,1,2,3,4,5,6' : [...new Set(listaDias)].sort().join(',');
+
+        const textoHoraRep = String(datos.repetirHora || datos.horaProgramada || '').trim();
+        const hmRep = parsearHora(textoHoraRep);
+        if (!hmRep && nuevaHoraProg) {
+          const dProg = new Date(nuevaHoraProg);
+          repHora = `${String(dProg.getHours()).padStart(2, '0')}:${String(dProg.getMinutes()).padStart(2, '0')}`;
+        } else if (hmRep) {
+          repHora = `${String(hmRep.h).padStart(2, '0')}:${String(hmRep.m).padStart(2, '0')}`;
+        } else {
+          const dToma = new Date(actual.hora_toma);
+          repHora = `${String(dToma.getHours()).padStart(2, '0')}:${String(dToma.getMinutes()).padStart(2, '0')}`;
+        }
+
+        const descDias =
+          repModo === 'diario'
+            ? 'Cada día (todos los días)'
+            : repDias
+                .split(',')
+                .map((d) => DIAS_NOMBRES[Number(d)])
+                .join(', ');
+
+        if (
+          !actual.repetir_activo ||
+          actual.repetir_modo !== repModo ||
+          actual.repetir_dias !== repDias ||
+          actual.repetir_hora !== repHora
+        ) {
+          cambios.push(`Repetición activada: ${descDias} a las ${repHora}`);
+        }
+      } else if (actual.repetir_activo) {
+        repDias = '';
+        cambios.push('Desactivó la repetición automática del viaje');
+      }
+    }
+
+    await client.query(
+      `UPDATE viajes
+       SET telefono = $1,
+           direccion_id = $2,
+           chofer_id = $3,
+           hora_asignacion = $4,
+           hora_fin = $4,
+           asignado_por = $5,
+           hora_avisado = $6,
+           avisado_por = $7,
+           programado = $8,
+           hora_programada = $9,
+           fecha_turno = $10,
+           tipo_turno = $11,
+           numero = $12,
+           hora_ejecucion = $13,
+           repetir_activo = $14,
+           repetir_modo = $15,
+           repetir_dias = $16,
+           repetir_hora = $17
+       WHERE id = $18`,
+      [
+        nuevoTel,
+        nuevaDirId,
+        nuevoChoferId,
+        nuevaHoraAsig,
+        nuevoAsigPor,
+        nuevaHoraAvisado,
+        nuevoAvisadoPor,
+        nuevoProgramado,
+        nuevaHoraProg,
+        nuevaFechaTurno,
+        nuevoTipoTurno,
+        nuevoNumero,
+        nuevaHoraEjec,
+        repActivo,
+        repModo,
+        repDias,
+        repHora,
+        viajeId,
+      ],
+    );
+
+    if (cambios.length > 0) {
+      await registrarHistorial(client, viajeId, operadorId, 'Edición en ficha de viaje', cambios.join(' · '));
+    }
+
+    return obtenerViaje(viajeId, client);
+  });
+
+  if (resultado.repetir_activo) {
+    await generarViajesRepetidos(ahora).catch(() => {});
+  }
+  return obtenerFichaViaje(viajeId);
 }
 
 export async function cambiarCancelacion(viajeId, cancelado, operadorId) {
-  const { rowCount } = await query(
-    'UPDATE viajes SET cancelado = $1, cancelado_por = $2 WHERE id = $3',
-    [!!cancelado, cancelado ? operadorId : null, viajeId],
-  );
-  if (!rowCount) throw new ErrorNegocio('Viaje inexistente', 404);
-  return obtenerViaje(viajeId);
+  return transaccion(async (client) => {
+    const { rowCount } = await client.query(
+      'UPDATE viajes SET cancelado = $1, cancelado_por = $2 WHERE id = $3',
+      [!!cancelado, cancelado ? operadorId : null, viajeId],
+    );
+    if (!rowCount) throw new ErrorNegocio('Viaje inexistente', 404);
+    await registrarHistorial(
+      client,
+      viajeId,
+      operadorId,
+      cancelado ? 'Viaje anulado' : 'Viaje restaurado',
+      cancelado ? 'Se anuló el viaje.' : 'Se restauró el viaje anulado.',
+    );
+    return obtenerViaje(viajeId, client);
+  });
 }
 
 /**

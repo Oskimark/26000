@@ -7,7 +7,7 @@ import Historial from './Historial.jsx';
 import Clientes from './Clientes.jsx';
 import Admin from './Admin.jsx';
 import Reloj from './Reloj.jsx';
-import { leerTema } from './tema.js';
+import { leerTema, guardarTema } from './tema.js';
 
 const SECCIONES = [
   { id: 'recepcion', nombre: 'Recepción' },
@@ -57,6 +57,14 @@ export default function App() {
     return () => window.removeEventListener('cambio-tema', alCambiarTema);
   }, []);
 
+  useEffect(() => {
+    document.body.classList.toggle('tema-oscuro', Boolean(tema.modoOscuro));
+  }, [tema.modoOscuro]);
+
+  function alternarModoOscuro() {
+    guardarTema({ ...tema, modoOscuro: !tema.modoOscuro });
+  }
+
   if (!sesion) {
     return <Login onIngreso={(s) => { guardarSesion(s); setSesion(s); }} />;
   }
@@ -65,6 +73,7 @@ export default function App() {
 
   const clasesApp = [
     'app',
+    tema.modoOscuro && 'tema-oscuro',
     tema.usarIdentidad && tema.elementos.marcosTarjetas && 'tema-marcos-naranja',
     tema.usarIdentidad && tema.elementos.bordeEtiquetas && 'tema-etiquetas-naranja',
     tema.usarIdentidad && tema.elementos.botonesNaranja && 'tema-botones-naranja',
@@ -92,6 +101,14 @@ export default function App() {
         )}
 
         <div className="barra-derecha">
+          <button
+            type="button"
+            className="btn-modo-oscuro"
+            onClick={alternarModoOscuro}
+            title={tema.modoOscuro ? 'Cambiar a modo claro' : 'Activar modo oscuro'}
+          >
+            {tema.modoOscuro ? '☀️ Claro' : '🌙 Oscuro'}
+          </button>
           {turnos && <span className="turno-actual">Turno {turnos.actual.etiqueta}</span>}
           <Reloj />
           <span className="operador">{sesion.operador.nombre}</span>

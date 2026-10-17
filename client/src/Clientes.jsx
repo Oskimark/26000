@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from './api.js';
 import { hora } from './formato.js';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
+import FichaViajeModal from './FichaViajeModal.jsx';
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -45,6 +46,7 @@ export default function Clientes({ socket }) {
   const [datos, setDatos] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [viajeFichaId, setViajeFichaId] = useState(null);
 
   useEffect(() => {
     api('/choferes')
@@ -700,7 +702,7 @@ export default function Clientes({ socket }) {
         ) : viajes.length === 0 ? (
           <p className="vacio">No se encontraron viajes con los filtros aplicados.</p>
         ) : (
-          <table className="tabla-viajes">
+          <table className="tabla-viajes tabla-filas-clickeables">
             <thead>
               <tr>
                 <th>Fecha / Turno</th>
@@ -717,7 +719,12 @@ export default function Clientes({ socket }) {
             </thead>
             <tbody>
               {viajes.map((v) => (
-                <tr key={v.id} className={v.cancelado ? 'fila-anulada' : ''}>
+                <tr
+                  key={v.id}
+                  className={v.cancelado ? 'fila-anulada fila-clickeable' : 'fila-clickeable'}
+                  onClick={() => setViajeFichaId(v.id)}
+                  title="Click para abrir la Ficha de Viaje y ver su historial"
+                >
                   <td>
                     <b>{formatearDia(v.fecha_turno)}</b>
                     <div className="subtexto-op">Turno {v.tipo_turno}</div>
@@ -735,7 +742,10 @@ export default function Clientes({ socket }) {
                         <button
                           className="btn-filtro-mini"
                           title={`Filtrar viajes del teléfono ${v.telefono}`}
-                          onClick={() => setTelefono(v.telefono)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTelefono(v.telefono);
+                          }}
                         >
                           🔍
                         </button>
@@ -743,30 +753,11 @@ export default function Clientes({ socket }) {
                     </div>
                   </td>
                   <td className="col-dir">
-                    <button
-                      className="btn-texto-filtrable texto-direccion"
-                      title="Click para filtrar por este destino"
-                      onClick={() => setDestino(v.direccion)}
-                    >
-                      {v.direccion}
-                    </button>
+                    <span className="texto-direccion">{v.direccion}</span>
                   </td>
                   <td>
                     {v.chofer ? (
-                      <button
-                        className="btn-texto-filtrable"
-                        title="Click para filtrar por este chofer"
-                        onClick={() => {
-                          if (v.chofer_id) {
-                            setChoferId(String(v.chofer_id));
-                            setChofer('');
-                          } else {
-                            setChofer(v.chofer);
-                          }
-                        }}
-                      >
-                        {v.chofer}
-                      </button>
+                      <span>{v.chofer}</span>
                     ) : (
                       <span className="tenue">—</span>
                     )}
@@ -787,6 +778,16 @@ export default function Clientes({ socket }) {
           </table>
         )}
       </section>
+
+      {viajeFichaId != null && (
+        <FichaViajeModal
+          viajeId={viajeFichaId}
+          choferes={choferesLista.filter((c) => c.activo)}
+          editable={true}
+          onClose={() => setViajeFichaId(null)}
+          onGuardado={cargarDatos}
+        />
+      )}
     </div>
   );
 }

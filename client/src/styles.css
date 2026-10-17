@@ -1179,5 +1179,448 @@ input:focus, select:focus {
   background-color: #fffbeb !important;
 }
 
+/* Filas clickeables para abrir Ficha de Viaje */
+.tabla-filas-clickeables .fila-clickeable {
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+.tabla-filas-clickeables .fila-clickeable:hover {
+  background-color: #eef4ff;
+}
 
+.badge-repetir-mini {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.85rem;
+}
 
+/* Botón de Modo Oscuro en barra superior */
+.btn-modo-oscuro {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-modo-oscuro:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: var(--corporativo-naranja);
+}
+
+/* Modal Ficha de Viaje */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal-ficha {
+  background: var(--bg-superficie);
+  color: var(--texto);
+  border: 2px solid var(--corporativo-naranja);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.modal-ficha-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 20px;
+  background: var(--bg-destacado);
+  border-bottom: 1px solid var(--borde);
+}
+
+.modal-ficha-titulo-wrap h2 {
+  font-size: 1.2rem;
+  margin-bottom: 4px;
+}
+
+.modal-ficha-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
+}
+
+.btn-cerrar-modal {
+  background: transparent;
+  border: 1px solid var(--borde);
+  color: var(--texto);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.btn-cerrar-modal:hover {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+.modal-ficha-cuerpo {
+  padding: 18px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Tarjetas de solo lectura para registros de tiempos y operadores */
+.ficha-tiempos-readonly {
+  background: var(--bg-app);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.ficha-seccion-titulo {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--texto-secundario);
+  margin-bottom: 10px;
+}
+
+.ficha-tiempos-grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.ficha-tiempo-card {
+  background: var(--bg-superficie);
+  border: 1px solid var(--borde-suave);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ficha-tiempo-etiqueta {
+  font-size: 0.78rem;
+  color: var(--texto-secundario);
+  font-weight: 600;
+}
+
+.ficha-tiempo-valor {
+  font-size: 0.98rem;
+  color: var(--texto);
+}
+
+.ficha-tiempo-operador {
+  font-size: 0.8rem;
+  color: var(--texto-secundario);
+}
+
+/* Bloques editables del formulario de la ficha */
+.ficha-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ficha-grilla-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.ficha-bloque {
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: var(--bg-app);
+}
+
+.ficha-check-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ficha-check-header input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--corporativo-naranja);
+}
+
+.ficha-reprogramar-controles {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ficha-repeticion-panel {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ficha-repeticion-fila {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.ficha-modos-repetir {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ficha-dias-semana {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ficha-dias-etiqueta {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--texto-secundario);
+}
+
+.ficha-dias-grilla {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-dia-semana {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--borde);
+  background: var(--bg-superficie);
+  color: var(--texto);
+  font-weight: 600;
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-dia-semana:hover:not(:disabled) {
+  border-color: var(--corporativo-naranja);
+}
+.btn-dia-semana.activo {
+  background: var(--corporativo-naranja);
+  color: #fff;
+  border-color: var(--corporativo-hover);
+}
+
+.ficha-dias-atajos {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ficha-acciones-form {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+/* Historial del viaje dentro de la ficha */
+.ficha-historial-seccion {
+  border-top: 1px solid var(--borde);
+  padding-top: 14px;
+}
+
+.ficha-historial-lista {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.ficha-historial-item {
+  background: var(--bg-app);
+  border: 1px solid var(--borde-suave);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+.ficha-historial-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+
+.ficha-historial-badge {
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--bg-destacado);
+  color: var(--texto);
+}
+
+.ficha-historial-fecha {
+  font-size: 0.8rem;
+  color: var(--texto-secundario);
+}
+
+.ficha-historial-op {
+  font-size: 0.8rem;
+  color: var(--texto-secundario);
+  margin-left: auto;
+}
+
+.ficha-historial-detalle {
+  font-size: 0.88rem;
+  color: var(--texto);
+}
+
+/* =========================================================
+   MODO OSCURO (.tema-oscuro)
+   ========================================================= */
+body.tema-oscuro,
+.app.tema-oscuro {
+  --bg-app: #0f172a;
+  --bg-superficie: #1e293b;
+  --bg-destacado: #273549;
+  --borde: #334155;
+  --borde-suave: #293548;
+  --texto: #f1f5f9;
+  --texto-secundario: #94a3b8;
+  --primario-suave: #1e3a5f;
+  --alerta-bg: #422006;
+  --alerta-texto: #fde68a;
+  --alerta-borde: #b45309;
+  --exito-bg: #064e3b;
+  --exito-texto: #a7f3d0;
+  --error-bg: #450a0a;
+  --error-texto: #fecaca;
+  --prog-bg: #431407;
+  --prog-texto: #fdba74;
+  --fila-hover: #263449;
+  --sombra: 0 4px 14px rgba(0, 0, 0, 0.4);
+  color: var(--texto);
+  background-color: var(--bg-app);
+}
+
+.tema-oscuro .barra {
+  background-color: #090d16;
+  border-bottom: 1px solid #1e293b;
+}
+
+.tema-oscuro input,
+.tema-oscuro select,
+.tema-oscuro textarea {
+  background-color: #0f172a;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+
+.tema-oscuro .btn {
+  background-color: #334155;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+.tema-oscuro .btn:hover:not(:disabled) {
+  background-color: #475569;
+}
+
+.tema-oscuro .tabla-viajes th {
+  background-color: #162032;
+  color: #cbd5e1;
+  border-bottom-color: #334155;
+}
+
+.tema-oscuro .tabla-viajes td {
+  border-bottom-color: #293548;
+}
+
+.tema-oscuro .tabla-filas-clickeables .fila-clickeable:hover {
+  background-color: #26354d;
+}
+
+.tema-oscuro .fila-pendiente {
+  background-color: rgba(251, 146, 60, 0.08);
+}
+
+.tema-oscuro .fila-sin-chofer {
+  background-color: rgba(234, 179, 8, 0.12);
+}
+
+.tema-oscuro .fila-aviso-programado {
+  background-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+.tema-oscuro .fila-en-curso {
+  background-color: rgba(56, 189, 248, 0.08);
+}
+
+.tema-oscuro .select-chofer-tabla.asignado {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+.tema-oscuro .select-chofer-tabla.sin-asignar {
+  background-color: #422006;
+  border-color: #f59e0b;
+  color: #fde68a;
+}
+
+.tema-oscuro .hora-avisado-texto {
+  color: #cbd5e1;
+}
+
+.tema-oscuro .enlace-whatsapp {
+  background-color: rgba(16, 185, 129, 0.14);
+  border-color: #059669;
+  color: #34d399;
+}
+.tema-oscuro .enlace-whatsapp:hover {
+  background-color: #059669;
+  color: #ffffff;
+}
+
+.tema-oscuro .bloque-ranking,
+.tema-oscuro .desglose-elementos-identidad,
+.tema-oscuro .opcion-identidad-item,
+.tema-oscuro .muestra-tarjeta {
+  background-color: #162032;
+  border-color: #334155;
+}
+
+.tema-oscuro .control-identidad-principal {
+  background-color: rgba(255, 102, 0, 0.1);
+}
+
+.tema-oscuro .tarjeta-chofer {
+  background-color: #162032;
+  border-color: #334155;
+}
+.tema-oscuro .tarjeta-chofer.seleccionado {
+  background-color: rgba(255, 102, 0, 0.15);
+}

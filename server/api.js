@@ -5,6 +5,7 @@ import { firmarToken, requiereAuth, requiereAdmin } from './auth.js';
 import {
   ErrorNegocio, crearViaje, listarTurno, listarProgramadosFuturos, asignarChofer,
   registrarFin, registrarAvisado, cambiarCancelacion, sugerirDirecciones, obtenerViaje,
+  obtenerFichaViaje, editarFichaViaje,
   buscarViajesClientes, obtenerConfiguracion, actualizarConfiguracion, ejecutarProgramadosVencidos,
 } from './viajes.js';
 import { turnoDe, turnoSiguiente, turnoAnterior, describirTurno, validarTurno } from '../shared/turnos.js';
@@ -104,6 +105,16 @@ export function crearApi({ notificar }) {
   }));
 
   api.get('/viajes/:id', a(async (req, res) => res.json(await obtenerViaje(Number(req.params.id)))));
+
+  api.get('/viajes/:id/ficha', a(async (req, res) => {
+    res.json(await obtenerFichaViaje(Number(req.params.id)));
+  }));
+
+  api.put('/viajes/:id', a(async (req, res) => {
+    const resultado = await editarFichaViaje(Number(req.params.id), req.body || {}, req.operador.id);
+    notificar('viajes', { id: Number(req.params.id) });
+    res.json(resultado);
+  }));
 
   api.put('/viajes/:id/chofer', a(async (req, res) => {
     const viaje = await asignarChofer(Number(req.params.id), req.body?.choferId, req.operador.id);

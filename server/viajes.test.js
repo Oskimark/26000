@@ -110,7 +110,7 @@ test('Flujo completo del sistema de recepción de viajes', async () => {
   });
   assert.ok(viajeAvisado.hora_avisado, 'Debe registrar la hora en que fue avisado al chofer');
 
-  // 9b. Crear viaje "Sin asignar" por defecto y asignarle chofer luego (y también en un programado)
+  // 9b. Crear viaje "Sin asignar" por defecto y verificar que NO permite avisar sin chofer
   const viajeSinChofer = await req('/viajes', {
     token,
     method: 'POST',
@@ -123,6 +123,31 @@ test('Flujo completo del sistema de recepción de viajes', async () => {
   });
   assert.equal(viajeSinChofer.chofer_id, null, 'Permite crear viaje inmediato Sin asignar');
 
+  await assert.rejects(
+    () =>
+      req(`/viajes/${viajeSinChofer.id}/avisado`, {
+        token,
+        method: 'PUT',
+        body: { avisado: true },
+      }),
+    /Primero tenés que asignar un chofer/,
+    'No debe permitir avisar si no hay chofer asignado'
+  );
+
+  // 9c. Cambiar asignación de chofer reinicia el estado de "Avisar"
+  const chofer2 = await req('/choferes', {
+    token,
+    method: 'POST',
+    body: { nombre: 'Lucia Perez (Móvil 22)' },
+  });
+  const reasignado = await req(`/viajes/${viaje1.id}/chofer`, {
+    token,
+    method: 'PUT',
+    body: { choferId: chofer2.id },
+  });
+  assert.equal(reasignado.chofer_id, chofer2.id, 'Debe cambiar al nuevo chofer');
+  assert.equal(reasignado.hora_avisado, null, 'Cambiar el chofer debe resetear el botón de avisar');
+
   const progAsignado = await req(`/viajes/${viajeProg.id}/chofer`, {
     token,
     method: 'PUT',
@@ -131,7 +156,31 @@ test('Flujo completo del sistema de recepción de viajes', async () => {
   assert.equal(progAsignado.chofer_id, chofer.id, 'Permite asignar chofer a un programado en cualquier momento');
   assert.ok(progAsignado.hora_asignacion, 'Registra hora de asignación en viaje programado');
 
-  // 9c. Configuración de minutos de aviso previo
+  // 9d. Ficha de viaje: editar dirección, teléfono, chofer, reprogramar y activar repetición programática
+  const fichaEditada = await req(`/viajes/${viajeProg.id}`, {
+    token,
+    method: 'PUT',
+    body: {
+      direccion: 'Corrientes 550 Piso 2',
+      telefono: '3415558888',
+      choferId: chofer2.id,
+      reprogramar: true,
+      horaProgramada: `${proximaH}:45`,
+      repetirActivo: true,
+      repetirModo: 'dias',
+      repetirDias: [1, 3, 5],
+      repetirHora: '08:15',
+    },
+  });
+  assert.equal(fichaEditada.viaje.direccion, 'Corrientes 550 Piso 2');
+  assert.equal(fichaEditada.viaje.telefono, '3415558888');
+  assert.equal(fichaEditada.viaje.chofer_id, chofer2.id);
+  assert.equal(Boolean(fichaEditada.viaje.repetir_activo), true);
+  assert.equal(fichaEditada.viaje.repetir_modo, 'dias');
+  assert.equal(fichaEditada.viaje.repetir_dias, '1,3,5');
+  assert.ok(Array.isArray(fichaEditada.historial) && fichaEditada.historial.length >= 3, 'Debe registrar el historial del viaje');
+
+  // 9e. Configuración de minutos de aviso previo
   const cfg = await req('/configuracion', {
     token,
     method: 'PUT',
@@ -159,4 +208,5 @@ test('Flujo completo del sistema de recepción de viajes', async () => {
   });
   assert.equal(eliminado.id, choferTemp.id, 'Debe eliminar el chofer correctamente');
 });
+
 

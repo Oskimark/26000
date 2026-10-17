@@ -1,6 +1,7 @@
 const CLAVE_TEMA = 'taxis.tema_identidad';
 
 export const CONFIG_TEMA_DEFECTO = {
+  modoOscuro: false,
   usarIdentidad: true,
   elementos: {
     marcosTarjetas: true, // Marco naranja en tarjetas y paneles
@@ -16,6 +17,7 @@ export function leerTema() {
     if (!guardado) return CONFIG_TEMA_DEFECTO;
     const parseado = JSON.parse(guardado);
     return {
+      modoOscuro: Boolean(parseado.modoOscuro),
       usarIdentidad: parseado.usarIdentidad ?? true,
       elementos: {
         ...CONFIG_TEMA_DEFECTO.elementos,
@@ -35,3 +37,4 @@ export function guardarTema(nuevoTema) {
     console.error('Error al guardar tema:', err);
   }
 }
+

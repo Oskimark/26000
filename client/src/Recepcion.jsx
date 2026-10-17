@@ -4,6 +4,7 @@ import FormViaje from './FormViaje.jsx';
 import Despacho from './Despacho.jsx';
 import ListaViajes from './ListaViajes.jsx';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
+import FichaViajeModal from './FichaViajeModal.jsx';
 import { hora, horaConDia } from './formato.js';
 
 function minutosHasta(iso) {
@@ -19,6 +20,7 @@ export default function Recepcion({ turnos, socket, activa }) {
   const [pospuestos, setPospuestos] = useState(new Set());
   const [atendiendoManual, setAtendiendoManual] = useState(null);
   const [formVacio, setFormVacio] = useState(true);
+  const [viajeFuturoFichaId, setViajeFuturoFichaId] = useState(null);
 
   const formRef = useRef(null);
   const despachoRef = useRef(null);
@@ -160,7 +162,12 @@ export default function Recepcion({ turnos, socket, activa }) {
     }
   }
 
-  async function toggleAvisadoFuturo(f) {
+  async function toggleAvisadoFuturo(e, f) {
+    e.stopPropagation();
+    if (!f.hora_avisado && !f.chofer_id) {
+      window.alert('⚠️ Primero tenés que asignar un chofer antes de avisar.');
+      return;
+    }
     try {
       await api(`/viajes/${f.id}/avisado`, {
         method: 'PUT',
@@ -240,6 +247,7 @@ export default function Recepcion({ turnos, socket, activa }) {
             minutosAviso={minutosAviso}
             editable={true}
             onAtender={handleAtenderManual}
+            onActualizado={cargarDatos}
           />
         </div>
       </section>
@@ -249,7 +257,7 @@ export default function Recepcion({ turnos, socket, activa }) {
         <section className="seccion-futuros">
           <h3>📅 Programados para próximos turnos ({futuros.length})</h3>
           <div className="tarjeta tabla-futuros-wrap">
-            <table className="tabla-viajes">
+            <table className="tabla-viajes tabla-filas-clickeables">
               <thead>
                 <tr>
                   <th>Dirección</th>
@@ -266,28 +274,38 @@ export default function Recepcion({ turnos, socket, activa }) {
                   const horaAsig = f.hora_asignacion || f.hora_fin;
                   const fueAvisado = Boolean(f.hora_avisado);
                   return (
-                    <tr key={f.id} className="fila-pendiente">
+                    <tr
+                      key={f.id}
+                      className="fila-pendiente fila-clickeable"
+                      onClick={() => setViajeFuturoFichaId(f.id)}
+                      title="Click para abrir la Ficha de Viaje"
+                    >
                       <td className="col-dir">
                         <span className="texto-direccion">{f.direccion}</span>
+                        {Boolean(f.repetir_activo) && (
+                          <span className="badge-repetir-mini" title="Repetición programática activa">
+                            🔁
+                          </span>
+                        )}
                       </td>
                       <td className="col-hora" title={`Creado por ${f.operador || '—'}`}>
                         <b>{hora(f.hora_toma)}</b>
                         <div className="subtexto-op">{f.operador}</div>
                       </td>
                       <td className="col-fin">{horaAsig ? <b>{hora(horaAsig)}</b> : <span className="tenue">—</span>}</td>
-                      <td className="col-avisado">
+                      <td className="col-avisado" onClick={(e) => e.stopPropagation()}>
                         <div className="celda-avisado-wrap">
                           <button
                             type="button"
                             className={fueAvisado ? 'btn-avisado' : 'btn-avisar'}
-                            onClick={() => toggleAvisadoFuturo(f)}
+                            onClick={(e) => toggleAvisadoFuturo(e, f)}
                           >
                             {fueAvisado ? 'Avisado' : 'Avisar'}
                           </button>
                           {fueAvisado && <b className="hora-avisado-texto">{hora(f.hora_avisado)}</b>}
                         </div>
                       </td>
-                      <td>
+                      <td onClick={(e) => e.stopPropagation()}>
                         <select
                           className={f.chofer_id ? 'select-chofer-tabla asignado' : 'select-chofer-tabla sin-asignar'}
                           value={f.chofer_id ?? ''}
@@ -315,6 +333,17 @@ export default function Recepcion({ turnos, socket, activa }) {
           </div>
         </section>
       )}
+
+      {viajeFuturoFichaId != null && (
+        <FichaViajeModal
+          viajeId={viajeFuturoFichaId}
+          choferes={choferes}
+          editable={true}
+          onClose={() => setViajeFuturoFichaId(null)}
+          onGuardado={cargarDatos}
+        />
+      )}
     </div>
   );
 }
+
