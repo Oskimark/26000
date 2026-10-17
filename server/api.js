@@ -7,6 +7,7 @@ import {
   registrarFin, registrarAvisado, cambiarCancelacion, sugerirDirecciones, obtenerViaje,
   obtenerFichaViaje, editarFichaViaje,
   buscarViajesClientes, obtenerConfiguracion, actualizarConfiguracion, ejecutarProgramadosVencidos,
+  listarCalles, crearCalle, actualizarCalle, eliminarCalle, restaurarCatalogoCalles,
 } from './viajes.js';
 import { turnoDe, turnoSiguiente, turnoAnterior, describirTurno, validarTurno } from '../shared/turnos.js';
 
@@ -228,6 +229,31 @@ export function crearApi({ notificar }) {
     );
     if (!rows[0]) throw new ErrorNegocio('Operador inexistente', 404);
     res.json(rows[0]);
+  }));
+
+  // ---------- Catálogo de Calles (San José de Mayo) ----------
+  api.get('/calles', a(async (req, res) => {
+    res.json(await listarCalles({ q: req.query.q }));
+  }));
+
+  api.post('/calles', requiereAdmin, a(async (req, res) => {
+    const calle = await crearCalle(req.body || {});
+    res.status(201).json(calle);
+  }));
+
+  api.post('/calles/restaurar', requiereAdmin, a(async (req, res) => {
+    res.json(await restaurarCatalogoCalles());
+  }));
+
+  api.put('/calles/:id', requiereAdmin, a(async (req, res) => {
+    const calle = await actualizarCalle(Number(req.params.id), req.body || {});
+    notificar('viajes');
+    res.json(calle);
+  }));
+
+  api.delete('/calles/:id', requiereAdmin, a(async (req, res) => {
+    const eliminada = await eliminarCalle(Number(req.params.id));
+    res.json(eliminada);
   }));
 
   // ---------- Errores ----------

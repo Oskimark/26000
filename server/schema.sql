@@ -96,4 +96,13 @@ INSERT INTO configuracion (clave, valor)
 VALUES ('minutos_aviso_programado', '5')
 ON CONFLICT (clave) DO NOTHING;
 
-
+CREATE TABLE IF NOT EXISTS calles (
+  id                SERIAL PRIMARY KEY,
+  nombre            TEXT NOT NULL,
+  nombre_normalizado TEXT NOT NULL UNIQUE,
+  alias             TEXT NOT NULL DEFAULT '',
+  alias_normalizado TEXT NOT NULL DEFAULT '',
+  activa            BOOLEAN NOT NULL DEFAULT TRUE,
+  creado_en         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_calles_nombre_norm ON calles (nombre_normalizado);

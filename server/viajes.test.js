@@ -207,6 +207,21 @@ test('Flujo completo del sistema de recepción de viajes', async () => {
     method: 'DELETE',
   });
   assert.equal(eliminado.id, choferTemp.id, 'Debe eliminar el chofer correctamente');
-});
 
+  // 12. Catálogo curado de calles de San José de Mayo y autocompletado <número> <calle>
+  const callesBatlle = await req('/calles?q=batlle', { token });
+  assert.ok(callesBatlle.some((c) => c.nombre === 'Batlle y Ordóñez'), 'Debe incluir Batlle y Ordóñez en el catálogo curado');
+
+  const sugCatalogo = await req('/direcciones?q=450%20arti', { token });
+  assert.ok(
+    sugCatalogo.some((s) => s.texto === '450 Artigas'),
+    'Al ingresar <número> <calle> ("450 arti") debe sugerir "450 Artigas" desde el catálogo de San José',
+  );
+
+  const sugAlias = await req('/direcciones?q=820%20bvr%20aparicio', { token });
+  assert.ok(
+    sugAlias.some((s) => s.texto === '820 Aparicio Saravia'),
+    'Debe sugerir el nombre curado ("820 Aparicio Saravia") al buscar por su alias',
+  );
+});
 

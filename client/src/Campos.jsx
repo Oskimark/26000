@@ -86,7 +86,7 @@ export const CampoDireccion = forwardRef(function CampoDireccion({ valor, onCamb
         <input
           ref={inputRef}
           value={valor}
-          placeholder="Calle y número"
+          placeholder="Número y calle (ej: 450 Artigas)"
           onChange={(e) => { onCambio(e.target.value); setAbierto(true); }}
           onFocus={() => setAbierto(true)}
           onBlur={() => setTimeout(() => setAbierto(false), 150)}
@@ -109,7 +109,13 @@ export const CampoDireccion = forwardRef(function CampoDireccion({ valor, onCamb
               onMouseDown={(e) => { e.preventDefault(); elegir(s); }}
             >
               <span>{s.texto}</span>
-              <small>{s.usos_telefono ? `★ ${s.usos_telefono} con este tel.` : `${s.veces_usada} usos`}</small>
+              <small>
+                {s.usos_telefono
+                  ? `★ ${s.usos_telefono} con este tel.`
+                  : s.es_catalogo
+                    ? '🗺️ Calle San José'
+                    : `${s.veces_usada} usos`}
+              </small>
             </li>
           ))}
         </ul>

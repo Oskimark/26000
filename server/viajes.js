@@ -1,5 +1,5 @@
 // Reglas de negocio de los viajes.
-import { query, transaccion } from './db.js';
+import { query, transaccion, sembrarCallesIniciales } from './db.js';
 import { turnoDe, parsearHora, proximaOcurrencia } from '../shared/turnos.js';
 
 export class ErrorNegocio extends Error {
@@ -25,6 +25,72 @@ export function limpiarDireccion(texto) {
 
 export function normalizarTelefono(texto) {
   return String(texto ?? '').replace(/\D/g, '');
+}
+
+/**
+ * Clave fonética rioplatense para tolerar errores de ortografía o tipeo en calles
+ * (ej: b/v, s/c/z, ll/y, h muda, letras repetidas).
+ */
+export function claveFonetica(texto) {
+  return normalizarDireccion(texto)
+    .replace(/h/g, '')
+    .replace(/v/g, 'b')
+    .replace(/z/g, 's')
+    .replace(/c([ei])/g, 's$1')
+    .replace(/ll/g, 'y')
+    .replace(/qu([ei])/g, 'k$1')
+    .replace(/([a-z])\1+/g, '$1');
+}
+
+/**
+ * Distancia de Levenshtein acotada para tolerar errores de tipeo (letras invertidas o faltantes).
+ */
+function distanciaEdicion(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  if (Math.abs(a.length - b.length) > 2) return 99;
+  const prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  const curr = new Array(b.length + 1);
+  for (let i = 1; i <= a.length; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const costo = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + costo);
+    }
+    for (let j = 0; j <= b.length; j++) prev[j] = curr[j];
+  }
+  return prev[b.length];
+}
+
+/**
+ * Desglosa el texto ingresado respetando el orden estándar de ingreso:
+ * SIEMPRE <número> y luego <calle> (ej: "450 Artigas", "1250 Batlle y Ordóñez").
+ * Contempla calles cuyo nombre empieza con número ("18 de Julio", "25 de Mayo", etc.).
+ */
+export function desglosarNumeroYCalle(texto) {
+  const limpio = limpiarDireccion(texto);
+  if (!limpio) return { numero: '', calle: '' };
+
+  // Si empieza con un número de puerta seguido de la calle: ej "450 Artigas" o "450 bis Artigas"
+  const m = limpio.match(/^(\d{1,5}[a-zA-Z]?(?:\s+bis)?)\s+(.+)$/i);
+  if (m) {
+    const posibleNum = m[1].trim();
+    const resto = m[2].trim();
+    // Excepción: el operador escribió solo el nombre de una calle con fecha patria sin número de puerta adelante
+    // (ej: "18 de Julio", "25 de Mayo", "25 de Agosto", "19 de Abril", "12 de Octubre")
+    if (/^(18|25|19|12|33)$/i.test(posibleNum) && /^de\s+/i.test(resto)) {
+      return { numero: '', calle: limpio };
+    }
+    return { numero: posibleNum, calle: resto };
+  }
+
+  // Si solo escribió el número hasta ahora (ej: "450")
+  if (/^\d{1,5}[a-zA-Z]?$/.test(limpio)) {
+    return { numero: limpio, calle: '' };
+  }
+
+  return { numero: '', calle: limpio };
 }
 
 const DIAS_NOMBRES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -141,15 +207,61 @@ async function siguienteNumero(client, { fecha, tipo }) {
   return rows[0].n;
 }
 
-async function registrarDireccion(client, texto) {
+async function canonizarDireccionConCatalogo(client, texto) {
   const limpia = limpiarDireccion(texto);
+  if (!limpia) return '';
+  try {
+    const { rows: calles } = await client.query(
+      'SELECT id, nombre, nombre_normalizado, alias FROM calles WHERE activa = TRUE',
+    );
+    if (!calles.length) return limpia;
+
+    const buscarCoincidenciaExacta = (frag) => {
+      const fNorm = normalizarDireccion(frag);
+      const fFon = claveFonetica(frag);
+      if (!fNorm) return null;
+
+      // 1. Nombre exacto normalizado
+      for (const c of calles) {
+        if (c.nombre_normalizado === fNorm) return c;
+      }
+      // 2. Alias exacto normalizado (ej: "jose batlle y ordoñez" -> "Batlle y Ordóñez")
+      for (const c of calles) {
+        const listaAlias = String(c.alias || '')
+          .split(',')
+          .map((a) => normalizarDireccion(a))
+          .filter(Boolean);
+        if (listaAlias.includes(fNorm)) return c;
+      }
+      // 3. Coincidencia fonética exacta del nombre (ej: "sorriya de san martin" o "itusango")
+      for (const c of calles) {
+        if (claveFonetica(c.nombre) === fFon) return c;
+      }
+      return null;
+    };
+
+    const { numero, calle } = desglosarNumeroYCalle(limpia);
+    if (calle) {
+      const match = buscarCoincidenciaExacta(calle);
+      if (match) {
+        return numero ? `${numero} ${match.nombre}` : match.nombre;
+      }
+    }
+  } catch {
+    // Si la tabla calles aún no existe o falla, conserva el texto limpio
+  }
+  return limpia;
+}
+
+async function registrarDireccion(client, texto) {
+  const limpia = await canonizarDireccionConCatalogo(client, texto);
   const normalizada = normalizarDireccion(limpia);
   if (!normalizada) throw new ErrorNegocio('Falta la dirección');
   const { rows } = await client.query(
     `INSERT INTO direcciones (texto, texto_normalizado, veces_usada, ultimo_uso)
      VALUES ($1, $2, 1, now())
      ON CONFLICT (texto_normalizado)
-     DO UPDATE SET veces_usada = direcciones.veces_usada + 1, ultimo_uso = now()
+     DO UPDATE SET texto = EXCLUDED.texto, veces_usada = direcciones.veces_usada + 1, ultimo_uso = now()
      RETURNING id`,
     [limpia, normalizada],
   );
@@ -628,15 +740,65 @@ export async function cambiarCancelacion(viajeId, cancelado, operadorId) {
 }
 
 /**
+ * Puntúa qué tan bien coincide un fragmento escrito por el operador con una calle del catálogo curado.
+ * Contempla prefijos, alias, palabras internas y errores de ortografía/tipeo.
+ */
+function puntuarCalleCatalogo(calleRow, fragNorm, fragFon) {
+  const nomNorm = calleRow.nombre_normalizado;
+  const nomFon = claveFonetica(calleRow.nombre);
+  const listaAlias = String(calleRow.alias || '')
+    .split(',')
+    .map((a) => normalizarDireccion(a))
+    .filter(Boolean);
+
+  if (nomNorm === fragNorm) return 120;
+  if (nomNorm.startsWith(fragNorm)) return 100;
+  if (listaAlias.some((a) => a === fragNorm)) return 98;
+  if (listaAlias.some((a) => a.startsWith(fragNorm))) return 92;
+
+  const palabrasNom = nomNorm.split(' ').filter((p) => p.length > 1);
+  if (palabrasNom.some((p) => p.startsWith(fragNorm))) return 88;
+
+  const palabrasAlias = listaAlias.flatMap((a) => a.split(' ')).filter((p) => p.length > 1);
+  if (palabrasAlias.some((p) => p.startsWith(fragNorm))) return 82;
+
+  if (nomNorm.includes(fragNorm)) return 75;
+  if (listaAlias.some((a) => a.includes(fragNorm))) return 70;
+
+  // Coincidencia fonética (b/v, s/c/z, ll/y, h)
+  if (fragFon.length >= 2) {
+    if (nomFon.startsWith(fragFon)) return 68;
+    if (nomFon.split(' ').some((p) => p.startsWith(fragFon))) return 64;
+    if (listaAlias.some((a) => claveFonetica(a).startsWith(fragFon))) return 60;
+    if (nomFon.includes(fragFon)) return 55;
+  }
+
+  // Tolerancia a errores de tipeo (Levenshtein <= 1 o 2 sobre prefijos o palabras)
+  if (fragNorm.length >= 4) {
+    for (const p of [...palabrasNom, ...palabrasAlias]) {
+      const recorte = p.slice(0, fragNorm.length);
+      const dist = distanciaEdicion(fragNorm, recorte);
+      if (dist <= 1) return 50;
+      if (fragNorm.length >= 6 && dist <= 2) return 42;
+    }
+  }
+
+  return 0;
+}
+
+/**
  * Sugerencias de direcciones mientras se escribe.
- * Primero las usadas por ese teléfono (por asiduidad), luego el resto por frecuencia.
+ * 1) Primero las direcciones ya existentes en la BD usadas por ese teléfono (por asiduidad) y luego por frecuencia general.
+ * 2) A continuación, completa con el catálogo curado de calles de San José de Mayo respetando SIEMPRE
+ *    el orden de ingreso: <número> <calle> (ej: al escribir "450 art" o "450 batlle" sugiere "450 Artigas" o "450 Batlle y Ordóñez").
  */
 export async function sugerirDirecciones({ q, telefono, limite = 8 }) {
   const texto = normalizarDireccion(q);
   const tel = normalizarTelefono(telefono);
   const patron = `%${texto.replace(/[%_\\]/g, '\\$&')}%`;
   const prefijo = `${texto.replace(/[%_\\]/g, '\\$&')}%`;
-  const { rows } = await query(
+
+  const { rows: historicas } = await query(
     `WITH del_telefono AS (
        SELECT v.direccion_id, count(*) AS usos, max(v.hora_toma) AS ultimo
        FROM viajes v
@@ -644,7 +806,8 @@ export async function sugerirDirecciones({ q, telefono, limite = 8 }) {
        GROUP BY v.direccion_id
      )
      SELECT d.id, d.texto, d.veces_usada,
-            COALESCE(t.usos, 0)::int AS usos_telefono
+            COALESCE(t.usos, 0)::int AS usos_telefono,
+            FALSE AS es_catalogo
      FROM direcciones d
      LEFT JOIN del_telefono t ON t.direccion_id = d.id
      WHERE ($2 = '' AND t.direccion_id IS NOT NULL)
@@ -654,7 +817,56 @@ export async function sugerirDirecciones({ q, telefono, limite = 8 }) {
      LIMIT $5`,
     [tel, texto, patron, prefijo, limite],
   );
-  return rows;
+
+  if (!texto) return historicas;
+
+  const { numero, calle } = desglosarNumeroYCalle(q);
+  const fragNorm = normalizarDireccion(calle);
+  const fragFon = claveFonetica(calle);
+
+  if (!fragNorm) return historicas;
+
+  const { rows: callesActivas } = await query(
+    'SELECT id, nombre, nombre_normalizado, alias FROM calles WHERE activa = TRUE',
+  );
+
+  const candidatos = [];
+  for (const c of callesActivas) {
+    const puntaje = puntuarCalleCatalogo(c, fragNorm, fragFon);
+    if (puntaje > 0) {
+      const textoSugerido = numero ? `${numero} ${c.nombre}` : c.nombre;
+      candidatos.push({
+        id: `calle-${c.id}`,
+        texto: textoSugerido,
+        textoNorm: normalizarDireccion(textoSugerido),
+        veces_usada: 0,
+        usos_telefono: 0,
+        es_catalogo: true,
+        calle_nombre: c.nombre,
+        puntaje,
+      });
+    }
+  }
+
+  candidatos.sort((a, b) => b.puntaje - a.puntaje || a.calle_nombre.localeCompare(b.calle_nombre, 'es'));
+
+  const vistos = new Set(historicas.map((h) => normalizarDireccion(h.texto)));
+  const combinadas = [...historicas];
+
+  for (const cand of candidatos) {
+    if (combinadas.length >= limite) break;
+    if (vistos.has(cand.textoNorm)) continue;
+    vistos.add(cand.textoNorm);
+    combinadas.push({
+      id: cand.id,
+      texto: cand.texto,
+      veces_usada: 0,
+      usos_telefono: 0,
+      es_catalogo: true,
+    });
+  }
+
+  return combinadas;
 }
 
 /**
@@ -885,3 +1097,152 @@ export async function buscarViajesClientes(filtros = {}) {
   };
 }
 
+/**
+ * Catálogo curado de calles de San José de Mayo (Administración).
+ */
+export async function listarCalles({ q = '' } = {}) {
+  const filtro = normalizarDireccion(q);
+  if (!filtro) {
+    const { rows } = await query(
+      `SELECT id, nombre, alias, activa, creado_en
+       FROM calles
+       ORDER BY nombre ASC`,
+    );
+    return rows;
+  }
+  const patron = `%${filtro.replace(/[%_\\]/g, '\\$&')}%`;
+  const { rows } = await query(
+    `SELECT id, nombre, alias, activa, creado_en
+     FROM calles
+     WHERE nombre_normalizado LIKE $1 OR alias_normalizado LIKE $1
+     ORDER BY (nombre_normalizado LIKE $2) DESC, nombre ASC`,
+    [patron, `${filtro.replace(/[%_\\]/g, '\\$&')}%`],
+  );
+  return rows;
+}
+
+export async function crearCalle({ nombre, alias = '' }) {
+  const limpioNombre = limpiarDireccion(nombre);
+  const normNombre = normalizarDireccion(limpioNombre);
+  if (!normNombre) throw new ErrorNegocio('El nombre de la calle es obligatorio');
+  const limpioAlias = limpiarDireccion(alias);
+  const normAlias = normalizarDireccion(limpioAlias);
+
+  try {
+    const { rows } = await query(
+      `INSERT INTO calles (nombre, nombre_normalizado, alias, alias_normalizado, activa)
+       VALUES ($1, $2, $3, $4, TRUE)
+       RETURNING id, nombre, alias, activa, creado_en`,
+      [limpioNombre, normNombre, limpioAlias, normAlias],
+    );
+    return rows[0];
+  } catch (err) {
+    if (err.code === '23505') {
+      throw new ErrorNegocio(`Ya existe una calle con el nombre "${limpioNombre}"`);
+    }
+    throw err;
+  }
+}
+
+export async function actualizarCalle(id, { nombre, alias, activa }) {
+  return transaccion(async (client) => {
+    const { rows: actuales } = await client.query('SELECT * FROM calles WHERE id = $1 FOR UPDATE', [id]);
+    const actual = actuales[0];
+    if (!actual) throw new ErrorNegocio('Calle inexistente', 404);
+
+    const nuevoNombre = nombre !== undefined ? limpiarDireccion(nombre) : actual.nombre;
+    const normNombre = normalizarDireccion(nuevoNombre);
+    if (!normNombre) throw new ErrorNegocio('El nombre de la calle no puede quedar vacío');
+
+    let nuevoAlias = alias !== undefined ? limpiarDireccion(alias) : actual.alias;
+    // Si el administrador renombró la calle (ej: "José Batlle y Ordóñez" -> "Batlle y Ordóñez"),
+    // conservamos automáticamente el nombre anterior dentro de los alias para que siga reconociéndose.
+    if (actual.nombre_normalizado !== normNombre) {
+      const listaAlias = String(nuevoAlias || '')
+        .split(',')
+        .map((a) => a.trim())
+        .filter(Boolean);
+      const yaEstaEnAlias = listaAlias.some((a) => normalizarDireccion(a) === actual.nombre_normalizado);
+      if (!yaEstaEnAlias && actual.nombre) {
+        listaAlias.unshift(actual.nombre);
+        nuevoAlias = listaAlias.join(', ');
+      }
+    }
+
+    const normAlias = normalizarDireccion(nuevoAlias);
+    const nuevaActiva = activa !== undefined ? Boolean(activa) : actual.activa;
+
+    let actualizada;
+    try {
+      const { rows } = await client.query(
+        `UPDATE calles
+         SET nombre = $1,
+             nombre_normalizado = $2,
+             alias = $3,
+             alias_normalizado = $4,
+             activa = $5
+         WHERE id = $6
+         RETURNING id, nombre, alias, activa, creado_en`,
+        [nuevoNombre, normNombre, nuevoAlias, normAlias, nuevaActiva, id],
+      );
+      actualizada = rows[0];
+    } catch (err) {
+      if (err.code === '23505') {
+        throw new ErrorNegocio(`Ya existe otra calle con el nombre "${nuevoNombre}"`);
+      }
+      throw err;
+    }
+
+    // Si cambió el nombre principal de la calle, actualizamos también las direcciones históricas
+    // que usaban el nombre anterior (ej: "450 José Batlle y Ordóñez" -> "450 Batlle y Ordóñez")
+    if (actual.nombre_normalizado !== normNombre) {
+      const { rows: dirs } = await client.query(
+        `SELECT id, texto, veces_usada FROM direcciones WHERE texto_normalizado LIKE $1`,
+        [`%${actual.nombre_normalizado.replace(/[%_\\]/g, '\\$&')}%`],
+      );
+      for (const d of dirs) {
+        const { numero, calle } = desglosarNumeroYCalle(d.texto);
+        if (normalizarDireccion(calle) === actual.nombre_normalizado) {
+          const nuevoTextoDir = numero ? `${numero} ${nuevoNombre}` : nuevoNombre;
+          const nuevoNormDir = normalizarDireccion(nuevoTextoDir);
+          if (nuevoNormDir === normalizarDireccion(d.texto)) continue;
+
+          const { rows: existente } = await client.query(
+            'SELECT id FROM direcciones WHERE texto_normalizado = $1 AND id <> $2',
+            [nuevoNormDir, d.id],
+          );
+          if (existente[0]) {
+            await client.query('UPDATE viajes SET direccion_id = $1 WHERE direccion_id = $2', [
+              existente[0].id,
+              d.id,
+            ]);
+            await client.query(
+              'UPDATE direcciones SET veces_usada = veces_usada + $1 WHERE id = $2',
+              [d.veces_usada, existente[0].id],
+            );
+            await client.query('DELETE FROM direcciones WHERE id = $1', [d.id]);
+          } else {
+            await client.query(
+              'UPDATE direcciones SET texto = $1, texto_normalizado = $2 WHERE id = $3',
+              [nuevoTextoDir, nuevoNormDir, d.id],
+            );
+          }
+        }
+      }
+    }
+
+    return actualizada;
+  });
+}
+
+export async function eliminarCalle(id) {
+  const { rows } = await query('DELETE FROM calles WHERE id = $1 RETURNING id, nombre', [id]);
+  if (!rows[0]) throw new ErrorNegocio('Calle inexistente', 404);
+  return rows[0];
+}
+
+export async function restaurarCatalogoCalles() {
+  const agregadas = await sembrarCallesIniciales();
+  const total = await listarCalles();
+  return { agregadas, total: total.length };
+}

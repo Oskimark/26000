@@ -15,6 +15,12 @@ export default function Admin({ operadorId }) {
   const [nuevoOp, setNuevoOp] = useState({ usuario: '', nombre: '', password: '', rol: 'operador' });
   const [editOp, setEditOp] = useState(null);
 
+  // Catálogo curado de Calles de San José de Mayo
+  const [calles, setCalles] = useState([]);
+  const [busquedaCalle, setBusquedaCalle] = useState('');
+  const [nuevaCalle, setNuevaCalle] = useState({ nombre: '', alias: '' });
+  const [editCalle, setEditCalle] = useState(null);
+
   // Identidad corporativa
   const [tema, setTema] = useState(leerTema);
 
@@ -61,6 +67,16 @@ export default function Admin({ operadorId }) {
     }
   }, []);
 
+  const cargarCalles = useCallback(async (q = '') => {
+    try {
+      const params = q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+      const data = await api(`/calles${params}`);
+      setCalles(data);
+    } catch (err) {
+      setError(err.message);
+    }
+  }, []);
+
   const cargarConfiguracion = useCallback(async () => {
     try {
       const cfg = await api('/configuracion');
@@ -74,13 +90,15 @@ export default function Admin({ operadorId }) {
 
   useEffect(() => {
     cargarConfiguracion();
-  }, [cargarConfiguracion]);
+    cargarCalles();
+  }, [cargarConfiguracion, cargarCalles]);
 
   useEffect(() => {
     if (subtab === 'choferes') cargarChoferes();
     else if (subtab === 'operadores') cargarOperadores();
+    else if (subtab === 'calles') cargarCalles(busquedaCalle);
     else if (subtab === 'configuracion') cargarConfiguracion();
-  }, [subtab, cargarChoferes, cargarOperadores, cargarConfiguracion]);
+  }, [subtab, cargarChoferes, cargarOperadores, cargarCalles, busquedaCalle, cargarConfiguracion]);
 
   function mostrarExito(txt) {
     setMensaje(txt);
@@ -180,6 +198,65 @@ export default function Admin({ operadorId }) {
     }
   }
 
+  // --- Calles Handlers ---
+  async function agregarCalle(e) {
+    e.preventDefault();
+    if (!nuevaCalle.nombre.trim()) return;
+    try {
+      await api('/calles', {
+        method: 'POST',
+        body: { nombre: nuevaCalle.nombre, alias: nuevaCalle.alias },
+      });
+      setNuevaCalle({ nombre: '', alias: '' });
+      mostrarExito('Calle agregada al catálogo de San José de Mayo');
+      cargarCalles(busquedaCalle);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function guardarEdicionCalle(e) {
+    e.preventDefault();
+    if (!editCalle?.nombre?.trim()) return;
+    try {
+      await api(`/calles/${editCalle.id}`, {
+        method: 'PUT',
+        body: {
+          nombre: editCalle.nombre,
+          alias: editCalle.alias,
+          activa: editCalle.activa,
+        },
+      });
+      setEditCalle(null);
+      mostrarExito('Calle actualizada (y direcciones históricas sincronizadas)');
+      cargarCalles(busquedaCalle);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function eliminarCalleCatalogo(calle) {
+    if (!window.confirm(`¿Eliminar "${calle.nombre}" del catálogo de calles?`)) return;
+    try {
+      await api(`/calles/${calle.id}`, { method: 'DELETE' });
+      if (editCalle?.id === calle.id) setEditCalle(null);
+      mostrarExito(`Calle "${calle.nombre}" eliminada del catálogo`);
+      cargarCalles(busquedaCalle);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function restaurarCallesBase() {
+    try {
+      const res = await api('/calles/restaurar', { method: 'POST' });
+      mostrarExito(`Catálogo verificado (${res.agregadas} calles agregadas · ${res.total} en total)`);
+      cargarCalles(busquedaCalle);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
     <div className="admin-wrap">
       <div className="subtabs">
@@ -194,6 +271,12 @@ export default function Admin({ operadorId }) {
           onClick={() => { setSubtab('operadores'); setError(''); }}
         >
           Operadores ({operadores.length})
+        </button>
+        <button
+          className={subtab === 'calles' ? 'tab activa' : 'tab'}
+          onClick={() => { setSubtab('calles'); setError(''); }}
+        >
+          🗺️ Calles San José ({calles.length})
         </button>
         <button
           className={subtab === 'configuracion' ? 'tab activa' : 'tab'}
@@ -503,6 +586,155 @@ export default function Admin({ operadorId }) {
                 ℹ️ <b>Modo normal:</b> El sistema utilizará marcos neutros estándar y paleta de colores habitual.
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {subtab === 'calles' && (
+        <div className="seccion-admin">
+          <div className="tarjeta admin-form-tarjeta">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+              <div>
+                <h3>🗺️ Catálogo Curado de Calles y Lugares (San José de Mayo)</h3>
+                <p className="descripcion" style={{ marginTop: 4 }}>
+                  Usado para autocompletar y normalizar direcciones respetando el orden <b>&lt;número&gt; &lt;calle&gt;</b> (ej: <b>450 Artigas</b>, <b>1200 Batlle y Ordóñez</b>).
+                  Podés buscar cualquier calle y modificar su nombre principal manualmente (ej: cambiar <i>"José Batlle y Ordóñez"</i> por <i>"Batlle y Ordóñez"</i>).
+                </p>
+              </div>
+              <button type="button" className="btn chico" onClick={restaurarCallesBase} title="Agrega calles del listado base que se hayan borrado, sin pisar tus ediciones">
+                🔄 Restaurar faltantes del catálogo
+              </button>
+            </div>
+
+            <form onSubmit={agregarCalle} className="form-horizontal-wrap" style={{ marginTop: 14 }}>
+              <input
+                placeholder="Nombre principal (ej: Batlle y Ordóñez)"
+                value={nuevaCalle.nombre}
+                onChange={(e) => setNuevaCalle({ ...nuevaCalle, nombre: e.target.value })}
+                required
+              />
+              <input
+                placeholder="Alias / nombres alternativos separados por coma (ej: José Batlle y Ordóñez, Batlle)"
+                value={nuevaCalle.alias}
+                onChange={(e) => setNuevaCalle({ ...nuevaCalle, alias: e.target.value })}
+              />
+              <button className="btn primario" type="submit">
+                ➕ Agregar Calle / Lugar
+              </button>
+            </form>
+
+            <div className="form-horizontal" style={{ marginTop: 14, alignItems: 'center' }}>
+              <input
+                style={{ maxWidth: 460 }}
+                placeholder="🔎 Buscar calle o alias en el listado (ej: Batlle, Saravia, Ciganda, 18 de Julio)..."
+                value={busquedaCalle}
+                onChange={(e) => setBusquedaCalle(e.target.value)}
+              />
+              {busquedaCalle && (
+                <button type="button" className="btn chico" onClick={() => setBusquedaCalle('')}>
+                  ✖ Limpiar búsqueda
+                </button>
+              )}
+              <span className="tenue">
+                Mostrando <b>{calles.length}</b> entrada(s)
+              </span>
+            </div>
+          </div>
+
+          <div className="tarjeta tabla-admin-tarjeta">
+            <table className="tabla-viajes">
+              <thead>
+                <tr>
+                  <th style={{ width: '30%' }}>Nombre Principal (se usa al guardar)</th>
+                  <th style={{ width: '40%' }}>Alias / Nombres Alternativos reconocidos</th>
+                  <th style={{ width: '12%' }}>Ejemplo</th>
+                  <th style={{ width: '8%' }}>Estado</th>
+                  <th style={{ width: 170 }}>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {calles.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="vacio">
+                      No se encontraron calles con "{busquedaCalle}".
+                    </td>
+                  </tr>
+                ) : (
+                  calles.map((c) => {
+                    const editando = editCalle?.id === c.id;
+                    return (
+                      <tr key={c.id}>
+                        <td>
+                          {editando ? (
+                            <input
+                              value={editCalle.nombre}
+                              onChange={(e) => setEditCalle({ ...editCalle, nombre: e.target.value })}
+                              placeholder="Nombre principal"
+                              autoFocus
+                            />
+                          ) : (
+                            <b>{c.nombre}</b>
+                          )}
+                        </td>
+                        <td>
+                          {editando ? (
+                            <input
+                              value={editCalle.alias || ''}
+                              onChange={(e) => setEditCalle({ ...editCalle, alias: e.target.value })}
+                              placeholder="Variantes separadas por coma"
+                            />
+                          ) : c.alias ? (
+                            <span className="tenue">{c.alias}</span>
+                          ) : (
+                            <span className="tenue">—</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className="chip prog">450 {editando ? editCalle.nombre || c.nombre : c.nombre}</span>
+                        </td>
+                        <td>
+                          {editando ? (
+                            <label className="label-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={editCalle.activa}
+                                onChange={(e) => setEditCalle({ ...editCalle, activa: e.target.checked })}
+                              />
+                              Activa
+                            </label>
+                          ) : (
+                            <span className={c.activa ? 'chip exito' : 'chip'}>
+                              {c.activa ? 'Activa' : 'Inactiva'}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          {editando ? (
+                            <div className="botones-accion-fila">
+                              <button className="btn chico primario" onClick={guardarEdicionCalle}>
+                                Guardar
+                              </button>
+                              <button className="btn chico" onClick={() => setEditCalle(null)}>
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="botones-accion-fila">
+                              <button className="btn chico" onClick={() => setEditCalle({ ...c })}>
+                                Editar
+                              </button>
+                              <button className="btn chico peligro" onClick={() => eliminarCalleCatalogo(c)}>
+                                Eliminar
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
