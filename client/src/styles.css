@@ -533,7 +533,10 @@ input:focus, select:focus {
   color: #1e3a8a;
 }
 .fila-sin-chofer {
-  background-color: #fef3c7 !important;
+  background-color: #fef3c7;
+}
+.tabla-filas-clickeables .fila-sin-chofer.fila-clickeable:hover {
+  background-color: #fde68a;
 }
 .fila-en-curso {
   background-color: #fff;
@@ -1217,7 +1220,10 @@ input:focus, select:focus {
   animation: pulso 1.8s infinite;
 }
 .fila-aviso-programado {
-  background-color: #fffbeb !important;
+  background-color: #fffbeb;
+}
+.tabla-filas-clickeables .fila-aviso-programado.fila-clickeable:hover {
+  background-color: #fef3c7;
 }
 
 /* Filas clickeables para abrir Ficha de Viaje */
@@ -1677,18 +1683,70 @@ body.tema-oscuro,
 }
 
 .tema-oscuro .fila-sin-chofer {
-  background-color: rgba(234, 179, 8, 0.12);
-  color: #ffffff;
+  background-color: #2b1b08 !important;
+  color: #ffffff !important;
+  box-shadow: inset 4px 0 0 0 #f59e0b;
+}
+
+.tema-oscuro .fila-sin-chofer td {
+  border-bottom-color: #45290a !important;
+  color: #ffffff !important;
+}
+
+.tema-oscuro .fila-sin-chofer .col-num {
+  color: #fbbf24 !important;
+  font-weight: 800;
+}
+
+.tema-oscuro .fila-sin-chofer .texto-direccion {
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.tema-oscuro .fila-sin-chofer .col-hora,
+.tema-oscuro .fila-sin-chofer .col-hora b,
+.tema-oscuro .fila-sin-chofer .col-fin,
+.tema-oscuro .fila-sin-chofer .col-fin b {
+  color: #ffffff !important;
+}
+
+.tema-oscuro .fila-sin-chofer .subtexto-op {
+  color: #cbd5e1 !important;
+}
+
+.tema-oscuro .fila-sin-chofer .tenue {
+  color: #94a3b8 !important;
+}
+
+.tema-oscuro .fila-sin-chofer:hover,
+.tema-oscuro .tabla-filas-clickeables .fila-sin-chofer.fila-clickeable:hover {
+  background-color: #3d260c !important;
 }
 
 .tema-oscuro .fila-aviso-programado {
-  background-color: rgba(245, 158, 11, 0.2) !important;
-  color: #ffffff;
+  background-color: #3b1d08 !important;
+  color: #ffffff !important;
+  box-shadow: inset 4px 0 0 0 #f97316;
+}
+
+.tema-oscuro .fila-aviso-programado td {
+  border-bottom-color: #4d260a !important;
+  color: #ffffff !important;
+}
+
+.tema-oscuro .fila-aviso-programado:hover,
+.tema-oscuro .tabla-filas-clickeables .fila-aviso-programado.fila-clickeable:hover {
+  background-color: #4d280c !important;
 }
 
 .tema-oscuro .fila-en-curso {
   background-color: rgba(56, 189, 248, 0.08);
   color: #ffffff;
+}
+
+.tema-oscuro .fila-anulada {
+  background-color: rgba(15, 23, 42, 0.6) !important;
+  opacity: 0.45;
 }
 
 .tema-oscuro .select-chofer-tabla.asignado {
