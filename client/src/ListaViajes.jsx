@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { api } from './api.js';
+import { api, leerSesion } from './api.js';
 import { hora, horaConDia } from './formato.js';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 import FichaViajeModal from './FichaViajeModal.jsx';
+import { tienePermiso } from '../../shared/permisos.js';
 
 function minutosHasta(iso) {
   if (!iso) return null;
@@ -207,6 +208,8 @@ export default function ListaViajes({
     }
   }
 
+  const puedeCancelar = editable && tienePermiso(leerSesion()?.operador, 'cancelar_viajes');
+
   if (!viajesVisibles.length) return <p className="vacio">Todavía no hay viajes en este turno.</p>;
 
   return (
@@ -218,11 +221,11 @@ export default function ListaViajes({
             <th className="col-dir">Dirección</th>
             <th className="col-hora">Hora Inicio</th>
             <th className="col-fin">Asignado</th>
-            <th className="col-avisado">Avisado</th>
             <th>Chofer</th>
+            <th className="col-avisado">Avisado</th>
             <th>{mostrarNombre ? 'Teléfono / Cliente' : 'Teléfono'}</th>
             <th className="col-prog">Programado</th>
-            {editable && <th className="col-acc" />}
+            {puedeCancelar && <th className="col-acc" />}
           </tr>
         </thead>
         <tbody>
@@ -262,8 +265,8 @@ export default function ListaViajes({
                   <div className="subtexto-op">{v.operador}</div>
                 </td>
                 <CeldaAsignado viaje={v} />
-                <CeldaAvisado viaje={v} editable={editable} />
                 <CeldaChofer viaje={v} choferes={choferes} editable={editable} onAtender={onAtender} />
+                <CeldaAvisado viaje={v} editable={editable} />
                 <td>
                   <TelefonoWhatsApp telefono={v.telefono} nombre={mostrarNombre ? v.nombre_cliente : ''} />
                 </td>
@@ -290,7 +293,7 @@ export default function ListaViajes({
                     <span className="tenue">—</span>
                   )}
                 </td>
-                {editable && (
+                {puedeCancelar && (
                   <td className="col-acc" onClick={(e) => e.stopPropagation()}>
                     <button className="btn-link chico" onClick={(e) => cambiarCancelado(e, v)}>
                       {v.cancelado ? 'Restaurar' : 'Anular'}

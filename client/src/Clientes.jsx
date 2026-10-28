@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api } from './api.js';
+import { api, leerSesion } from './api.js';
 import { hora } from './formato.js';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 import FichaViajeModal from './FichaViajeModal.jsx';
+import { tienePermiso } from '../../shared/permisos.js';
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -152,11 +153,11 @@ export default function Clientes({ socket }) {
       'N°',
       'Hora inicio',
       'Asignado',
+      'Chofer',
       'Avisado',
       'Teléfono',
       'Cliente',
       'Destino',
-      'Chofer',
       'Operador',
       'Estado',
     ];
@@ -166,11 +167,11 @@ export default function Clientes({ socket }) {
       v.numero ?? '',
       v.hora_toma ? hora(v.hora_toma) : '',
       v.hora_asignacion || v.hora_fin ? hora(v.hora_asignacion || v.hora_fin) : '',
+      `"${(v.chofer || 'Sin asignar').replace(/"/g, '""')}"`,
       v.hora_avisado ? hora(v.hora_avisado) : '',
       `"${v.telefono || ''}"`,
       `"${(v.nombre_cliente || '').replace(/"/g, '""')}"`,
       `"${(v.direccion || '').replace(/"/g, '""')}"`,
-      `"${(v.chofer || 'Sin asignar').replace(/"/g, '""')}"`,
       `"${(v.operador || '').replace(/"/g, '""')}"`,
       v.cancelado ? 'Anulado' : v.numero != null ? 'Realizado' : 'Pendiente',
     ]);
@@ -223,7 +224,7 @@ export default function Clientes({ socket }) {
                 ✖ Limpiar filtros
               </button>
             )}
-            {viajes.length > 0 && (
+            {viajes.length > 0 && tienePermiso(leerSesion()?.operador, 'exportar_csv') && (
               <button className="btn" onClick={exportarCSV}>
                 📥 Exportar CSV ({viajes.length})
               </button>
@@ -726,10 +727,10 @@ export default function Clientes({ socket }) {
                 <th className="col-num">N°</th>
                 <th className="col-hora">Hora Inicio</th>
                 <th className="col-fin">Asignado</th>
+                <th>Chofer</th>
                 <th className="col-avisado">Avisado</th>
                 <th>Teléfono / Cliente</th>
                 <th className="col-dir">Destino</th>
-                <th>Chofer</th>
                 <th>Operador</th>
                 <th>Estado</th>
               </tr>
@@ -751,6 +752,7 @@ export default function Clientes({ socket }) {
                     <b>{hora(v.hora_toma)}</b>
                   </td>
                   <td className="col-fin">{v.hora_asignacion || v.hora_fin ? hora(v.hora_asignacion || v.hora_fin) : '—'}</td>
+                  <td><b>{v.chofer || <span className="tenue">Sin asignar</span>}</b></td>
                   <td className="col-avisado">{v.hora_avisado ? <b>{hora(v.hora_avisado)}</b> : <span className="tenue">—</span>}</td>
                   <td>
                     <div className="celda-tel-acciones">
@@ -771,13 +773,6 @@ export default function Clientes({ socket }) {
                   </td>
                   <td className="col-dir">
                     <span className="texto-direccion">{v.direccion}</span>
-                  </td>
-                  <td>
-                    {v.chofer ? (
-                      <span>{v.chofer}</span>
-                    ) : (
-                      <span className="tenue">—</span>
-                    )}
                   </td>
                   <td className="tenue">{v.operador || '—'}</td>
                   <td>

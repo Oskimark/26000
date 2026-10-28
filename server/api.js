@@ -1,7 +1,8 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { query, transaccion } from './db.js';
-import { firmarToken, requiereAuth, requiereAdmin } from './auth.js';
+import { firmarToken, requiereAuth, requiereAdmin, requiereSuperAdmin, requierePermiso } from './auth.js';
+import { normalizarPermisos, tienePermiso } from '../shared/permisos.js';
 import {
   ErrorNegocio, crearViaje, listarTurno, listarProgramadosFuturos, asignarChofer,
   registrarFin, registrarAvisado, cambiarCancelacion, sugerirDirecciones, obtenerViaje,
@@ -25,13 +26,30 @@ export function crearApi({ notificar }) {
     if (!op || !(await bcrypt.compare(String(password || ''), op.password_hash))) {
       throw new ErrorNegocio('Usuario o contraseña incorrectos', 401);
     }
-    const operador = { id: op.id, usuario: op.usuario, nombre: op.nombre, rol: op.rol };
+    const operador = {
+      id: op.id,
+      usuario: op.usuario,
+      nombre: op.nombre,
+      rol: op.rol,
+      permisos: normalizarPermisos(op.permisos, op.rol),
+    };
     res.json({ token: firmarToken(operador), operador });
   }));
 
   api.use(requiereAuth);
 
-  api.get('/yo', (req, res) => res.json(req.operador));
+  api.get('/yo', a(async (req, res) => {
+    const { rows } = await query('SELECT id, usuario, nombre, rol, activo, permisos FROM operadores WHERE id = $1', [req.operador.id]);
+    const op = rows[0];
+    if (!op || !op.activo) throw new ErrorNegocio('Operador inactivo o no encontrado', 401);
+    res.json({
+      id: op.id,
+      usuario: op.usuario,
+      nombre: op.nombre,
+      rol: op.rol,
+      permisos: normalizarPermisos(op.permisos, op.rol),
+    });
+  }));
 
   // ---------- Configuración ----------
   api.get('/configuracion', a(async (req, res) => {
@@ -73,7 +91,7 @@ export function crearApi({ notificar }) {
     res.json(rows);
   }));
 
-  api.put('/turnos/:fecha/:tipo/choferes', a(async (req, res) => {
+  api.put('/turnos/:fecha/:tipo/choferes', requierePermiso('choferes'), a(async (req, res) => {
     const t = turnoDeParams(req);
     const ids = [...new Set((req.body?.choferIds || []).map(Number).filter(Boolean))];
     await query('DELETE FROM turno_choferes WHERE fecha_turno = $1 AND tipo_turno = $2', [t.fecha, t.tipo]);
@@ -90,6 +108,17 @@ export function crearApi({ notificar }) {
 
   api.get('/turnos/:fecha/:tipo/viajes', a(async (req, res) => {
     const t = turnoDeParams(req);
+    const actual = turnoDe(new Date());
+    const esTurnoActual = t.fecha === actual.fecha && t.tipo === actual.tipo;
+    if (esTurnoActual) {
+      if (!tienePermiso(req.operador, 'recepcion') && !tienePermiso(req.operador, 'historial')) {
+        throw new ErrorNegocio('Sin permisos para ver el turno', 403);
+      }
+    } else {
+      if (!tienePermiso(req.operador, 'historial')) {
+        throw new ErrorNegocio('Sin permiso para ver historial de turnos', 403);
+      }
+    }
     const [viajes, futuros, cfg] = await Promise.all([
       listarTurno(t),
       listarProgramadosFuturos(t),
@@ -99,7 +128,7 @@ export function crearApi({ notificar }) {
   }));
 
   // ---------- Viajes ----------
-  api.post('/viajes', a(async (req, res) => {
+  api.post('/viajes', requierePermiso('recepcion'), a(async (req, res) => {
     const viaje = await crearViaje(req.body || {}, req.operador.id);
     notificar('viajes', { id: viaje.id });
     res.status(201).json(viaje);
@@ -111,13 +140,13 @@ export function crearApi({ notificar }) {
     res.json(await obtenerFichaViaje(Number(req.params.id)));
   }));
 
-  api.put('/viajes/:id', a(async (req, res) => {
+  api.put('/viajes/:id', requierePermiso('editar_viajes'), a(async (req, res) => {
     const resultado = await editarFichaViaje(Number(req.params.id), req.body || {}, req.operador.id);
     notificar('viajes', { id: Number(req.params.id) });
     res.json(resultado);
   }));
 
-  api.put('/viajes/:id/chofer', a(async (req, res) => {
+  api.put('/viajes/:id/chofer', requierePermiso('recepcion'), a(async (req, res) => {
     const viaje = await asignarChofer(Number(req.params.id), req.body?.choferId, req.operador.id);
     notificar('viajes', { id: viaje.id });
     res.json(viaje);
@@ -129,13 +158,13 @@ export function crearApi({ notificar }) {
     res.json(viaje);
   }));
 
-  api.put('/viajes/:id/avisado', a(async (req, res) => {
+  api.put('/viajes/:id/avisado', requierePermiso('recepcion'), a(async (req, res) => {
     const viaje = await registrarAvisado(Number(req.params.id), req.body || {}, req.operador.id);
     notificar('viajes', { id: viaje.id });
     res.json(viaje);
   }));
 
-  api.put('/viajes/:id/cancelado', a(async (req, res) => {
+  api.put('/viajes/:id/cancelado', requierePermiso('cancelar_viajes'), a(async (req, res) => {
     const viaje = await cambiarCancelacion(Number(req.params.id), req.body?.cancelado, req.operador.id);
     notificar('viajes', { id: viaje.id });
     res.json(viaje);
@@ -151,7 +180,7 @@ export function crearApi({ notificar }) {
     res.json({ nombre });
   }));
 
-  api.get('/clientes', a(async (req, res) => {
+  api.get('/clientes', requierePermiso('clientes'), a(async (req, res) => {
     res.json(await buscarViajesClientes(req.query));
   }));
 
@@ -197,43 +226,49 @@ export function crearApi({ notificar }) {
   }));
 
   // ---------- Operadores ----------
-  api.get('/operadores', requiereAdmin, a(async (req, res) => {
-    const { rows } = await query('SELECT id, usuario, nombre, rol, activo FROM operadores ORDER BY activo DESC, nombre');
-    res.json(rows);
+  api.get('/operadores', requiereSuperAdmin, a(async (req, res) => {
+    const { rows } = await query('SELECT id, usuario, nombre, rol, activo, permisos FROM operadores ORDER BY activo DESC, nombre');
+    res.json(rows.map((r) => ({ ...r, permisos: normalizarPermisos(r.permisos, r.rol) })));
   }));
 
-  api.post('/operadores', requiereAdmin, a(async (req, res) => {
-    const { usuario, nombre, password, rol } = req.body || {};
+  api.post('/operadores', requiereSuperAdmin, a(async (req, res) => {
+    const { usuario, nombre, password, rol, permisos } = req.body || {};
     if (!usuario?.trim() || !nombre?.trim() || !password) throw new ErrorNegocio('Completá usuario, nombre y contraseña');
+    const rolEfectivo = rol === 'admin' ? 'admin' : 'operador';
+    const perms = JSON.stringify(normalizarPermisos(permisos, rolEfectivo));
     const hash = await bcrypt.hash(String(password), 10);
     try {
       const { rows } = await query(
-        `INSERT INTO operadores (usuario, nombre, password_hash, rol) VALUES ($1, $2, $3, $4)
-         RETURNING id, usuario, nombre, rol, activo`,
-        [usuario.trim(), nombre.trim(), hash, rol === 'admin' ? 'admin' : 'operador'],
+        `INSERT INTO operadores (usuario, nombre, password_hash, rol, permisos) VALUES ($1, $2, $3, $4, $5::jsonb)
+         RETURNING id, usuario, nombre, rol, activo, permisos`,
+        [usuario.trim(), nombre.trim(), hash, rolEfectivo, perms],
       );
-      res.status(201).json(rows[0]);
+      const creado = rows[0];
+      res.status(201).json({ ...creado, permisos: normalizarPermisos(creado.permisos, creado.rol) });
     } catch (err) {
       if (err.code === '23505') throw new ErrorNegocio('Ese usuario ya existe');
       throw err;
     }
   }));
 
-  api.put('/operadores/:id', requiereAdmin, a(async (req, res) => {
+  api.put('/operadores/:id', requiereSuperAdmin, a(async (req, res) => {
     const id = Number(req.params.id);
-    const { nombre, password, rol, activo } = req.body || {};
+    const { nombre, password, rol, activo, permisos } = req.body || {};
     if (!nombre?.trim()) throw new ErrorNegocio('Falta el nombre');
     if (id === req.operador.id && (activo === false || rol !== 'admin')) {
       throw new ErrorNegocio('No podés quitarte el rol de administrador ni desactivarte');
     }
+    const rolEfectivo = rol === 'admin' ? 'admin' : 'operador';
+    const perms = permisos !== undefined ? JSON.stringify(normalizarPermisos(permisos, rolEfectivo)) : null;
     const hash = password ? await bcrypt.hash(String(password), 10) : null;
     const { rows } = await query(
-      `UPDATE operadores SET nombre = $1, rol = $2, activo = $3, password_hash = COALESCE($4, password_hash)
-       WHERE id = $5 RETURNING id, usuario, nombre, rol, activo`,
-      [nombre.trim(), rol === 'admin' ? 'admin' : 'operador', activo !== false, hash, id],
+      `UPDATE operadores SET nombre = $1, rol = $2, activo = $3, password_hash = COALESCE($4, password_hash), permisos = COALESCE($5::jsonb, permisos)
+       WHERE id = $6 RETURNING id, usuario, nombre, rol, activo, permisos`,
+      [nombre.trim(), rolEfectivo, activo !== false, hash, perms, id],
     );
     if (!rows[0]) throw new ErrorNegocio('Operador inexistente', 404);
-    res.json(rows[0]);
+    const modificado = rows[0];
+    res.json({ ...modificado, permisos: normalizarPermisos(modificado.permisos, modificado.rol) });
   }));
 
   // ---------- Catálogo de Calles (San José de Mayo) ----------

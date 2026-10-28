@@ -1,8 +1,136 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from './api.js';
 import { leerTema, guardarTema } from './tema.js';
+import {
+  PERMISOS_DISPONIBLES,
+  PERMISOS_DEFAULT_OPERADOR,
+  normalizarPermisos,
+} from '../../shared/permisos.js';
 
-export default function Admin({ operadorId }) {
+function EditorPermisos({ permisos, rol, onChange, disabled }) {
+  const esAdmin = rol === 'admin';
+
+  function setPermiso(id, valor) {
+    if (disabled || esAdmin) return;
+    onChange({ ...permisos, [id]: valor });
+  }
+
+  function marcarTodos(valor) {
+    if (disabled || esAdmin) return;
+    const nuevo = {};
+    PERMISOS_DISPONIBLES.forEach((p) => {
+      nuevo[p.id] = valor;
+    });
+    onChange(nuevo);
+  }
+
+  function restablecer() {
+    if (disabled || esAdmin) return;
+    onChange({ ...PERMISOS_DEFAULT_OPERADOR });
+  }
+
+  const secciones = PERMISOS_DISPONIBLES.filter((p) => p.categoria === 'Secciones');
+  const operaciones = PERMISOS_DISPONIBLES.filter((p) => p.categoria === 'Operaciones');
+
+  return (
+    <div className="contenedor-permisos">
+      <div className="permisos-cabecera">
+        <h5>Permisos de acceso del operador</h5>
+        {!esAdmin && !disabled && (
+          <div className="permisos-atajos">
+            <button type="button" className="btn-link chico" onClick={() => marcarTodos(true)}>
+              Marcar todos
+            </button>
+            <span>·</span>
+            <button type="button" className="btn-link chico" onClick={() => marcarTodos(false)}>
+              Desmarcar todos
+            </button>
+            <span>·</span>
+            <button type="button" className="btn-link chico" onClick={restablecer}>
+              Por defecto
+            </button>
+          </div>
+        )}
+      </div>
+
+      {esAdmin ? (
+        <div className="alerta-admin-permisos">
+          👑 <b>Rol Administrador:</b> Este operador cuenta con acceso completo a todas las secciones y operaciones del sistema.
+        </div>
+      ) : (
+        <div className="permisos-grilla-secciones">
+          <div className="permisos-columna">
+            <h6 className="permisos-seccion-titulo">📍 Secciones y Vistas</h6>
+            <div className="permisos-items">
+              {secciones.map((p) => (
+                <label key={p.id} className="item-permiso">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(permisos[p.id])}
+                    onChange={(e) => setPermiso(p.id, e.target.checked)}
+                    disabled={disabled}
+                  />
+                  <div className="item-permiso-info">
+                    <span className="item-permiso-nombre">{p.nombre}</span>
+                    <span className="item-permiso-desc">{p.descripcion}</span>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="permisos-columna">
+            <h6 className="permisos-seccion-titulo">⚡ Acciones y Privilegios</h6>
+            <div className="permisos-items">
+              {operaciones.map((p) => (
+                <label key={p.id} className="item-permiso">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(permisos[p.id])}
+                    onChange={(e) => setPermiso(p.id, e.target.checked)}
+                    disabled={disabled}
+                  />
+                  <div className="item-permiso-info">
+                    <span className="item-permiso-nombre">{p.nombre}</span>
+                    <span className="item-permiso-desc">{p.descripcion}</span>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ResumenPermisos({ operador }) {
+  if (operador.rol === 'admin') {
+    return <span className="chip exito" title="Acceso total irrestricto">👑 Acceso total</span>;
+  }
+  const perms = normalizarPermisos(operador.permisos, operador.rol);
+  const habilitados = PERMISOS_DISPONIBLES.filter((p) => perms[p.id]);
+
+  if (habilitados.length === 0) {
+    return <span className="chip alerta" title="Sin accesos concedidos">🚫 Sin acceso</span>;
+  }
+  if (habilitados.length === PERMISOS_DISPONIBLES.length) {
+    return <span className="chip exito">Completo (8/8)</span>;
+  }
+  const secHabilitadas = PERMISOS_DISPONIBLES.filter((p) => p.categoria === 'Secciones' && perms[p.id]);
+  return (
+    <div className="resumen-permisos-wrap" title={habilitados.map((p) => p.nombre).join(', ')}>
+      <div className="resumen-permisos-chips">
+        {secHabilitadas.map((s) => (
+          <span key={s.id} className="chip-permiso-mini">{s.nombre}</span>
+        ))}
+      </div>
+      <small className="tenue">{habilitados.length} de {PERMISOS_DISPONIBLES.length} permisos</small>
+    </div>
+  );
+}
+
+export default function Admin({ operadorId, esSuperAdmin = true }) {
   const [subtab, setSubtab] = useState('choferes');
 
   // Choferes
@@ -12,7 +140,14 @@ export default function Admin({ operadorId }) {
 
   // Operadores
   const [operadores, setOperadores] = useState([]);
-  const [nuevoOp, setNuevoOp] = useState({ usuario: '', nombre: '', password: '', rol: 'operador' });
+  const [nuevoOp, setNuevoOp] = useState({
+    usuario: '',
+    nombre: '',
+    password: '',
+    rol: 'operador',
+    permisos: { ...PERMISOS_DEFAULT_OPERADOR },
+  });
+  const [mostrarPermisosNuevo, setMostrarPermisosNuevo] = useState(false);
   const [editOp, setEditOp] = useState(null);
 
   // Catálogo curado de Calles de San José de Mayo
@@ -195,17 +330,45 @@ export default function Admin({ operadorId }) {
   async function agregarOperador(e) {
     e.preventDefault();
     try {
-      await api('/operadores', { method: 'POST', body: nuevoOp });
-      setNuevoOp({ usuario: '', nombre: '', password: '', rol: 'operador' });
-      mostrarExito('Operador creado correctamente');
+      await api('/operadores', {
+        method: 'POST',
+        body: {
+          usuario: nuevoOp.usuario,
+          nombre: nuevoOp.nombre,
+          password: nuevoOp.password,
+          rol: nuevoOp.rol,
+          permisos: nuevoOp.permisos,
+        },
+      });
+      setNuevoOp({
+        usuario: '',
+        nombre: '',
+        password: '',
+        rol: 'operador',
+        permisos: { ...PERMISOS_DEFAULT_OPERADOR },
+      });
+      setMostrarPermisosNuevo(false);
+      mostrarExito('Operador creado correctamente con sus permisos');
       cargarOperadores();
     } catch (err) {
       setError(err.message);
     }
   }
 
+  function iniciarEdicionOp(o) {
+    setEditOp({
+      ...o,
+      password: '',
+      permisos: normalizarPermisos(o.permisos, o.rol),
+    });
+  }
+
   async function guardarEdicionOp(e) {
-    e.preventDefault();
+    e?.preventDefault();
+    if (!editOp.nombre?.trim()) {
+      setError('El nombre no puede estar vacío');
+      return;
+    }
     try {
       await api(`/operadores/${editOp.id}`, {
         method: 'PUT',
@@ -214,10 +377,11 @@ export default function Admin({ operadorId }) {
           rol: editOp.rol,
           activo: editOp.activo,
           password: editOp.password || undefined,
+          permisos: editOp.permisos,
         },
       });
       setEditOp(null);
-      mostrarExito('Operador actualizado');
+      mostrarExito('Operador y permisos actualizados correctamente');
       cargarOperadores();
     } catch (err) {
       setError(err.message);
@@ -292,12 +456,14 @@ export default function Admin({ operadorId }) {
         >
           Choferes ({choferes.length})
         </button>
-        <button
-          className={subtab === 'operadores' ? 'tab activa' : 'tab'}
-          onClick={() => { setSubtab('operadores'); setError(''); }}
-        >
-          Operadores ({operadores.length})
-        </button>
+        {esSuperAdmin && (
+          <button
+            className={subtab === 'operadores' ? 'tab activa' : 'tab'}
+            onClick={() => { setSubtab('operadores'); setError(''); }}
+          >
+            👥 Operadores ({operadores.length})
+          </button>
+        )}
         <button
           className={subtab === 'calles' ? 'tab activa' : 'tab'}
           onClick={() => { setSubtab('calles'); setError(''); }}
@@ -394,40 +560,155 @@ export default function Admin({ operadorId }) {
         </div>
       )}
 
-      {subtab === 'operadores' && (
+      {subtab === 'operadores' && esSuperAdmin && (
         <div className="seccion-admin">
-          <div className="tarjeta admin-form-tarjeta">
-            <h3>Nuevo Operador</h3>
-            <form onSubmit={agregarOperador} className="form-horizontal-wrap">
-              <input
-                placeholder="Usuario (ej: juan)"
-                value={nuevoOp.usuario}
-                onChange={(e) => setNuevoOp({ ...nuevoOp, usuario: e.target.value })}
-                required
+          {editOp ? (
+            <div className="tarjeta edicion-op-panel">
+              <div className="edicion-op-cabecera">
+                <h4>
+                  ✏️ Editando Operador: <code>{editOp.usuario}</code>
+                </h4>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button className="btn chico primario" onClick={guardarEdicionOp}>
+                    💾 Guardar Cambios y Permisos
+                  </button>
+                  <button className="btn chico" onClick={() => setEditOp(null)}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+
+              <div className="edicion-op-campos">
+                <label className="campo">
+                  <span>Nombre completo</span>
+                  <input
+                    value={editOp.nombre}
+                    onChange={(e) => setEditOp({ ...editOp, nombre: e.target.value })}
+                    required
+                  />
+                </label>
+
+                <label className="campo">
+                  <span>Nueva contraseña (opcional)</span>
+                  <input
+                    type="password"
+                    placeholder="Dejar en blanco para no cambiar"
+                    value={editOp.password || ''}
+                    onChange={(e) => setEditOp({ ...editOp, password: e.target.value })}
+                  />
+                </label>
+
+                <label className="campo">
+                  <span>Rol en el sistema</span>
+                  <select
+                    value={editOp.rol}
+                    onChange={(e) => {
+                      const nuevoRol = e.target.value;
+                      setEditOp({
+                        ...editOp,
+                        rol: nuevoRol,
+                        permisos: normalizarPermisos(editOp.permisos, nuevoRol),
+                      });
+                    }}
+                    disabled={editOp.id === operadorId}
+                  >
+                    <option value="operador">Operador</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </label>
+
+                <label className="campo" style={{ justifyContent: 'center' }}>
+                  <span>Estado de cuenta</span>
+                  <label className="label-checkbox" style={{ marginTop: 6 }}>
+                    <input
+                      type="checkbox"
+                      checked={editOp.activo}
+                      onChange={(e) => setEditOp({ ...editOp, activo: e.target.checked })}
+                      disabled={editOp.id === operadorId}
+                    />
+                    <b>Usuario Activo</b>
+                  </label>
+                </label>
+              </div>
+
+              <EditorPermisos
+                permisos={editOp.permisos || {}}
+                rol={editOp.rol}
+                onChange={(p) => setEditOp({ ...editOp, permisos: p })}
+                disabled={editOp.id === operadorId}
               />
-              <input
-                placeholder="Nombre completo"
-                value={nuevoOp.nombre}
-                onChange={(e) => setNuevoOp({ ...nuevoOp, nombre: e.target.value })}
-                required
-              />
-              <input
-                type="password"
-                placeholder="Contraseña"
-                value={nuevoOp.password}
-                onChange={(e) => setNuevoOp({ ...nuevoOp, password: e.target.value })}
-                required
-              />
-              <select
-                value={nuevoOp.rol}
-                onChange={(e) => setNuevoOp({ ...nuevoOp, rol: e.target.value })}
-              >
-                <option value="operador">Operador</option>
-                <option value="admin">Administrador</option>
-              </select>
-              <button className="btn primario" type="submit">Crear Operador</button>
-            </form>
-          </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+                <button className="btn" onClick={() => setEditOp(null)}>
+                  Cancelar
+                </button>
+                <button className="btn primario" onClick={guardarEdicionOp}>
+                  💾 Guardar Operador y Permisos
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="tarjeta admin-form-tarjeta">
+              <h3>Nuevo Operador</h3>
+              <form onSubmit={agregarOperador}>
+                <div className="form-horizontal-wrap">
+                  <input
+                    placeholder="Usuario (ej: juan)"
+                    value={nuevoOp.usuario}
+                    onChange={(e) => setNuevoOp({ ...nuevoOp, usuario: e.target.value })}
+                    required
+                  />
+                  <input
+                    placeholder="Nombre completo"
+                    value={nuevoOp.nombre}
+                    onChange={(e) => setNuevoOp({ ...nuevoOp, nombre: e.target.value })}
+                    required
+                  />
+                  <input
+                    type="password"
+                    placeholder="Contraseña"
+                    value={nuevoOp.password}
+                    onChange={(e) => setNuevoOp({ ...nuevoOp, password: e.target.value })}
+                    required
+                  />
+                  <select
+                    value={nuevoOp.rol}
+                    onChange={(e) => {
+                      const nuevoRol = e.target.value;
+                      setNuevoOp({
+                        ...nuevoOp,
+                        rol: nuevoRol,
+                        permisos: normalizarPermisos(nuevoOp.permisos, nuevoRol),
+                      });
+                    }}
+                  >
+                    <option value="operador">Operador</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                  <button className="btn primario" type="submit">
+                    Crear Operador
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setMostrarPermisosNuevo(!mostrarPermisosNuevo)}
+                  >
+                    {mostrarPermisosNuevo ? 'Ocultar Permisos ▲' : 'Configurar Permisos ▼'}
+                  </button>
+                </div>
+
+                {mostrarPermisosNuevo && (
+                  <div style={{ marginTop: 16 }}>
+                    <EditorPermisos
+                      permisos={nuevoOp.permisos || {}}
+                      rol={nuevoOp.rol}
+                      onChange={(p) => setNuevoOp({ ...nuevoOp, permisos: p })}
+                    />
+                  </div>
+                )}
+              </form>
+            </div>
+          )}
 
           <div className="tarjeta tabla-admin-tarjeta">
             <table className="tabla-viajes">
@@ -437,66 +718,41 @@ export default function Admin({ operadorId }) {
                   <th>Nombre</th>
                   <th>Rol</th>
                   <th>Estado</th>
-                  <th style={{ width: 140 }}>Acción</th>
+                  <th>Permisos Concedidos</th>
+                  <th style={{ width: 100 }}>Acción</th>
                 </tr>
               </thead>
               <tbody>
-                {operadores.map((o) => (
-                  <tr key={o.id}>
-                    <td><code>{o.usuario}</code></td>
-                    <td>
-                      {editOp?.id === o.id ? (
-                        <input
-                          value={editOp.nombre}
-                          onChange={(e) => setEditOp({ ...editOp, nombre: e.target.value })}
-                        />
-                      ) : (
-                        o.nombre
-                      )}
-                    </td>
-                    <td>
-                      {editOp?.id === o.id ? (
-                        <select
-                          value={editOp.rol}
-                          onChange={(e) => setEditOp({ ...editOp, rol: e.target.value })}
-                          disabled={o.id === operadorId}
-                        >
-                          <option value="operador">Operador</option>
-                          <option value="admin">Administrador</option>
-                        </select>
-                      ) : (
-                        <span className="chip">{o.rol}</span>
-                      )}
-                    </td>
-                    <td>
-                      {editOp?.id === o.id ? (
-                        <label className="label-checkbox">
-                          <input
-                            type="checkbox"
-                            checked={editOp.activo}
-                            onChange={(e) => setEditOp({ ...editOp, activo: e.target.checked })}
-                            disabled={o.id === operadorId}
-                          />
-                          Activo
-                        </label>
-                      ) : (
+                {operadores.map((o) => {
+                  const editando = editOp?.id === o.id;
+                  return (
+                    <tr key={o.id} className={editando ? 'fila-editando' : ''}>
+                      <td><code>{o.usuario}</code></td>
+                      <td><b>{o.nombre}</b></td>
+                      <td>
+                        <span className={o.rol === 'admin' ? 'chip alerta' : 'chip'}>
+                          {o.rol === 'admin' ? 'Administrador' : 'Operador'}
+                        </span>
+                      </td>
+                      <td>
                         <span className={o.activo ? 'chip exito' : 'chip'}>
                           {o.activo ? 'Activo' : 'Inactivo'}
                         </span>
-                      )}
-                    </td>
-                    <td>
-                      {editOp?.id === o.id ? (
-                        <div className="botones-accion-fila">
-                          <button className="btn chico primario" onClick={guardarEdicionOp}>Guardar</button>
-                          <button className="btn chico" onClick={() => setEditOp(null)}>Cancelar</button>
-                        </div>
-                      ) : (
-                        <button className="btn chico" onClick={() => setEditOp({ ...o, password: '' })}>Editar</button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td>
+                        <ResumenPermisos operador={o} />
+                      </td>
+                      <td>
+                        <button
+                          className={editando ? 'btn chico primario' : 'btn chico'}
+                          onClick={() => iniciarEdicionOp(o)}
+                        >
+                          {editando ? 'Editando…' : 'Editar'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

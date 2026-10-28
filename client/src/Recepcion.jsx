@@ -291,8 +291,8 @@ export default function Recepcion({ turnos, socket, activa }) {
                   <th>Dirección</th>
                   <th className="col-hora">Hora Inicio</th>
                   <th className="col-fin">Asignado</th>
-                  <th className="col-avisado">Avisado</th>
                   <th>Chofer</th>
+                  <th className="col-avisado">Avisado</th>
                   <th>Teléfono</th>
                   <th>Hora Programada / Turno</th>
                 </tr>
@@ -321,18 +321,6 @@ export default function Recepcion({ turnos, socket, activa }) {
                         <div className="subtexto-op">{f.operador}</div>
                       </td>
                       <td className="col-fin">{horaAsig ? <b>{hora(horaAsig)}</b> : <span className="tenue">—</span>}</td>
-                      <td className="col-avisado" onClick={(e) => e.stopPropagation()}>
-                        <div className="celda-avisado-wrap">
-                          <button
-                            type="button"
-                            className={fueAvisado ? 'btn-avisado' : 'btn-avisar'}
-                            onClick={(e) => toggleAvisadoFuturo(e, f)}
-                          >
-                            {fueAvisado ? 'Avisado' : 'Avisar'}
-                          </button>
-                          {fueAvisado && <b className="hora-avisado-texto">{hora(f.hora_avisado)}</b>}
-                        </div>
-                      </td>
                       <td onClick={(e) => e.stopPropagation()}>
                         <select
                           className={f.chofer_id ? 'select-chofer-tabla asignado' : 'select-chofer-tabla sin-asignar'}
@@ -346,6 +334,18 @@ export default function Recepcion({ turnos, socket, activa }) {
                             </option>
                           ))}
                         </select>
+                      </td>
+                      <td className="col-avisado" onClick={(e) => e.stopPropagation()}>
+                        <div className="celda-avisado-wrap">
+                          <button
+                            type="button"
+                            className={fueAvisado ? 'btn-avisado' : 'btn-avisar'}
+                            onClick={(e) => toggleAvisadoFuturo(e, f)}
+                          >
+                            {fueAvisado ? 'Avisado' : 'Avisar'}
+                          </button>
+                          {fueAvisado && <b className="hora-avisado-texto">{hora(f.hora_avisado)}</b>}
+                        </div>
                       </td>
                       <td>
                         <TelefonoWhatsApp

@@ -7,8 +7,10 @@ CREATE TABLE IF NOT EXISTS operadores (
   password_hash TEXT NOT NULL,
   rol           TEXT NOT NULL DEFAULT 'operador' CHECK (rol IN ('operador', 'admin')),
   activo        BOOLEAN NOT NULL DEFAULT TRUE,
+  permisos      JSONB DEFAULT NULL,
   creado_en     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE operadores ADD COLUMN IF NOT EXISTS permisos JSONB DEFAULT NULL;
 
 CREATE TABLE IF NOT EXISTS choferes (
   id        SERIAL PRIMARY KEY,

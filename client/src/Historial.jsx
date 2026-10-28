@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api } from './api.js';
+import { api, leerSesion } from './api.js';
 import ListaViajes from './ListaViajes.jsx';
 import { fechaISO } from '../../shared/turnos.js';
+import { tienePermiso } from '../../shared/permisos.js';
 
 export default function Historial({ turnos }) {
   const [fecha, setFecha] = useState(() => turnos?.anterior?.fecha || fechaISO(new Date()));
@@ -30,17 +31,17 @@ export default function Historial({ turnos }) {
 
   function exportarCSV() {
     if (!datos?.viajes?.length) return;
-    const encabezados = ['N°', 'Hora inicio', 'Hora programada', 'Asignado', 'Avisado', 'Teléfono', 'Cliente', 'Dirección', 'Chofer', 'Operador', 'Estado'];
+    const encabezados = ['N°', 'Hora inicio', 'Hora programada', 'Asignado', 'Chofer', 'Avisado', 'Teléfono', 'Cliente', 'Dirección', 'Operador', 'Estado'];
     const filas = datos.viajes.map((v) => [
       v.numero ?? '',
       v.hora_toma ? new Date(v.hora_toma).toLocaleTimeString('es-AR') : '',
       v.hora_programada ? new Date(v.hora_programada).toLocaleTimeString('es-AR') : '',
       (v.hora_asignacion || v.hora_fin) ? new Date(v.hora_asignacion || v.hora_fin).toLocaleTimeString('es-AR') : '',
+      `"${v.chofer || 'Sin asignar'}"`,
       v.hora_avisado ? new Date(v.hora_avisado).toLocaleTimeString('es-AR') : '',
       `"${v.telefono || ''}"`,
       `"${(v.nombre_cliente || '').replace(/"/g, '""')}"`,
       `"${v.direccion.replace(/"/g, '""')}"`,
-      `"${v.chofer || 'Sin asignar'}"`,
       `"${v.operador || ''}"`,
       v.cancelado ? 'Anulado' : v.numero ? 'Completado' : 'Pendiente',
     ]);
@@ -55,6 +56,7 @@ export default function Historial({ turnos }) {
   }
 
   const viajesValidos = datos?.viajes?.filter((v) => v.numero != null && !v.cancelado) || [];
+  const puedeExportar = tienePermiso(leerSesion()?.operador, 'exportar_csv');
 
   return (
     <div className="historial-wrap">
@@ -81,9 +83,11 @@ export default function Historial({ turnos }) {
             <span className="resumen-viajes">
               <b>{viajesValidos.length}</b> viajes completados
             </span>
-            <button className="btn" onClick={exportarCSV}>
-              📥 Exportar CSV
-            </button>
+            {puedeExportar && (
+              <button className="btn" onClick={exportarCSV}>
+                📥 Exportar CSV
+              </button>
+            )}
           </div>
         )}
       </div>

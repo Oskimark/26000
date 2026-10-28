@@ -1907,4 +1907,200 @@ body.tema-oscuro,
   border-color: #475569;
 }
 
+/* --- Edición de Permisos de Operadores --- */
+.edicion-op-panel {
+  border: 2px solid var(--primario, #2563eb);
+  background: var(--fondo-tarjeta, #ffffff);
+  border-radius: 8px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.edicion-op-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--borde, #e2e8f0);
+}
+.edicion-op-cabecera h4 {
+  margin: 0;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.edicion-op-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.contenedor-permisos {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.permisos-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.permisos-cabecera h5 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #334155;
+}
+.permisos-atajos {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.permisos-grilla-secciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.permisos-columna {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 12px;
+}
+.permisos-seccion-titulo {
+  margin: 0 0 10px 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #475569;
+  font-weight: 700;
+}
+.permisos-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.item-permiso {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 5px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.item-permiso:hover {
+  background: #f1f5f9;
+}
+.item-permiso input[type="checkbox"] {
+  margin-top: 3px;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+.item-permiso-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.item-permiso-nombre {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+.item-permiso-desc {
+  font-size: 0.78rem;
+  color: #64748b;
+  line-height: 1.25;
+}
+.alerta-admin-permisos {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+.resumen-permisos-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.resumen-permisos-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.chip-permiso-mini {
+  display: inline-block;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.fila-editando {
+  background: #eff6ff !important;
+}
+
+/* Modo oscuro para permisos */
+.tema-oscuro .edicion-op-panel {
+  background: #1e293b;
+  border-color: #3b82f6;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.tema-oscuro .edicion-op-cabecera {
+  border-bottom-color: #334155;
+}
+.tema-oscuro .contenedor-permisos {
+  background: #0f172a;
+  border-color: #334155;
+}
+.tema-oscuro .permisos-cabecera h5 {
+  color: #e2e8f0;
+}
+.tema-oscuro .permisos-columna {
+  background: #1e293b;
+  border-color: #334155;
+}
+.tema-oscuro .permisos-seccion-titulo {
+  color: #94a3b8;
+}
+.tema-oscuro .item-permiso {
+  background: #0f172a;
+  border-color: #334155;
+}
+.tema-oscuro .item-permiso:hover {
+  background: #162032;
+}
+.tema-oscuro .item-permiso-nombre {
+  color: #f1f5f9;
+}
+.tema-oscuro .item-permiso-desc {
+  color: #94a3b8;
+}
+.tema-oscuro .alerta-admin-permisos {
+  background: #422006;
+  border-color: #b45309;
+  color: #fde68a;
+}
+.tema-oscuro .chip-permiso-mini {
+  background: #334155;
+  color: #e2e8f0;
+}
+.tema-oscuro .fila-editando {
+  background: rgba(59, 130, 246, 0.15) !important;
+}
+
 

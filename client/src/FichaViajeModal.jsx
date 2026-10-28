@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api } from './api.js';
+import { api, leerSesion } from './api.js';
 import { hora } from './formato.js';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
+import { tienePermiso } from '../../shared/permisos.js';
 
 const DIAS_SEMANA = [
   { id: 1, corto: 'Lun', largo: 'Lunes' },
@@ -22,6 +23,7 @@ function formatearFechaHoraCompleta(iso) {
 export default function FichaViajeModal({
   viajeId,
   choferes = [],
+  editable = true,
   onCerrar,
   onClose,
   onActualizado,
@@ -29,6 +31,7 @@ export default function FichaViajeModal({
 }) {
   const cerrar = onCerrar || onClose;
   const notificarCambio = onActualizado || onGuardado;
+  const puedeEditar = editable && tienePermiso(leerSesion()?.operador, 'editar_viajes');
 
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -148,6 +151,7 @@ export default function FichaViajeModal({
 
   async function guardarCambios(e) {
     e?.preventDefault();
+    if (!puedeEditar) return;
     setError('');
     setMensaje('');
     if (!direccion.trim()) {
@@ -518,9 +522,15 @@ export default function FichaViajeModal({
                 <button type="button" className="btn" onClick={cerrar}>
                   Cerrar
                 </button>
-                <button type="submit" className="btn primario" disabled={guardando}>
-                  {guardando ? 'Guardando…' : '💾 Guardar cambios'}
-                </button>
+                {puedeEditar ? (
+                  <button type="submit" className="btn primario" disabled={guardando}>
+                    {guardando ? 'Guardando…' : '💾 Guardar cambios'}
+                  </button>
+                ) : (
+                  <span className="chip" title="Tu usuario no tiene permiso para editar fichas de viaje">
+                    🔒 Modo solo lectura
+                  </span>
+                )}
               </div>
             </form>
 

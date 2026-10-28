@@ -8,13 +8,14 @@ import Clientes from './Clientes.jsx';
 import Admin from './Admin.jsx';
 import Reloj from './Reloj.jsx';
 import { leerTema, guardarTema } from './tema.js';
+import { tienePermiso } from '../../shared/permisos.js';
 
 const SECCIONES = [
-  { id: 'recepcion', nombre: 'Recepción' },
-  { id: 'choferes', nombre: 'Choferes del turno' },
-  { id: 'historial', nombre: 'Historial' },
-  { id: 'clientes', nombre: 'Clientes' },
-  { id: 'admin', nombre: 'Administración', soloAdmin: true },
+  { id: 'recepcion', nombre: 'Recepción', permiso: 'recepcion' },
+  { id: 'choferes', nombre: 'Choferes del turno', permiso: 'choferes' },
+  { id: 'historial', nombre: 'Historial', permiso: 'historial' },
+  { id: 'clientes', nombre: 'Clientes', permiso: 'clientes' },
+  { id: 'admin', nombre: 'Administración', permiso: 'admin' },
 ];
 
 export default function App() {
@@ -29,6 +30,23 @@ export default function App() {
   }, []);
 
   useEffect(() => onSesionExpirada(salir), [salir]);
+
+  // Actualizar datos del operador (incluyendo permisos actualizados)
+  useEffect(() => {
+    if (!sesion) return;
+    api('/yo')
+      .then((op) => {
+        if (op) {
+          setSesion((prev) => {
+            if (!prev) return null;
+            const nuevo = { ...prev, operador: op };
+            guardarSesion(nuevo);
+            return nuevo;
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const cargarTurnos = useCallback(() => {
     api('/turnos/actual').then(setTurnos).catch(() => {});
@@ -70,6 +88,12 @@ export default function App() {
   }
 
   const esAdmin = sesion.operador.rol === 'admin';
+  const seccionesVisibles = SECCIONES.filter((s) => tienePermiso(sesion.operador, s.permiso));
+
+  // Si la sección actual no está permitida, redirigir a la primera permitida
+  if (seccionesVisibles.length > 0 && !seccionesVisibles.some((s) => s.id === seccion)) {
+    setSeccion(seccionesVisibles[0].id);
+  }
 
   const clasesApp = [
     'app',
@@ -83,7 +107,7 @@ export default function App() {
     <div className={clasesApp}>
       <header className="barra">
         <nav>
-          {SECCIONES.filter((s) => !s.soloAdmin || esAdmin).map((s) => (
+          {seccionesVisibles.map((s) => (
             <button
               key={s.id}
               className={seccion === s.id ? 'tab activa' : 'tab'}
@@ -119,16 +143,30 @@ export default function App() {
       <main className="contenido">
         {!turnos || !socket ? (
           <p className="cargando">Cargando…</p>
+        ) : seccionesVisibles.length === 0 ? (
+          <div className="alerta error" style={{ margin: '2rem' }}>
+            ⚠️ Tu usuario no tiene permisos habilitados para acceder a ninguna sección del sistema. Por favor contactá al administrador.
+          </div>
         ) : (
           <>
             {/* Recepción queda montada para no perder lo que se estaba escribiendo */}
-            <div hidden={seccion !== 'recepcion'}>
-              <Recepcion turnos={turnos} socket={socket} activa={seccion === 'recepcion'} />
-            </div>
-            {seccion === 'choferes' && <ChoferesTurno turnos={turnos} socket={socket} esAdmin={esAdmin} />}
-            {seccion === 'historial' && <Historial turnos={turnos} />}
-            {seccion === 'clientes' && <Clientes socket={socket} />}
-            {seccion === 'admin' && esAdmin && <Admin operadorId={sesion.operador.id} />}
+            {tienePermiso(sesion.operador, 'recepcion') && (
+              <div hidden={seccion !== 'recepcion'}>
+                <Recepcion turnos={turnos} socket={socket} activa={seccion === 'recepcion'} />
+              </div>
+            )}
+            {seccion === 'choferes' && tienePermiso(sesion.operador, 'choferes') && (
+              <ChoferesTurno turnos={turnos} socket={socket} esAdmin={esAdmin} />
+            )}
+            {seccion === 'historial' && tienePermiso(sesion.operador, 'historial') && (
+              <Historial turnos={turnos} />
+            )}
+            {seccion === 'clientes' && tienePermiso(sesion.operador, 'clientes') && (
+              <Clientes socket={socket} />
+            )}
+            {seccion === 'admin' && tienePermiso(sesion.operador, 'admin') && (
+              <Admin operadorId={sesion.operador.id} esSuperAdmin={esAdmin} />
+            )}
           </>
         )}
       </main>

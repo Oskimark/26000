@@ -88,7 +88,7 @@ export const CampoDireccion = forwardRef(function CampoDireccion({ valor, onCamb
       }
     } else if (e.key === 'Enter' && !e.ctrlKey) {
       e.preventDefault();
-      if (hay && resaltada && (navegado || !valor.trim() || resaltada.es_canonica_exacta)) {
+      if (hay && resaltada && (navegado || !valor.trim())) {
         elegir(resaltada, { forzarAvance: !resaltada.texto.endsWith(' ') });
       } else if (valor.trim()) {
         onCambio(valor.trim());
