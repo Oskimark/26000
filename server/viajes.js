@@ -510,17 +510,21 @@ export async function crearViaje(
     const turno = turnoDe(programada ?? ahora);
     const numero = programada ? null : await siguienteNumero(client, turno);
     const horaAsig = chofer ? ahora : null;
+    const horaAvisado = chofer ? ahora : null;
+    const avisadoPor = chofer ? operadorId : null;
     const { rows } = await client.query(
       `INSERT INTO viajes (telefono, nombre_cliente, direccion_id, chofer_id, operador_id, hora_toma,
                            programado, hora_programada, fecha_turno, tipo_turno,
-                           numero, hora_ejecucion, hora_asignacion, asignado_por, hora_fin)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                           numero, hora_ejecucion, hora_asignacion, asignado_por, hora_fin,
+                           hora_avisado, avisado_por)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
        RETURNING id`,
       [
         tel, nomCliente, direccionId, chofer, operadorId, ahora,
         !!programada, programada, turno.fecha, turno.tipo,
         numero, programada ? null : ahora,
         horaAsig, chofer ? operadorId : null, horaAsig,
+        horaAvisado, avisadoPor,
       ],
     );
     const viajeId = rows[0].id;
@@ -536,7 +540,7 @@ export async function crearViaje(
       `Dirección: "${limpiarDireccion(direccion)}"`,
       tel ? `Tel: ${tel}` : 'Sin teléfono',
       nomCliente ? `Cliente: ${nomCliente}` : null,
-      infoChofer ? `Chofer asignado: ${infoChofer.nombre}` : 'Chofer: Sin asignar',
+      infoChofer ? `Chofer asignado: ${infoChofer.nombre} (avisado por defecto)` : 'Chofer: Sin asignar',
       programada ? `Programado para ${textoHora}` : 'Viaje inmediato',
     ].filter(Boolean).join(' · ');
     await registrarHistorial(client, viajeId, operadorId, 'Creación de viaje', resumenCreacion);

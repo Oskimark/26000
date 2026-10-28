@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { api } from './api.js';
 import { hora, horaConDia } from './formato.js';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
@@ -183,10 +183,16 @@ export default function ListaViajes({
   minutosAviso = 5,
   mostrarNombre = true,
   editable = true,
+  ocultarAnulados = false,
   onAtender,
   onActualizado,
 }) {
   const [viajeFichaId, setViajeFichaId] = useState(null);
+
+  const viajesVisibles = useMemo(() => {
+    if (!ocultarAnulados) return viajes;
+    return viajes.filter((v) => !v.cancelado);
+  }, [viajes, ocultarAnulados]);
 
   async function cambiarCancelado(e, v) {
     e.stopPropagation();
@@ -201,7 +207,7 @@ export default function ListaViajes({
     }
   }
 
-  if (!viajes.length) return <p className="vacio">Todavía no hay viajes en este turno.</p>;
+  if (!viajesVisibles.length) return <p className="vacio">Todavía no hay viajes en este turno.</p>;
 
   return (
     <>
@@ -220,7 +226,7 @@ export default function ListaViajes({
           </tr>
         </thead>
         <tbody>
-          {viajes.map((v) => {
+          {viajesVisibles.map((v) => {
             const pendiente = v.numero == null;
             const mins = v.programado ? minutosHasta(v.hora_programada) : null;
             const enAvisoPrevio =

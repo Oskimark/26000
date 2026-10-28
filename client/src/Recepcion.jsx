@@ -21,6 +21,7 @@ export default function Recepcion({ turnos, socket, activa }) {
   const [pospuestos, setPospuestos] = useState(new Set());
   const [atendiendoManual, setAtendiendoManual] = useState(null);
   const [formVacio, setFormVacio] = useState(true);
+  const [mostrarAnulados, setMostrarAnulados] = useState(false);
   const [viajeFuturoFichaId, setViajeFuturoFichaId] = useState(null);
 
   const formRef = useRef(null);
@@ -155,6 +156,7 @@ export default function Recepcion({ turnos, socket, activa }) {
 
   const totalViajes = viajes.filter((v) => v.numero != null && !v.cancelado).length;
   const sinAvisarCount = viajes.filter((v) => !v.cancelado && v.chofer_id && !v.hora_avisado).length;
+  const anuladosCount = viajes.filter((v) => v.cancelado).length;
 
   async function cambiarChoferFuturo(viajeId, nuevoChoferId) {
     try {
@@ -241,6 +243,20 @@ export default function Recepcion({ turnos, socket, activa }) {
               {sinAvisarCount > 0 && (
                 <> · <b style={{ color: '#dc2626' }}>{sinAvisarCount}</b> por avisar</>
               )}
+              {anuladosCount > 0 && (
+                <>
+                  {' · '}
+                  <button
+                    type="button"
+                    className="btn-link chico"
+                    style={{ color: '#94a3b8', textDecoration: 'underline', padding: '0 4px', fontSize: '0.82rem' }}
+                    onClick={() => setMostrarAnulados(!mostrarAnulados)}
+                    title={mostrarAnulados ? 'Ocultar viajes anulados de la lista' : 'Ver viajes anulados para consultar o restaurar'}
+                  >
+                    {mostrarAnulados ? 'Ocultar anulados' : `${anuladosCount} anulado(s)`}
+                  </button>
+                </>
+              )}
             </span>
           </div>
           {choferes.length === 0 && (
@@ -257,6 +273,7 @@ export default function Recepcion({ turnos, socket, activa }) {
             minutosAviso={minutosAviso}
             mostrarNombre={mostrarNombre}
             editable={true}
+            ocultarAnulados={!mostrarAnulados}
             onAtender={handleAtenderManual}
             onActualizado={cargarDatos}
           />

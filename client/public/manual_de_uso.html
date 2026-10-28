@@ -1282,6 +1282,7 @@
         <ol class="pasos-numerados">
           <li><strong>2.4.1. "Sin asignar" por defecto:</strong> Todo viaje nuevo tiene preseleccionada la opción <strong><code>Sin asignar</code></strong>. Esto permite tomar rápidamente el pedido del cliente y asignarle el móvil unos instantes o minutos después.</li>
           <li><strong>2.4.2. Asignación en cualquier momento:</strong> Tanto los viajes inmediatos como los viajes programados pueden crearse con chofer o sin chofer, y su chofer puede asignarse o cambiarse en cualquier momento directamente desde el desplegable de la columna <strong>Chofer</strong> en la tabla de viajes.</li>
+          <li><strong>2.4.3. Marcado como Avisado por defecto al crear:</strong> Cuando se crea un nuevo viaje y ya se le asigna un chofer en el formulario de ingreso, el sistema lo marca automáticamente como <strong>Avisado</strong> por defecto (registrando la hora y el operador creador), agilizando el despacho sin requerir pulsar el botón <em>Avisar</em>. (Si luego se cambia el chofer del viaje, el estado de aviso se reinicia a pendiente para asegurar que el nuevo chofer sea notificado).</li>
         </ol>
       </div>
 
@@ -1362,6 +1363,11 @@
             <li><strong>No se puede avisar sin chofer:</strong> Si pulsa el botón rojo <code>Avisar</code> cuando el viaje aún está en <em>"Sin asignar"</em>, el sistema bloquea la acción y muestra la alerta: <code>"⚠️ Primero tenés que asignar un chofer antes de avisar."</code></li>
             <li><strong>Cambio de chofer reinicia el aviso:</strong> Si a un viaje que ya estaba en estado <code>Avisado</code> se le cambia el chofer (desde la tabla o desde la Ficha de Viaje), el botón vuelve automáticamente a color <strong>rojo (<code>Avisar</code>)</strong> y se limpia la hora de avisado para no olvidar comunicarle al nuevo chofer.</li>
           </ul>
+        </div>
+
+        <div class="nota-box importante" style="margin-top:12px;">
+          <strong>🗑️ Los viajes anulados desaparecen del listado de recepción:</strong>
+          Al anular un viaje, este desaparece automáticamente de la tabla de <em>Recepción</em> para mantener la pantalla clara y enfocada en los viajes activos. Si el turno tiene viajes anulados, junto al resumen de cabecera figura el enlace <code>X anulado(s)</code> que permite desplegarlos para consultarlos o restaurarlos (<em>Restaurar</em>) en caso de anulación errónea. En el módulo <strong>Historial</strong>, los viajes anulados permanecen siempre registrados e identificables con formato tachado y en las exportaciones CSV.
         </div>
 
         <figure class="figura-ui">
