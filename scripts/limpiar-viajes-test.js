@@ -1,8 +1,9 @@
 /**
- * Script para eliminar viajes de prueba por número de teléfono
+ * Script para eliminar viajes de prueba por número de teléfono o dirección/destino
  * Uso:
  *   node scripts/limpiar-viajes-test.js 098155082
- *   node scripts/limpiar-viajes-test.js 098155082 --solo-listar
+ *   node scripts/limpiar-viajes-test.js 654654
+ *   node scripts/limpiar-viajes-test.js 654654 --solo-listar
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +13,6 @@ if (!process.env.DATABASE_URL && fs.existsSync('.env')) {
   try {
     process.loadEnvFile?.('.env');
   } catch {
-    // Si no está disponible loadEnvFile, parsear manualmente
     const contenido = fs.readFileSync('.env', 'utf-8');
     for (const linea of contenido.split('\n')) {
       const match = linea.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
@@ -25,7 +25,7 @@ if (!process.env.DATABASE_URL && fs.existsSync('.env')) {
 
 const args = process.argv.slice(2);
 const soloListar = args.includes('--solo-listar');
-const telefonoArg = args.find((a) => !a.startsWith('--')) || '098155082';
+const terminoArg = args.find((a) => !a.startsWith('--')) || '098155082';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -33,9 +33,10 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
-const telLimpio = telefonoArg.replace(/\D/g, '');
-const patron1 = `%${telLimpio}%`;
-const patron2 = telLimpio.startsWith('0') ? `%${telLimpio.slice(1)}%` : `%${telLimpio}%`;
+const telLimpio = terminoArg.replace(/\D/g, '');
+const patronTel1 = telLimpio ? `%${telLimpio}%` : '%---%';
+const patronTel2 = telLimpio.startsWith('0') ? `%${telLimpio.slice(1)}%` : patronTel1;
+const patronDestino = `%${terminoArg}%`;
 
 const esLocal = /localhost|127\.0\.0\.1/.test(databaseUrl);
 const usaRedPrivada = /\.railway\.internal/.test(databaseUrl);
@@ -45,7 +46,7 @@ const pool = new pg.Pool({
 });
 
 async function main() {
-  console.log(`\n🔍 Buscando viajes de prueba asociados al teléfono: "${telefonoArg}"...`);
+  console.log(`\n🔍 Buscando viajes de prueba asociados a: "${terminoArg}" (teléfono o destino)...`);
   
   let client;
   try {
@@ -61,13 +62,13 @@ async function main() {
       `SELECT v.id, v.numero, v.fecha_turno, v.tipo_turno, v.telefono, v.nombre_cliente, d.texto AS direccion, v.hora_toma
        FROM viajes v
        JOIN direcciones d ON d.id = v.direccion_id
-       WHERE v.telefono LIKE $1 OR v.telefono LIKE $2
+       WHERE v.telefono LIKE $1 OR v.telefono LIKE $2 OR d.texto ILIKE $3
        ORDER BY v.id DESC`,
-      [patron1, patron2],
+      [patronTel1, patronTel2, patronDestino],
     );
 
     if (viajes.length === 0) {
-      console.log('ℹ️ No se encontraron viajes registrados con ese teléfono.');
+      console.log('ℹ️ No se encontraron viajes registrados con ese teléfono o destino.');
       return;
     }
 
@@ -96,7 +97,7 @@ async function main() {
     );
     console.log(`\n✅ Se eliminaron con éxito ${res.rowCount} viaje(s) de prueba.`);
     console.log('ℹ️ El historial de auditoría de cada viaje se eliminó automáticamente (CASCADE).');
-    console.log('ℹ️ Las estadísticas, clientes únicos y rankings del panel ya no reflejarán estos viajes.\n');
+    console.log('ℹ️ Las estadísticas, destinos únicos y rankings ya no reflejarán estos viajes.\n');
   } catch (err) {
     console.error('❌ Error al interactuar con la base de datos:', err.message);
   } finally {
