@@ -13,7 +13,8 @@
     "db:dev": "node scripts/dev-db.js",
     "build": "npm --prefix client install --include=dev && npm --prefix client run build",
     "start": "node --env-file-if-exists=.env server/index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "limpiar:test": "node scripts/limpiar-viajes-test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
