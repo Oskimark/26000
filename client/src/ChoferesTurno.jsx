@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { api } from './api.js';
+import { api, leerSesion } from './api.js';
+import { tienePermiso } from '../../shared/permisos.js';
 
 export default function ChoferesTurno({ turnos, socket }) {
   const [turnoSeleccionado, setTurnoSeleccionado] = useState('actual');
@@ -10,6 +11,7 @@ export default function ChoferesTurno({ turnos, socket }) {
   const [mensaje, setMensaje] = useState('');
 
   const turno = turnoSeleccionado === 'actual' ? turnos.actual : turnos.siguiente;
+  const puedeAsignar = tienePermiso(leerSesion()?.operador, 'choferes_asignar');
 
   const cargarChoferesYTurno = useCallback(async () => {
     if (!turno) return;
@@ -40,6 +42,7 @@ export default function ChoferesTurno({ turnos, socket }) {
   }, [socket, cargarChoferesYTurno]);
 
   function toggle(id) {
+    if (!puedeAsignar) return;
     setAsignadosIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -103,10 +106,10 @@ export default function ChoferesTurno({ turnos, socket }) {
             </p>
           </div>
           <div className="acciones-rapidas">
-            <button className="btn" onClick={copiarAnterior} title="Copia la lista del turno previo">
+            <button className="btn" onClick={copiarAnterior} disabled={!puedeAsignar} title="Copia la lista del turno previo">
               Copiar del turno anterior
             </button>
-            <button className="btn primario" onClick={guardar} disabled={guardando}>
+            <button className="btn primario" onClick={guardar} disabled={!puedeAsignar || guardando}>
               {guardando ? 'Guardando…' : `Guardar asignación (${asignadosIds.size})`}
             </button>
           </div>

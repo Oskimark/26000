@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api } from './api.js';
+import { api, leerSesion } from './api.js';
+import { tienePermiso } from '../../shared/permisos.js';
 import FormViaje from './FormViaje.jsx';
 import Despacho from './Despacho.jsx';
 import ListaViajes from './ListaViajes.jsx';
@@ -26,6 +27,12 @@ export default function Recepcion({ turnos, socket, activa }) {
 
   const formRef = useRef(null);
   const despachoRef = useRef(null);
+
+  const sesionOperador = leerSesion()?.operador;
+  const puedeTomar = tienePermiso(sesionOperador, 'recepcion_toma');
+  const puedeAsignarChofer = tienePermiso(sesionOperador, 'recepcion_chofer');
+  const puedeAvisar = tienePermiso(sesionOperador, 'recepcion_avisar');
+  const puedeAbrirFicha = tienePermiso(sesionOperador, 'recepcion_ficha');
 
   const tActual = turnos?.actual;
 
@@ -217,7 +224,7 @@ export default function Recepcion({ turnos, socket, activa }) {
               onPosponer={handlePosponer}
               onAsignado={handleAsignado}
             />
-          ) : (
+          ) : puedeTomar ? (
             <FormViaje
               ref={formRef}
               choferes={choferes}
@@ -229,6 +236,10 @@ export default function Recepcion({ turnos, socket, activa }) {
               }}
               onVacioCambio={setFormVacio}
             />
+          ) : (
+            <div style={{ padding: '1.5rem', textAlign: 'center', color: '#64748b' }}>
+              🔒 No tenés permisos para ingresar nuevos viajes (Tomar viajes).
+            </div>
           )}
         </section>
       </div>
@@ -304,9 +315,9 @@ export default function Recepcion({ turnos, socket, activa }) {
                   return (
                     <tr
                       key={f.id}
-                      className="fila-pendiente fila-clickeable"
-                      onClick={() => setViajeFuturoFichaId(f.id)}
-                      title="Click para abrir la Ficha de Viaje"
+                      className={['fila-pendiente', puedeAbrirFicha && 'fila-clickeable'].filter(Boolean).join(' ')}
+                      onClick={() => { if (puedeAbrirFicha) setViajeFuturoFichaId(f.id); }}
+                      title={puedeAbrirFicha ? 'Click para abrir la Ficha de Viaje' : undefined}
                     >
                       <td className="col-dir">
                         <span className="texto-direccion">{f.direccion}</span>
@@ -325,6 +336,7 @@ export default function Recepcion({ turnos, socket, activa }) {
                         <select
                           className={f.chofer_id ? 'select-chofer-tabla asignado' : 'select-chofer-tabla sin-asignar'}
                           value={f.chofer_id ?? ''}
+                          disabled={!puedeAsignarChofer}
                           onChange={(e) => cambiarChoferFuturo(f.id, e.target.value)}
                         >
                           <option value="">Sin asignar</option>
@@ -340,6 +352,7 @@ export default function Recepcion({ turnos, socket, activa }) {
                           <button
                             type="button"
                             className={fueAvisado ? 'btn-avisado' : 'btn-avisar'}
+                            disabled={!puedeAvisar}
                             onClick={(e) => toggleAvisadoFuturo(e, f)}
                           >
                             {fueAvisado ? 'Avisado' : 'Avisar'}

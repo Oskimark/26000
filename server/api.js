@@ -56,7 +56,7 @@ export function crearApi({ notificar }) {
     res.json(await obtenerConfiguracion());
   }));
 
-  api.put('/configuracion', requiereAdmin, a(async (req, res) => {
+  api.put('/configuracion', requierePermiso('admin_configuracion'), a(async (req, res) => {
     const cfg = await actualizarConfiguracion(req.body || {});
     await ejecutarProgramadosVencidos();
     notificar('configuracion', cfg);
@@ -91,7 +91,7 @@ export function crearApi({ notificar }) {
     res.json(rows);
   }));
 
-  api.put('/turnos/:fecha/:tipo/choferes', requierePermiso('choferes'), a(async (req, res) => {
+  api.put('/turnos/:fecha/:tipo/choferes', requierePermiso('choferes_asignar'), a(async (req, res) => {
     const t = turnoDeParams(req);
     const ids = [...new Set((req.body?.choferIds || []).map(Number).filter(Boolean))];
     await query('DELETE FROM turno_choferes WHERE fecha_turno = $1 AND tipo_turno = $2', [t.fecha, t.tipo]);
@@ -128,7 +128,7 @@ export function crearApi({ notificar }) {
   }));
 
   // ---------- Viajes ----------
-  api.post('/viajes', requierePermiso('recepcion'), a(async (req, res) => {
+  api.post('/viajes', requierePermiso('recepcion_toma'), a(async (req, res) => {
     const viaje = await crearViaje(req.body || {}, req.operador.id);
     notificar('viajes', { id: viaje.id });
     res.status(201).json(viaje);
@@ -140,13 +140,13 @@ export function crearApi({ notificar }) {
     res.json(await obtenerFichaViaje(Number(req.params.id)));
   }));
 
-  api.put('/viajes/:id', requierePermiso('editar_viajes'), a(async (req, res) => {
+  api.put('/viajes/:id', requierePermiso('recepcion_ficha'), a(async (req, res) => {
     const resultado = await editarFichaViaje(Number(req.params.id), req.body || {}, req.operador.id);
     notificar('viajes', { id: Number(req.params.id) });
     res.json(resultado);
   }));
 
-  api.put('/viajes/:id/chofer', requierePermiso('recepcion'), a(async (req, res) => {
+  api.put('/viajes/:id/chofer', requierePermiso('recepcion_chofer'), a(async (req, res) => {
     const viaje = await asignarChofer(Number(req.params.id), req.body?.choferId, req.operador.id);
     notificar('viajes', { id: viaje.id });
     res.json(viaje);
@@ -158,13 +158,13 @@ export function crearApi({ notificar }) {
     res.json(viaje);
   }));
 
-  api.put('/viajes/:id/avisado', requierePermiso('recepcion'), a(async (req, res) => {
+  api.put('/viajes/:id/avisado', requierePermiso('recepcion_avisar'), a(async (req, res) => {
     const viaje = await registrarAvisado(Number(req.params.id), req.body || {}, req.operador.id);
     notificar('viajes', { id: viaje.id });
     res.json(viaje);
   }));
 
-  api.put('/viajes/:id/cancelado', requierePermiso('cancelar_viajes'), a(async (req, res) => {
+  api.put('/viajes/:id/cancelado', requierePermiso('recepcion_cancelar'), a(async (req, res) => {
     const viaje = await cambiarCancelacion(Number(req.params.id), req.body?.cancelado, req.operador.id);
     notificar('viajes', { id: viaje.id });
     res.json(viaje);
@@ -190,7 +190,7 @@ export function crearApi({ notificar }) {
     res.json(rows);
   }));
 
-  api.post('/choferes', requiereAdmin, a(async (req, res) => {
+  api.post('/choferes', requierePermiso('admin_choferes'), a(async (req, res) => {
     const nombre = String(req.body?.nombre || '').trim();
     if (!nombre) throw new ErrorNegocio('Falta el nombre');
     const { rows } = await query('INSERT INTO choferes (nombre) VALUES ($1) RETURNING id, nombre, activo', [nombre]);
@@ -198,7 +198,7 @@ export function crearApi({ notificar }) {
     res.status(201).json(rows[0]);
   }));
 
-  api.put('/choferes/:id', requiereAdmin, a(async (req, res) => {
+  api.put('/choferes/:id', requierePermiso('admin_choferes'), a(async (req, res) => {
     const nombre = String(req.body?.nombre || '').trim();
     if (!nombre) throw new ErrorNegocio('Falta el nombre');
     const { rows } = await query(
@@ -210,7 +210,7 @@ export function crearApi({ notificar }) {
     res.json(rows[0]);
   }));
 
-  api.delete('/choferes/:id', requiereAdmin, a(async (req, res) => {
+  api.delete('/choferes/:id', requierePermiso('admin_choferes'), a(async (req, res) => {
     const id = Number(req.params.id);
     if (!id) throw new ErrorNegocio('ID de chofer inválido');
     const eliminado = await transaccion(async (client) => {
@@ -276,22 +276,22 @@ export function crearApi({ notificar }) {
     res.json(await listarCalles({ q: req.query.q }));
   }));
 
-  api.post('/calles', requiereAdmin, a(async (req, res) => {
+  api.post('/calles', requierePermiso('admin_calles'), a(async (req, res) => {
     const calle = await crearCalle(req.body || {});
     res.status(201).json(calle);
   }));
 
-  api.post('/calles/restaurar', requiereAdmin, a(async (req, res) => {
+  api.post('/calles/restaurar', requierePermiso('admin_calles'), a(async (req, res) => {
     res.json(await restaurarCatalogoCalles());
   }));
 
-  api.put('/calles/:id', requiereAdmin, a(async (req, res) => {
+  api.put('/calles/:id', requierePermiso('admin_calles'), a(async (req, res) => {
     const calle = await actualizarCalle(Number(req.params.id), req.body || {});
     notificar('viajes');
     res.json(calle);
   }));
 
-  api.delete('/calles/:id', requiereAdmin, a(async (req, res) => {
+  api.delete('/calles/:id', requierePermiso('admin_calles'), a(async (req, res) => {
     const eliminada = await eliminarCalle(Number(req.params.id));
     res.json(eliminada);
   }));

@@ -224,7 +224,7 @@ export default function Clientes({ socket }) {
                 ✖ Limpiar filtros
               </button>
             )}
-            {viajes.length > 0 && tienePermiso(leerSesion()?.operador, 'exportar_csv') && (
+            {viajes.length > 0 && tienePermiso(leerSesion()?.operador, 'clientes_exportar') && (
               <button className="btn" onClick={exportarCSV}>
                 📥 Exportar CSV ({viajes.length})
               </button>

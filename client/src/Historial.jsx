@@ -56,7 +56,7 @@ export default function Historial({ turnos }) {
   }
 
   const viajesValidos = datos?.viajes?.filter((v) => v.numero != null && !v.cancelado) || [];
-  const puedeExportar = tienePermiso(leerSesion()?.operador, 'exportar_csv');
+  const puedeExportar = tienePermiso(leerSesion()?.operador, 'historial_exportar');
 
   return (
     <div className="historial-wrap">

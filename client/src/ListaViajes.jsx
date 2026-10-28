@@ -32,7 +32,7 @@ function CeldaAsignado({ viaje }) {
   );
 }
 
-function CeldaAvisado({ viaje, editable }) {
+function CeldaAvisado({ viaje, editable, puedeAvisar = true }) {
   const [guardando, setGuardando] = useState(false);
 
   if (viaje.cancelado) return <td className="col-avisado" />;
@@ -60,7 +60,7 @@ function CeldaAvisado({ viaje, editable }) {
     }
   }
 
-  if (!editable) {
+  if (!editable || !puedeAvisar) {
     return (
       <td className="col-avisado">
         {fueAvisado ? (
@@ -107,7 +107,7 @@ function CeldaAvisado({ viaje, editable }) {
   );
 }
 
-function CeldaChofer({ viaje, choferes = [], editable, onAtender }) {
+function CeldaChofer({ viaje, choferes = [], editable, puedeAsignarChofer = true, onAtender }) {
   const [guardando, setGuardando] = useState(false);
 
   async function cambiarChofer(nuevoId) {
@@ -124,7 +124,7 @@ function CeldaChofer({ viaje, choferes = [], editable, onAtender }) {
     }
   }
 
-  if (!editable || viaje.cancelado) {
+  if (!editable || !puedeAsignarChofer || viaje.cancelado) {
     return (
       <td>
         {viaje.chofer || <span className="tenue">Sin asignar</span>}
@@ -208,7 +208,11 @@ export default function ListaViajes({
     }
   }
 
-  const puedeCancelar = editable && tienePermiso(leerSesion()?.operador, 'cancelar_viajes');
+  const sesionOp = leerSesion()?.operador;
+  const puedeCancelar = editable && tienePermiso(sesionOp, 'recepcion_cancelar');
+  const puedeAsignarChofer = editable && tienePermiso(sesionOp, 'recepcion_chofer');
+  const puedeAvisar = editable && tienePermiso(sesionOp, 'recepcion_avisar');
+  const puedeAbrirFicha = tienePermiso(sesionOp, 'recepcion_ficha');
 
   if (!viajesVisibles.length) return <p className="vacio">Todavía no hay viajes en este turno.</p>;
 
@@ -236,7 +240,7 @@ export default function ListaViajes({
               v.programado && !v.cancelado && mins != null && mins <= minutosAviso && (!v.chofer_id || !v.hora_avisado);
             const sinChofer = !v.chofer_id && !v.cancelado && (!v.programado || !pendiente || enAvisoPrevio);
             const clases = [
-              'fila-clickeable',
+              puedeAbrirFicha && 'fila-clickeable',
               pendiente && 'fila-pendiente',
               sinChofer && 'fila-sin-chofer',
               enAvisoPrevio && 'fila-aviso-programado',
@@ -248,8 +252,8 @@ export default function ListaViajes({
               <tr
                 key={v.id}
                 className={clases}
-                onClick={() => setViajeFichaId(v.id)}
-                title="Click para abrir la Ficha de Viaje y ver su historial"
+                onClick={() => { if (puedeAbrirFicha) setViajeFichaId(v.id); }}
+                title={puedeAbrirFicha ? 'Click para abrir la Ficha de Viaje y ver su historial' : undefined}
               >
                 <td className="col-num">{pendiente ? '—' : v.numero}</td>
                 <td className="col-dir">
@@ -265,8 +269,8 @@ export default function ListaViajes({
                   <div className="subtexto-op">{v.operador}</div>
                 </td>
                 <CeldaAsignado viaje={v} />
-                <CeldaChofer viaje={v} choferes={choferes} editable={editable} onAtender={onAtender} />
-                <CeldaAvisado viaje={v} editable={editable} />
+                <CeldaChofer viaje={v} choferes={choferes} editable={editable} puedeAsignarChofer={puedeAsignarChofer} onAtender={onAtender} />
+                <CeldaAvisado viaje={v} editable={editable} puedeAvisar={puedeAvisar} />
                 <td>
                   <TelefonoWhatsApp telefono={v.telefono} nombre={mostrarNombre ? v.nombre_cliente : ''} />
                 </td>

@@ -1907,7 +1907,7 @@ body.tema-oscuro,
   border-color: #475569;
 }
 
-/* --- Edición de Permisos de Operadores --- */
+/* --- Edición de Permisos de Operadores (Módulos y Sub-secciones) --- */
 .edicion-op-panel {
   border: 2px solid var(--primario, #2563eb);
   background: var(--fondo-tarjeta, #ffffff);
@@ -1946,81 +1946,23 @@ body.tema-oscuro,
 .permisos-cabecera {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14px;
+  align-items: flex-start;
+  margin-bottom: 16px;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
 }
 .permisos-cabecera h5 {
-  margin: 0;
-  font-size: 0.95rem;
+  margin: 0 0 4px 0;
+  font-size: 1rem;
   font-weight: 700;
-  color: #334155;
+  color: #1e293b;
 }
 .permisos-atajos {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
-}
-.permisos-grilla-secciones {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-}
-.permisos-columna {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 12px;
-}
-.permisos-seccion-titulo {
-  margin: 0 0 10px 0;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #475569;
-  font-weight: 700;
-}
-.permisos-items {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.item-permiso {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 8px;
-  border-radius: 5px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-.item-permiso:hover {
-  background: #f1f5f9;
-}
-.item-permiso input[type="checkbox"] {
-  margin-top: 3px;
-  cursor: pointer;
-  width: 16px;
-  height: 16px;
-}
-.item-permiso-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.item-permiso-nombre {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #1e293b;
-}
-.item-permiso-desc {
-  font-size: 0.78rem;
-  color: #64748b;
-  line-height: 1.25;
+  flex-wrap: wrap;
 }
 .alerta-admin-permisos {
   background: #fef3c7;
@@ -2030,6 +1972,172 @@ body.tema-oscuro,
   border-radius: 6px;
   font-size: 0.9rem;
 }
+
+/* Lista de módulos acordeón */
+.lista-modulos-permisos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tarjeta-modulo-permiso {
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+.tarjeta-modulo-permiso.desplegado {
+  border-color: var(--primario, #2563eb);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.09);
+}
+.cabecera-modulo-permiso {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  background: #ffffff;
+  transition: background 0.15s ease;
+}
+.cabecera-modulo-permiso:hover {
+  background: #f8fafc;
+}
+.tarjeta-modulo-permiso.desplegado .cabecera-modulo-permiso {
+  background: #f1f5f9;
+}
+.cabecera-modulo-izq {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cabecera-modulo-izq input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+.cabecera-modulo-titulos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cabecera-modulo-nombre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.98rem;
+  color: #1e293b;
+}
+.icono-modulo {
+  font-size: 1.1rem;
+}
+.cabecera-modulo-desc {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+.cabecera-modulo-der {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.badge-contador-subs {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.badge-contador-subs.completo {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
+}
+.badge-contador-subs.parcial {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+}
+.badge-contador-subs.vacio {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+}
+.indicador-despliegue {
+  font-size: 0.85rem;
+  color: #64748b;
+  width: 20px;
+  text-align: center;
+}
+
+/* Subpermisos adentro del módulo */
+.cuerpo-modulo-permisos {
+  padding: 14px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+.subpermisos-barra-atajos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.subpermisos-subtitulo {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #475569;
+}
+.subpermisos-grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+.item-subpermiso {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.item-subpermiso:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+.item-subpermiso.activo {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+.item-subpermiso input[type="checkbox"] {
+  margin-top: 3px;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+.item-subpermiso-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.item-subpermiso-nombre {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+.item-subpermiso-desc {
+  font-size: 0.76rem;
+  color: #64748b;
+  line-height: 1.25;
+}
+
+/* Resumen de permisos en tabla */
 .resumen-permisos-wrap {
   display: flex;
   flex-direction: column;
@@ -2049,6 +2157,14 @@ body.tema-oscuro,
   padding: 2px 6px;
   border-radius: 4px;
   white-space: nowrap;
+}
+.chip-permiso-mini.completo {
+  background: #dcfce7;
+  color: #166534;
+}
+.chip-permiso-mini.parcial {
+  background: #fef3c7;
+  color: #92400e;
 }
 .fila-editando {
   background: #eff6ff !important;
@@ -2070,34 +2186,88 @@ body.tema-oscuro,
 .tema-oscuro .permisos-cabecera h5 {
   color: #e2e8f0;
 }
-.tema-oscuro .permisos-columna {
+.tema-oscuro .tarjeta-modulo-permiso {
   background: #1e293b;
   border-color: #334155;
 }
-.tema-oscuro .permisos-seccion-titulo {
-  color: #94a3b8;
+.tema-oscuro .tarjeta-modulo-permiso.desplegado {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
-.tema-oscuro .item-permiso {
-  background: #0f172a;
-  border-color: #334155;
+.tema-oscuro .cabecera-modulo-permiso {
+  background: #1e293b;
 }
-.tema-oscuro .item-permiso:hover {
-  background: #162032;
+.tema-oscuro .cabecera-modulo-permiso:hover {
+  background: #243247;
 }
-.tema-oscuro .item-permiso-nombre {
+.tema-oscuro .tarjeta-modulo-permiso.desplegado .cabecera-modulo-permiso {
+  background: #243247;
+}
+.tema-oscuro .cabecera-modulo-nombre {
   color: #f1f5f9;
 }
-.tema-oscuro .item-permiso-desc {
+.tema-oscuro .cabecera-modulo-desc {
   color: #94a3b8;
+}
+.tema-oscuro .indicador-despliegue {
+  color: #94a3b8;
+}
+.tema-oscuro .cuerpo-modulo-permisos {
+  background: #162032;
+  border-top-color: #334155;
+}
+.tema-oscuro .subpermisos-subtitulo {
+  color: #94a3b8;
+}
+.tema-oscuro .item-subpermiso {
+  background: #1e293b;
+  border-color: #334155;
+}
+.tema-oscuro .item-subpermiso:hover {
+  background: #27374f;
+  border-color: #475569;
+}
+.tema-oscuro .item-subpermiso.activo {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #2563eb;
+}
+.tema-oscuro .item-subpermiso-nombre {
+  color: #ffffff;
+}
+.tema-oscuro .item-subpermiso-desc {
+  color: #cbd5e1;
+}
+.tema-oscuro .badge-contador-subs.completo {
+  background: #064e3b;
+  color: #a7f3d0;
+  border-color: #059669;
+}
+.tema-oscuro .badge-contador-subs.parcial {
+  background: #451a03;
+  color: #fde68a;
+  border-color: #b45309;
+}
+.tema-oscuro .badge-contador-subs.vacio {
+  background: #1e293b;
+  color: #64748b;
+  border-color: #334155;
+}
+.tema-oscuro .chip-permiso-mini {
+  background: #334155;
+  color: #e2e8f0;
+}
+.tema-oscuro .chip-permiso-mini.completo {
+  background: #064e3b;
+  color: #a7f3d0;
+}
+.tema-oscuro .chip-permiso-mini.parcial {
+  background: #451a03;
+  color: #fde68a;
 }
 .tema-oscuro .alerta-admin-permisos {
   background: #422006;
   border-color: #b45309;
   color: #fde68a;
-}
-.tema-oscuro .chip-permiso-mini {
-  background: #334155;
-  color: #e2e8f0;
 }
 .tema-oscuro .fila-editando {
   background: rgba(59, 130, 246, 0.15) !important;

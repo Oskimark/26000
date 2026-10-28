@@ -1,27 +1,83 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api } from './api.js';
+import { api, leerSesion } from './api.js';
 import { leerTema, guardarTema } from './tema.js';
 import {
+  MODULOS_PERMISOS,
   PERMISOS_DISPONIBLES,
   PERMISOS_DEFAULT_OPERADOR,
   normalizarPermisos,
+  tienePermiso,
 } from '../../shared/permisos.js';
 
 function EditorPermisos({ permisos, rol, onChange, disabled }) {
   const esAdmin = rol === 'admin';
+  const [desplegados, setDesplegados] = useState(() => ({
+    admin: true,
+  }));
 
-  function setPermiso(id, valor) {
+  function toggleDesplegado(moduloId) {
+    setDesplegados((prev) => ({
+      ...prev,
+      [moduloId]: !prev[moduloId],
+    }));
+  }
+
+  function expandirTodos(valor) {
+    const nuevo = {};
+    MODULOS_PERMISOS.forEach((m) => {
+      nuevo[m.id] = valor;
+    });
+    setDesplegados(nuevo);
+  }
+
+  function toggleModuloCompleto(m, e) {
+    e.stopPropagation();
     if (disabled || esAdmin) return;
-    onChange({ ...permisos, [id]: valor });
+    const subsActivos = m.subpermisos.filter((sub) => permisos[sub.id]).length;
+    const todosActivos = subsActivos === m.subpermisos.length;
+    const nuevoValor = !todosActivos;
+
+    const actualizados = { ...permisos, [m.id]: nuevoValor };
+    m.subpermisos.forEach((sub) => {
+      actualizados[sub.id] = nuevoValor;
+    });
+    if (nuevoValor) {
+      setDesplegados((prev) => ({ ...prev, [m.id]: true }));
+    }
+    onChange(normalizarPermisos(actualizados, rol));
+  }
+
+  function toggleSubpermiso(m, subId, e) {
+    e.stopPropagation();
+    if (disabled || esAdmin) return;
+    const actualizados = {
+      ...permisos,
+      [subId]: !permisos[subId],
+    };
+    const algunActivo = m.subpermisos.some((s) => s.id === subId ? !permisos[subId] : Boolean(actualizados[s.id]));
+    actualizados[m.id] = algunActivo;
+    onChange(normalizarPermisos(actualizados, rol));
+  }
+
+  function marcarSubpermisosModulo(m, valor) {
+    if (disabled || esAdmin) return;
+    const actualizados = { ...permisos, [m.id]: valor };
+    m.subpermisos.forEach((sub) => {
+      actualizados[sub.id] = valor;
+    });
+    onChange(normalizarPermisos(actualizados, rol));
   }
 
   function marcarTodos(valor) {
     if (disabled || esAdmin) return;
-    const nuevo = {};
-    PERMISOS_DISPONIBLES.forEach((p) => {
-      nuevo[p.id] = valor;
+    const actualizados = {};
+    MODULOS_PERMISOS.forEach((m) => {
+      actualizados[m.id] = valor;
+      m.subpermisos.forEach((sub) => {
+        actualizados[sub.id] = valor;
+      });
     });
-    onChange(nuevo);
+    onChange(normalizarPermisos(actualizados, rol));
   }
 
   function restablecer() {
@@ -29,15 +85,25 @@ function EditorPermisos({ permisos, rol, onChange, disabled }) {
     onChange({ ...PERMISOS_DEFAULT_OPERADOR });
   }
 
-  const secciones = PERMISOS_DISPONIBLES.filter((p) => p.categoria === 'Secciones');
-  const operaciones = PERMISOS_DISPONIBLES.filter((p) => p.categoria === 'Operaciones');
-
   return (
     <div className="contenedor-permisos">
       <div className="permisos-cabecera">
-        <h5>Permisos de acceso del operador</h5>
+        <div>
+          <h5>Permisos de acceso del operador</h5>
+          <span className="tenue" style={{ fontSize: '0.82rem' }}>
+            Hacé clic en cualquier tarjeta para desplegar sus sub-secciones y configurar accesos individuales.
+          </span>
+        </div>
         {!esAdmin && !disabled && (
           <div className="permisos-atajos">
+            <button type="button" className="btn-link chico" onClick={() => expandirTodos(true)}>
+              Expandir todos
+            </button>
+            <span>·</span>
+            <button type="button" className="btn-link chico" onClick={() => expandirTodos(false)}>
+              Colapsar todos
+            </button>
+            <span>·</span>
             <button type="button" className="btn-link chico" onClick={() => marcarTodos(true)}>
               Marcar todos
             </button>
@@ -55,49 +121,113 @@ function EditorPermisos({ permisos, rol, onChange, disabled }) {
 
       {esAdmin ? (
         <div className="alerta-admin-permisos">
-          👑 <b>Rol Administrador:</b> Este operador cuenta con acceso completo a todas las secciones y operaciones del sistema.
+          👑 <b>Rol Administrador:</b> Este operador cuenta con acceso completo a todos los módulos y sub-secciones del sistema.
         </div>
       ) : (
-        <div className="permisos-grilla-secciones">
-          <div className="permisos-columna">
-            <h6 className="permisos-seccion-titulo">📍 Secciones y Vistas</h6>
-            <div className="permisos-items">
-              {secciones.map((p) => (
-                <label key={p.id} className="item-permiso">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(permisos[p.id])}
-                    onChange={(e) => setPermiso(p.id, e.target.checked)}
-                    disabled={disabled}
-                  />
-                  <div className="item-permiso-info">
-                    <span className="item-permiso-nombre">{p.nombre}</span>
-                    <span className="item-permiso-desc">{p.descripcion}</span>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
+        <div className="lista-modulos-permisos">
+          {MODULOS_PERMISOS.map((m) => {
+            const subsActivos = m.subpermisos.filter((sub) => permisos[sub.id]).length;
+            const todosActivos = subsActivos === m.subpermisos.length;
+            const algunoActivo = subsActivos > 0;
+            const desplegado = Boolean(desplegados[m.id]);
 
-          <div className="permisos-columna">
-            <h6 className="permisos-seccion-titulo">⚡ Acciones y Privilegios</h6>
-            <div className="permisos-items">
-              {operaciones.map((p) => (
-                <label key={p.id} className="item-permiso">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(permisos[p.id])}
-                    onChange={(e) => setPermiso(p.id, e.target.checked)}
-                    disabled={disabled}
-                  />
-                  <div className="item-permiso-info">
-                    <span className="item-permiso-nombre">{p.nombre}</span>
-                    <span className="item-permiso-desc">{p.descripcion}</span>
+            return (
+              <div
+                key={m.id}
+                className={`tarjeta-modulo-permiso ${algunoActivo ? 'activo' : 'inactivo'} ${desplegado ? 'desplegado' : ''}`}
+              >
+                <div
+                  className="cabecera-modulo-permiso"
+                  onClick={() => toggleDesplegado(m.id)}
+                  title="Clic para desplegar o colapsar sub-secciones"
+                >
+                  <div className="cabecera-modulo-izq">
+                    <input
+                      type="checkbox"
+                      checked={todosActivos}
+                      ref={(el) => {
+                        if (el) el.indeterminate = algunoActivo && !todosActivos;
+                      }}
+                      onChange={(e) => toggleModuloCompleto(m, e)}
+                      onClick={(e) => e.stopPropagation()}
+                      disabled={disabled}
+                      title={todosActivos ? 'Desmarcar todo el módulo' : 'Marcar todo el módulo'}
+                    />
+                    <div className="cabecera-modulo-titulos">
+                      <div className="cabecera-modulo-nombre">
+                        <span className="icono-modulo">{m.icono}</span>
+                        <b>{m.nombre}</b>
+                      </div>
+                      <span className="cabecera-modulo-desc">{m.descripcion}</span>
+                    </div>
                   </div>
-                </label>
-              ))}
-            </div>
-          </div>
+
+                  <div className="cabecera-modulo-der">
+                    <span className={`badge-contador-subs ${todosActivos ? 'completo' : algunoActivo ? 'parcial' : 'vacio'}`}>
+                      {subsActivos} de {m.subpermisos.length} activas
+                    </span>
+                    <span className="indicador-despliegue">
+                      {desplegado ? '▲' : '▼'}
+                    </span>
+                  </div>
+                </div>
+
+                {desplegado && (
+                  <div className="cuerpo-modulo-permisos">
+                    <div className="subpermisos-barra-atajos">
+                      <span className="subpermisos-subtitulo">
+                        Sub-secciones y privilegios de {m.nombre}:
+                      </span>
+                      {!disabled && (
+                        <div style={{ display: 'inline-flex', gap: 6, fontSize: '0.8rem' }}>
+                          <button
+                            type="button"
+                            className="btn-link chico"
+                            onClick={() => marcarSubpermisosModulo(m, true)}
+                          >
+                            Marcar todas
+                          </button>
+                          <span>·</span>
+                          <button
+                            type="button"
+                            className="btn-link chico"
+                            onClick={() => marcarSubpermisosModulo(m, false)}
+                          >
+                            Desmarcar todas
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="subpermisos-grilla">
+                      {m.subpermisos.map((sub) => {
+                        const activo = Boolean(permisos[sub.id]);
+                        return (
+                          <div
+                            key={sub.id}
+                            className={`item-subpermiso ${activo ? 'activo' : ''}`}
+                            onClick={(e) => toggleSubpermiso(m, sub.id, e)}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={activo}
+                              onChange={(e) => toggleSubpermiso(m, sub.id, e)}
+                              onClick={(e) => e.stopPropagation()}
+                              disabled={disabled}
+                            />
+                            <div className="item-subpermiso-info">
+                              <span className="item-subpermiso-nombre">{sub.nombre}</span>
+                              <span className="item-subpermiso-desc">{sub.descripcion}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -109,29 +239,49 @@ function ResumenPermisos({ operador }) {
     return <span className="chip exito" title="Acceso total irrestricto">👑 Acceso total</span>;
   }
   const perms = normalizarPermisos(operador.permisos, operador.rol);
-  const habilitados = PERMISOS_DISPONIBLES.filter((p) => perms[p.id]);
+  const totalSubpermisos = MODULOS_PERMISOS.reduce((acc, m) => acc + m.subpermisos.length, 0);
+  const habilitados = MODULOS_PERMISOS.flatMap((m) => m.subpermisos).filter((s) => perms[s.id]);
 
   if (habilitados.length === 0) {
     return <span className="chip alerta" title="Sin accesos concedidos">🚫 Sin acceso</span>;
   }
-  if (habilitados.length === PERMISOS_DISPONIBLES.length) {
-    return <span className="chip exito">Completo (8/8)</span>;
+  if (habilitados.length === totalSubpermisos) {
+    return <span className="chip exito">Completo ({totalSubpermisos}/{totalSubpermisos})</span>;
   }
-  const secHabilitadas = PERMISOS_DISPONIBLES.filter((p) => p.categoria === 'Secciones' && perms[p.id]);
+
+  const modulosResumen = MODULOS_PERMISOS.map((m) => {
+    const act = m.subpermisos.filter((s) => perms[s.id]);
+    if (act.length === 0) return null;
+    const esCompleto = act.length === m.subpermisos.length;
+    return {
+      id: m.id,
+      nombre: m.nombre,
+      esCompleto,
+      resumen: esCompleto ? m.nombre : `${m.nombre} (${act.length}/${m.subpermisos.length})`,
+      detalle: act.map((s) => s.nombre).join(', '),
+    };
+  }).filter(Boolean);
+
   return (
     <div className="resumen-permisos-wrap" title={habilitados.map((p) => p.nombre).join(', ')}>
       <div className="resumen-permisos-chips">
-        {secHabilitadas.map((s) => (
-          <span key={s.id} className="chip-permiso-mini">{s.nombre}</span>
+        {modulosResumen.map((mr) => (
+          <span
+            key={mr.id}
+            className={`chip-permiso-mini ${mr.esCompleto ? 'completo' : 'parcial'}`}
+            title={`${mr.nombre}: ${mr.detalle}`}
+          >
+            {mr.resumen}
+          </span>
         ))}
       </div>
-      <small className="tenue">{habilitados.length} de {PERMISOS_DISPONIBLES.length} permisos</small>
+      <small className="tenue">{habilitados.length} de {totalSubpermisos} sub-secciones</small>
     </div>
   );
 }
 
 export default function Admin({ operadorId, esSuperAdmin = true }) {
-  const [subtab, setSubtab] = useState('choferes');
+  const sesionOperador = leerSesion()?.operador;
 
   // Choferes
   const [choferes, setChoferes] = useState([]);
@@ -155,6 +305,28 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
   const [busquedaCalle, setBusquedaCalle] = useState('');
   const [nuevaCalle, setNuevaCalle] = useState({ nombre: '', alias: '' });
   const [editCalle, setEditCalle] = useState(null);
+
+  // Subtabs disponibles según permisos
+  const SUBTABS_ADMIN = [
+    { id: 'choferes', nombre: `🚖 Choferes (${choferes.length})`, permiso: 'admin_choferes' },
+    { id: 'operadores', nombre: `👥 Operadores (${operadores.length})`, permiso: 'admin_operadores', soloSuperAdmin: true },
+    { id: 'calles', nombre: `🗺️ Calles San José (${calles.length})`, permiso: 'admin_calles' },
+    { id: 'configuracion', nombre: '⚙️ Configuración', permiso: 'admin_configuracion' },
+    { id: 'identidad', nombre: '🎨 Identidad Corporativa', permiso: 'admin_identidad' },
+  ];
+
+  const subtabsDisponibles = SUBTABS_ADMIN.filter((t) => {
+    if (t.soloSuperAdmin && !esSuperAdmin) return false;
+    return tienePermiso(sesionOperador, t.permiso);
+  });
+
+  const [subtab, setSubtab] = useState(() => subtabsDisponibles[0]?.id || 'choferes');
+
+  useEffect(() => {
+    if (subtabsDisponibles.length > 0 && !subtabsDisponibles.some((t) => t.id === subtab)) {
+      setSubtab(subtabsDisponibles[0].id);
+    }
+  }, [subtabsDisponibles, subtab]);
 
   // Identidad corporativa
   const [tema, setTema] = useState(leerTema);
@@ -450,44 +622,21 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
   return (
     <div className="admin-wrap">
       <div className="subtabs">
-        <button
-          className={subtab === 'choferes' ? 'tab activa' : 'tab'}
-          onClick={() => { setSubtab('choferes'); setError(''); }}
-        >
-          Choferes ({choferes.length})
-        </button>
-        {esSuperAdmin && (
+        {subtabsDisponibles.map((t) => (
           <button
-            className={subtab === 'operadores' ? 'tab activa' : 'tab'}
-            onClick={() => { setSubtab('operadores'); setError(''); }}
+            key={t.id}
+            className={subtab === t.id ? 'tab activa' : 'tab'}
+            onClick={() => { setSubtab(t.id); setError(''); }}
           >
-            👥 Operadores ({operadores.length})
+            {t.nombre}
           </button>
-        )}
-        <button
-          className={subtab === 'calles' ? 'tab activa' : 'tab'}
-          onClick={() => { setSubtab('calles'); setError(''); }}
-        >
-          🗺️ Calles San José ({calles.length})
-        </button>
-        <button
-          className={subtab === 'configuracion' ? 'tab activa' : 'tab'}
-          onClick={() => { setSubtab('configuracion'); setError(''); }}
-        >
-          ⚙️ Configuración
-        </button>
-        <button
-          className={subtab === 'identidad' ? 'tab activa' : 'tab'}
-          onClick={() => { setSubtab('identidad'); setError(''); }}
-        >
-          🎨 Identidad Corporativa
-        </button>
+        ))}
       </div>
 
       {mensaje && <div className="alerta exito">{mensaje}</div>}
       {error && <div className="alerta error">{error}</div>}
 
-      {subtab === 'choferes' && (
+      {subtab === 'choferes' && tienePermiso(sesionOperador, 'admin_choferes') && (
         <div className="seccion-admin">
           <div className="tarjeta admin-form-tarjeta">
             <h3>Nuevo Chofer</h3>
@@ -560,7 +709,7 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
         </div>
       )}
 
-      {subtab === 'operadores' && esSuperAdmin && (
+      {subtab === 'operadores' && esSuperAdmin && tienePermiso(sesionOperador, 'admin_operadores') && (
         <div className="seccion-admin">
           {editOp ? (
             <div className="tarjeta edicion-op-panel">
@@ -759,7 +908,7 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
         </div>
       )}
 
-      {subtab === 'identidad' && (
+      {subtab === 'identidad' && tienePermiso(sesionOperador, 'admin_identidad') && (
         <div className="seccion-admin">
           <div className="tarjeta admin-form-tarjeta">
             <h3>🎨 Identidad y Colores Corporativos (26000)</h3>
@@ -872,7 +1021,7 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
         </div>
       )}
 
-      {subtab === 'calles' && (
+      {subtab === 'calles' && tienePermiso(sesionOperador, 'admin_calles') && (
         <div className="seccion-admin">
           <div className="tarjeta admin-form-tarjeta">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
@@ -1021,7 +1170,7 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
         </div>
       )}
 
-      {subtab === 'configuracion' && (
+      {subtab === 'configuracion' && tienePermiso(sesionOperador, 'admin_configuracion') && (
         <div className="seccion-admin">
           <div className="tarjeta admin-form-tarjeta">
             <h3>⏰ Configuración de Viajes Programados</h3>
