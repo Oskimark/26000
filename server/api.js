@@ -9,6 +9,7 @@ import {
   obtenerFichaViaje, editarFichaViaje, obtenerNombrePorTelefono,
   buscarViajesClientes, obtenerConfiguracion, actualizarConfiguracion, ejecutarProgramadosVencidos,
   listarCalles, crearCalle, actualizarCalle, eliminarCalle, restaurarCatalogoCalles,
+  obtenerTurnoActual, obtenerInfoCambioTurno, avanzarTurnoManual,
 } from './viajes.js';
 import { turnoDe, turnoSiguiente, turnoAnterior, describirTurno, validarTurno } from '../shared/turnos.js';
 
@@ -65,15 +66,25 @@ export function crearApi({ notificar }) {
   }));
 
   // ---------- Turnos ----------
-  api.get('/turnos/actual', (req, res) => {
-    const actual = turnoDe(new Date());
+  api.get('/turnos/actual', a(async (req, res) => {
+    const actual = await obtenerTurnoActual();
     res.json({
       ahora: new Date().toISOString(),
       actual: describirTurno(actual),
       siguiente: describirTurno(turnoSiguiente(actual)),
       anterior: describirTurno(turnoAnterior(actual)),
     });
-  });
+  }));
+
+  api.get('/turnos/cambio-info', a(async (req, res) => {
+    res.json(await obtenerInfoCambioTurno());
+  }));
+
+  api.post('/turnos/cambiar', a(async (req, res) => {
+    const { actual, nuevo } = await avanzarTurnoManual(req.operador.id);
+    notificar('turno', describirTurno(nuevo));
+    res.json({ ok: true, nuevo: describirTurno(nuevo), anterior: describirTurno(actual) });
+  }));
 
   const turnoDeParams = (req) => {
     const { fecha, tipo } = req.params;
@@ -108,7 +119,7 @@ export function crearApi({ notificar }) {
 
   api.get('/turnos/:fecha/:tipo/viajes', a(async (req, res) => {
     const t = turnoDeParams(req);
-    const actual = turnoDe(new Date());
+    const actual = await obtenerTurnoActual();
     const esTurnoActual = t.fecha === actual.fecha && t.tipo === actual.tipo;
     if (esTurnoActual) {
       if (!tienePermiso(req.operador, 'recepcion') && !tienePermiso(req.operador, 'historial')) {
@@ -119,12 +130,20 @@ export function crearApi({ notificar }) {
         throw new ErrorNegocio('Sin permiso para ver historial de turnos', 403);
       }
     }
-    const [viajes, futuros, cfg] = await Promise.all([
+    const tAnterior = turnoAnterior(t);
+    const [viajes, futuros, anteriores, cfg] = await Promise.all([
       listarTurno(t),
       listarProgramadosFuturos(t),
+      listarTurno(tAnterior),
       obtenerConfiguracion(),
     ]);
-    res.json({ turno: describirTurno(t), viajes, futuros, configuracion: cfg });
+    res.json({
+      turno: describirTurno(t),
+      viajes,
+      futuros,
+      anteriores,
+      configuracion: cfg,
+    });
   }));
 
   // ---------- Viajes ----------

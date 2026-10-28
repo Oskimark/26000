@@ -185,6 +185,7 @@ export default function ListaViajes({
   mostrarNombre = true,
   editable = true,
   ocultarAnulados = false,
+  esReferencia = false,
   onAtender,
   onActualizado,
 }) {
@@ -214,11 +215,11 @@ export default function ListaViajes({
   const puedeAvisar = editable && tienePermiso(sesionOp, 'recepcion_avisar');
   const puedeAbrirFicha = tienePermiso(sesionOp, 'recepcion_ficha');
 
-  if (!viajesVisibles.length) return <p className="vacio">Todavía no hay viajes en este turno.</p>;
+  if (!viajesVisibles.length) return <p className="vacio">{esReferencia ? "No hay viajes registrados en el turno anterior." : "Todavía no hay viajes en este turno."}</p>;
 
   return (
     <>
-      <table className="tabla-viajes tabla-filas-clickeables">
+      <table className={`tabla-viajes tabla-filas-clickeables ${esReferencia ? "tabla-referencia-anterior" : ""}`.trim()}>
         <thead>
           <tr>
             <th className="col-num">N°</th>

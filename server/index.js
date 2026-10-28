@@ -9,7 +9,6 @@ import { migrar } from './db.js';
 import { verificarToken } from './auth.js';
 import { crearApi } from './api.js';
 import { ejecutarProgramadosVencidos } from './viajes.js';
-import { turnoDe } from '../shared/turnos.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -43,17 +42,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// Tareas periódicas: ejecutar programados vencidos y avisar cambios de turno.
-let turnoActual = JSON.stringify(turnoDe());
+// Tareas periódicas: ejecutar viajes programados vencidos
 async function tick() {
   try {
     const ejecutados = await ejecutarProgramadosVencidos();
     if (ejecutados.length) notificar('viajes', { ejecutados });
-    const t = JSON.stringify(turnoDe());
-    if (t !== turnoActual) {
-      turnoActual = t;
-      notificar('turno', JSON.parse(t));
-    }
   } catch (err) {
     console.error('Error en tarea periódica:', err.message);
   }

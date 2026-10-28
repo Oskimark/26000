@@ -1,6 +1,6 @@
 // Reglas de negocio de los viajes.
 import { query, transaccion, sembrarCallesIniciales } from './db.js';
-import { turnoDe, parsearHora, proximaOcurrencia } from '../shared/turnos.js';
+import { turnoDe, turnoSiguiente, turnoAnterior, describirTurno, rangoTurno, parsearHora, proximaOcurrencia } from '../shared/turnos.js';
 
 export class ErrorNegocio extends Error {
   constructor(mensaje, status = 400) {
@@ -353,6 +353,104 @@ export async function obtenerConfiguracion(db = { query }) {
   }
 }
 
+export async function obtenerTurnoActual(db = { query }) {
+  try {
+    const { rows } = await db.query(
+      `SELECT clave, valor FROM configuracion WHERE clave IN ('turno_actual_fecha', 'turno_actual_tipo')`,
+    );
+    const mapa = Object.fromEntries(rows.map((r) => [r.clave, r.valor]));
+    if (mapa.turno_actual_fecha && (mapa.turno_actual_tipo === 'A' || mapa.turno_actual_tipo === 'B')) {
+      return {
+        fecha: mapa.turno_actual_fecha,
+        tipo: mapa.turno_actual_tipo,
+      };
+    }
+  } catch {
+    // Si la tabla no existe o error, recurre al turno por hora
+  }
+
+  const porDefecto = turnoDe(new Date());
+  await fijarTurnoActual(porDefecto, db).catch(() => {});
+  return porDefecto;
+}
+
+export async function fijarTurnoActual(turno, db = { query }) {
+  await db.query(
+    `INSERT INTO configuracion (clave, valor) VALUES ('turno_actual_fecha', $1)
+     ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
+    [turno.fecha],
+  );
+  await db.query(
+    `INSERT INTO configuracion (clave, valor) VALUES ('turno_actual_tipo', $1)
+     ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
+    [turno.tipo],
+  );
+  return turno;
+}
+
+export async function obtenerInfoCambioTurno(db = { query }) {
+  const actual = await obtenerTurnoActual(db);
+  const siguiente = turnoSiguiente(actual);
+
+  const { rows: pendientes } = await db.query(
+    `SELECT v.id, v.numero, v.hora_toma, v.telefono, v.nombre_cliente, d.texto as direccion
+     FROM viajes v
+     JOIN direcciones d ON d.id = v.direccion_id
+     WHERE v.fecha_turno = $1 AND v.tipo_turno = $2
+       AND v.chofer_id IS NULL
+       AND NOT v.cancelado
+     ORDER BY v.numero ASC NULLS LAST, v.hora_toma ASC`,
+    [actual.fecha, actual.tipo],
+  );
+
+  const { rows: stats } = await db.query(
+    `SELECT
+       COUNT(*) FILTER (WHERE NOT cancelado) AS total_activos,
+       COUNT(*) FILTER (WHERE cancelado) AS total_cancelados,
+       COUNT(DISTINCT chofer_id) FILTER (WHERE chofer_id IS NOT NULL AND NOT cancelado) AS total_choferes
+     FROM viajes
+     WHERE fecha_turno = $1 AND tipo_turno = $2`,
+    [actual.fecha, actual.tipo],
+  );
+
+  return {
+    actual: describirTurno(actual),
+    siguiente: describirTurno(siguiente),
+    pendientes,
+    puedeCambiar: pendientes.length === 0,
+    resumen: {
+      totalActivos: Number(stats[0]?.total_activos || 0),
+      totalCancelados: Number(stats[0]?.total_cancelados || 0),
+      totalChoferes: Number(stats[0]?.total_choferes || 0),
+    },
+  };
+}
+
+export async function avanzarTurnoManual(operadorId, db = { query }) {
+  return transaccion(async (client) => {
+    const actual = await obtenerTurnoActual(client);
+
+    const { rows: sinChofer } = await client.query(
+      `SELECT v.id, v.numero, v.hora_toma, v.telefono, v.nombre_cliente, d.texto as direccion
+       FROM viajes v
+       JOIN direcciones d ON d.id = v.direccion_id
+       WHERE v.fecha_turno = $1 AND v.tipo_turno = $2
+         AND v.chofer_id IS NULL
+         AND NOT v.cancelado
+       ORDER BY v.hora_toma`,
+      [actual.fecha, actual.tipo],
+    );
+
+    if (sinChofer.length > 0) {
+      throw new ErrorNegocio('Tienes viajes sin terminar en tu turno, asigna primero un chofer', 400);
+    }
+
+    const nuevo = turnoSiguiente(actual);
+    await fijarTurnoActual(nuevo, client);
+    return { actual, nuevo };
+  });
+}
+
 export async function actualizarConfiguracion(datos = {}) {
   if (datos.minutosAvisoProgramado !== undefined) {
     const min = Number(datos.minutosAvisoProgramado);
@@ -507,7 +605,18 @@ export async function crearViaje(
       nomCliente = await obtenerNombrePorTelefono(tel, client);
     }
 
-    const turno = turnoDe(programada ?? ahora);
+    let turno;
+    if (!programada) {
+      turno = await obtenerTurnoActual(client);
+    } else {
+      const activo = await obtenerTurnoActual(client);
+      const rangoActivo = rangoTurno(activo);
+      if (programada >= rangoActivo.inicio && programada < rangoActivo.fin) {
+        turno = activo;
+      } else {
+        turno = turnoDe(programada);
+      }
+    }
     const numero = programada ? null : await siguienteNumero(client, turno);
     const horaAsig = chofer ? ahora : null;
     const horaAvisado = chofer ? ahora : null;
@@ -832,7 +941,7 @@ export async function editarFichaViaje(viajeId, datos, operadorId, ahora = new D
         nuevoProgramado = false;
         nuevaHoraProg = null;
         if (nuevoNumero == null) {
-          const t = turnoDe(ahora);
+          const t = await obtenerTurnoActual(client);
           nuevaFechaTurno = t.fecha;
           nuevoTipoTurno = t.tipo;
           nuevoNumero = await siguienteNumero(client, t);

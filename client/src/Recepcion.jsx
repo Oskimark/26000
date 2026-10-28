@@ -17,6 +17,8 @@ export default function Recepcion({ turnos, socket, activa }) {
   const [choferes, setChoferes] = useState([]);
   const [viajes, setViajes] = useState([]);
   const [futuros, setFuturos] = useState([]);
+  const [anteriores, setAnteriores] = useState([]);
+  const [mostrarAnteriores, setMostrarAnteriores] = useState(true);
   const [minutosAviso, setMinutosAviso] = useState(5);
   const [mostrarNombre, setMostrarNombre] = useState(true);
   const [pospuestos, setPospuestos] = useState(new Set());
@@ -46,6 +48,7 @@ export default function Recepcion({ turnos, socket, activa }) {
       setChoferes(listaChoferes);
       setViajes(datosViajes.viajes || []);
       setFuturos(datosViajes.futuros || []);
+      setAnteriores(datosViajes.anteriores || []);
       if (datosViajes.configuracion?.minutosAvisoProgramado != null) {
         setMinutosAviso(datosViajes.configuracion.minutosAvisoProgramado);
       }
@@ -277,6 +280,13 @@ export default function Recepcion({ turnos, socket, activa }) {
           )}
         </div>
 
+        {viajes.length === 0 && anteriores.length > 0 && (
+          <div className="alerta info aviso-cambio-suave" style={{ marginBottom: '12px', fontSize: '0.88rem' }}>
+            💡 <b>Turno nuevo en curso ({turnos?.actual?.etiqueta}):</b> El nuevo conteo iniciará con el <b>N° 1</b>.
+            Más abajo tenés la lista del turno anterior disponible como referencia.
+          </div>
+        )}
+
         <div className="tarjeta listado-tarjeta">
           <ListaViajes
             viajes={viajes}
@@ -290,6 +300,43 @@ export default function Recepcion({ turnos, socket, activa }) {
           />
         </div>
       </section>
+
+      {/* Viajes del turno anterior como referencia */}
+      {anteriores.length > 0 && (
+        <section className="seccion-turno-anterior">
+          <div className="cabecera-seccion-referencia">
+            <div className="titulos-referencia">
+              <h3>📋 Viajes del turno anterior ({turnos?.anterior?.etiqueta}) — Referencia</h3>
+              <span className="tenue" style={{ fontSize: '0.83rem' }}>
+                {anteriores.filter((v) => v.numero != null && !v.cancelado).length} viaje(s) del turno previo conservados como referencia.
+              </span>
+            </div>
+            <button
+              type="button"
+              className="btn-link chico"
+              style={{ fontSize: '0.82rem' }}
+              onClick={() => setMostrarAnteriores(!mostrarAnteriores)}
+            >
+              {mostrarAnteriores ? 'Ocultar referencia ▲' : 'Ver referencia ▼'}
+            </button>
+          </div>
+
+          {mostrarAnteriores && (
+            <div className="tarjeta listado-tarjeta tarjeta-referencia-anterior">
+              <ListaViajes
+                viajes={anteriores}
+                choferes={choferes}
+                minutosAviso={minutosAviso}
+                mostrarNombre={mostrarNombre}
+                editable={false}
+                esReferencia={true}
+                ocultarAnulados={false}
+                onActualizado={cargarDatos}
+              />
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Programados de turnos posteriores */}
       {futuros.length > 0 && (

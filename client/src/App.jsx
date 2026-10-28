@@ -7,6 +7,7 @@ import Historial from './Historial.jsx';
 import Clientes from './Clientes.jsx';
 import Admin from './Admin.jsx';
 import Reloj from './Reloj.jsx';
+import ModalCambioTurno from './ModalCambioTurno.jsx';
 import { leerTema, guardarTema } from './tema.js';
 import { tienePermiso } from '../../shared/permisos.js';
 
@@ -23,6 +24,7 @@ export default function App() {
   const [seccion, setSeccion] = useState('recepcion');
   const [turnos, setTurnos] = useState(null);
   const [socket, setSocket] = useState(null);
+  const [modalCambioTurnoAbierto, setModalCambioTurnoAbierto] = useState(false);
 
   const salir = useCallback(() => {
     guardarSesion(null);
@@ -133,7 +135,17 @@ export default function App() {
           >
             {tema.modoOscuro ? '☀️ Claro' : '🌙 Oscuro'}
           </button>
-          {turnos && <span className="turno-actual">Turno {turnos.actual.etiqueta}</span>}
+          {turnos && (
+            <button
+              type="button"
+              className="turno-actual btn-turno-header"
+              onClick={() => setModalCambioTurnoAbierto(true)}
+              title="Hacé clic para ver estado del turno o realizar Cambio de Turno"
+            >
+              Turno {turnos.actual.etiqueta}
+              <span className="flecha-cambio-turno"> ▾</span>
+            </button>
+          )}
           <Reloj />
           <span className="operador">{sesion.operador.nombre}</span>
           <button className="btn-link" onClick={salir}>Salir</button>
@@ -170,6 +182,14 @@ export default function App() {
           </>
         )}
       </main>
+
+      {modalCambioTurnoAbierto && turnos && (
+        <ModalCambioTurno
+          turnos={turnos}
+          onCerrar={() => setModalCambioTurnoAbierto(false)}
+          onSalir={salir}
+        />
+      )}
     </div>
   );
 }
