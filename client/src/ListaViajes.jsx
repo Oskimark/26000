@@ -65,7 +65,7 @@ function CeldaAvisado({ viaje, editable, puedeAvisar = true }) {
       <td className="col-avisado">
         {fueAvisado ? (
           <div className="celda-avisado-wrap">
-            <span className="btn-estado-avisado">Avisado</span>
+            <span className="btn-estado-avisado">Asignado</span>
             <b className="hora-avisado-texto">{hora(viaje.hora_avisado)}</b>
           </div>
         ) : (
@@ -85,19 +85,19 @@ function CeldaAvisado({ viaje, editable, puedeAvisar = true }) {
           onClick={marcarAvisado}
           title={
             fueAvisado
-              ? `Avisado a las ${hora(viaje.hora_avisado)}${opAvisado ? ` por ${opAvisado}` : ''} (click para desmarcar)`
+              ? `Asignado a las ${hora(viaje.hora_avisado)}${opAvisado ? ` por ${opAvisado}` : ''} (click para desmarcar)`
               : viaje.chofer_id
-                ? 'Click para marcar como avisado al chofer'
-                : 'Primero asigná un chofer para poder avisar'
+                ? 'Click para marcar como asignado al chofer'
+                : 'Primero asigná un chofer para poder marcar como asignado'
           }
         >
-          {fueAvisado ? 'Avisado' : 'Avisar'}
+          {fueAvisado ? 'Asignado' : 'Asignar'}
         </button>
 
         {fueAvisado && (
           <b
             className="hora-avisado-texto"
-            title={opAvisado ? `Avisado por ${opAvisado}` : 'Hora en que fue avisado'}
+            title={opAvisado ? `Asignado por ${opAvisado}` : 'Hora en que fue asignado'}
           >
             {hora(viaje.hora_avisado)}
           </b>
@@ -227,7 +227,7 @@ export default function ListaViajes({
             <th className="col-hora">Hora Inicio</th>
             <th className="col-fin">Asignado</th>
             <th>Chofer</th>
-            <th className="col-avisado">Avisado</th>
+            <th className="col-avisado">Estado</th>
             <th>{mostrarNombre ? 'Teléfono / Cliente' : 'Teléfono'}</th>
             <th className="col-prog">Programado</th>
             {puedeCancelar && <th className="col-acc" />}

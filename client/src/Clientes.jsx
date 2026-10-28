@@ -154,7 +154,7 @@ export default function Clientes({ socket }) {
       'Hora inicio',
       'Asignado',
       'Chofer',
-      'Avisado',
+      'Estado',
       'Teléfono',
       'Cliente',
       'Destino',
@@ -728,7 +728,7 @@ export default function Clientes({ socket }) {
                 <th className="col-hora">Hora Inicio</th>
                 <th className="col-fin">Asignado</th>
                 <th>Chofer</th>
-                <th className="col-avisado">Avisado</th>
+                <th className="col-avisado">Estado</th>
                 <th>Teléfono / Cliente</th>
                 <th className="col-dir">Destino</th>
                 <th>Operador</th>

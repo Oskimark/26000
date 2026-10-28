@@ -31,7 +31,7 @@ export default function Historial({ turnos }) {
 
   function exportarCSV() {
     if (!datos?.viajes?.length) return;
-    const encabezados = ['N°', 'Hora inicio', 'Hora programada', 'Asignado', 'Chofer', 'Avisado', 'Teléfono', 'Cliente', 'Dirección', 'Operador', 'Estado'];
+    const encabezados = ['N°', 'Hora inicio', 'Hora programada', 'Hora asignado', 'Chofer', 'Estado', 'Teléfono', 'Cliente', 'Dirección', 'Operador', 'Condición'];
     const filas = datos.viajes.map((v) => [
       v.numero ?? '',
       v.hora_toma ? new Date(v.hora_toma).toLocaleTimeString('es-AR') : '',

@@ -7,7 +7,7 @@ export const MODULOS_PERMISOS = [
     subpermisos: [
       { id: 'recepcion_toma', nombre: 'Toma de viajes', descripcion: 'Ingresar viajes inmediatos y programados' },
       { id: 'recepcion_chofer', nombre: 'Asignar chofer', descripcion: 'Asignar y cambiar chofer en la tabla de viajes' },
-      { id: 'recepcion_avisar', nombre: 'Avisar al chofer', descripcion: 'Marcar y desmarcar estado de avisado' },
+      { id: 'recepcion_avisar', nombre: 'Estado de asignación', descripcion: 'Marcar y desmarcar estado asignado del viaje' },
       { id: 'recepcion_cancelar', nombre: 'Anular / Restaurar', descripcion: 'Cancelar viajes o reactivar viajes anulados' },
       { id: 'recepcion_ficha', nombre: 'Editar ficha de viaje', descripcion: 'Modificar datos de viajes ya guardados' },
     ],

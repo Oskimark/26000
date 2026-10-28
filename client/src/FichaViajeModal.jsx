@@ -271,7 +271,7 @@ export default function FichaViajeModal({
                   className={viaje.hora_avisado ? 'btn-avisado' : 'btn-avisar'}
                   onClick={handleAvisarDesdeFicha}
                 >
-                  {viaje.hora_avisado ? `Avisado (${hora(viaje.hora_avisado)})` : 'Avisar al chofer'}
+                  {viaje.hora_avisado ? `Asignado (${hora(viaje.hora_avisado)})` : 'Asignar al chofer'}
                 </button>
               </div>
               <div className="ficha-tiempos-grilla">
@@ -290,9 +290,9 @@ export default function FichaViajeModal({
                   </span>
                 </div>
                 <div className="ficha-tiempo-card">
-                  <span className="ficha-tiempo-etiqueta">Avisado al Chofer</span>
+                  <span className="ficha-tiempo-etiqueta">Estado (Asignado)</span>
                   <b className="ficha-tiempo-valor">
-                    {viaje.hora_avisado ? formatearFechaHoraCompleta(viaje.hora_avisado) : 'Pendiente de aviso'}
+                    {viaje.hora_avisado ? formatearFechaHoraCompleta(viaje.hora_avisado) : 'Pendiente de asignar'}
                   </b>
                   <span className="ficha-tiempo-operador">
                     Operador: <b>{viaje.avisado_por_nombre || '—'}</b>

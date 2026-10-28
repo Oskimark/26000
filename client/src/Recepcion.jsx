@@ -182,7 +182,7 @@ export default function Recepcion({ turnos, socket, activa }) {
   async function toggleAvisadoFuturo(e, f) {
     e.stopPropagation();
     if (!f.hora_avisado && !f.chofer_id) {
-      window.alert('⚠️ Primero tenés que asignar un chofer antes de avisar.');
+      window.alert('⚠️ Primero tenés que asignar un chofer antes de marcar como asignado.');
       return;
     }
     try {
@@ -255,7 +255,7 @@ export default function Recepcion({ turnos, socket, activa }) {
             <span className="resumen-viajes">
               <b>{totalViajes}</b> activos · <b>{choferes.length}</b> choferes en turno
               {sinAvisarCount > 0 && (
-                <> · <b style={{ color: '#dc2626' }}>{sinAvisarCount}</b> por avisar</>
+                <> · <b style={{ color: '#dc2626' }}>{sinAvisarCount}</b> por asignar</>
               )}
               {anuladosCount > 0 && (
                 <>
@@ -350,7 +350,7 @@ export default function Recepcion({ turnos, socket, activa }) {
                   <th className="col-hora">Hora Inicio</th>
                   <th className="col-fin">Asignado</th>
                   <th>Chofer</th>
-                  <th className="col-avisado">Avisado</th>
+                  <th className="col-avisado">Estado</th>
                   <th>Teléfono</th>
                   <th>Hora Programada / Turno</th>
                 </tr>
@@ -402,7 +402,7 @@ export default function Recepcion({ turnos, socket, activa }) {
                             disabled={!puedeAvisar}
                             onClick={(e) => toggleAvisadoFuturo(e, f)}
                           >
-                            {fueAvisado ? 'Avisado' : 'Avisar'}
+                            {fueAvisado ? 'Asignado' : 'Asignar'}
                           </button>
                           {fueAvisado && <b className="hora-avisado-texto">{hora(f.hora_avisado)}</b>}
                         </div>
