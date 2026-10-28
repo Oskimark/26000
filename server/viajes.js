@@ -290,8 +290,9 @@ const SELECT_VIAJE = `
   LEFT JOIN operadores oav ON oav.id = v.avisado_por
   LEFT JOIN operadores oc ON oc.id = v.cancelado_por`;
 
-// Ejecutados primero (por N°), luego los programados pendientes por hora.
-const ORDEN_LISTADO = `ORDER BY v.numero IS NULL, v.numero, v.hora_programada, v.id`;
+// Ejecutados primero: el más nuevo primero (N° DESC), el más viejo al final (abajo).
+// Luego los programados pendientes del turno ordenados por hora programada.
+const ORDEN_LISTADO = `ORDER BY v.numero IS NULL, v.numero DESC, v.hora_programada, v.id DESC`;
 
 export function limpiarNombreCliente(texto) {
   return String(texto ?? '').replace(/\s+/g, ' ').trim();

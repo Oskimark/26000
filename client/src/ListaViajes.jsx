@@ -173,7 +173,8 @@ function CeldaChofer({ viaje, choferes = [], editable, onAtender }) {
 }
 
 /**
- * Listado del turno: ejecutados por N°, luego los programados pendientes por hora.
+ * Listado del turno: orden invertido (el más nuevo primero en la parte superior,
+ * el más viejo al final de la lista). Luego los programados pendientes por hora.
  * Al clickear una fila se abre el modal "Ficha de viaje".
  */
 export default function ListaViajes({

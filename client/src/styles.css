@@ -49,6 +49,9 @@ body {
   color: #fff;
   padding: 8px 18px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  position: sticky;
+  top: 0;
+  z-index: 200;
 }
 
 .marca-corporativa {
@@ -249,6 +252,38 @@ kbd {
   justify-content: space-between;
   margin-bottom: 14px;
   box-shadow: 0 2px 4px rgba(255, 193, 7, 0.15);
+}
+
+/* Tarjeta flotante de ingreso de viajes */
+.bloque-ingreso-flotante {
+  position: sticky;
+  top: 50px;
+  z-index: 100;
+  background-color: var(--bg-app);
+  padding: 6px 0 10px 0;
+  margin-top: -6px;
+}
+
+.bloque-ingreso-flotante .seccion-panel-ingreso {
+  margin-bottom: 0;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.tema-oscuro .bloque-ingreso-flotante {
+  background-color: var(--bg-app);
+}
+
+.tema-oscuro .bloque-ingreso-flotante .seccion-panel-ingreso {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.tema-marcos-naranja .bloque-ingreso-flotante .seccion-panel-ingreso {
+  box-shadow: 0 8px 24px rgba(255, 102, 0, 0.18);
+}
+
+.tema-oscuro.tema-marcos-naranja .bloque-ingreso-flotante .seccion-panel-ingreso,
+.tema-oscuro .tema-marcos-naranja .bloque-ingreso-flotante .seccion-panel-ingreso {
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.7), 0 0 12px rgba(255, 102, 0, 0.2);
 }
 
 /* Formulario Nuevo Viaje */

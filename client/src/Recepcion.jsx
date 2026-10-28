@@ -202,31 +202,34 @@ export default function Recepcion({ turnos, socket, activa }) {
         </div>
       )}
 
-      {/* Panel dinámico: Despacho O Formulario de nuevo viaje */}
-      <section className="tarjeta seccion-panel-ingreso">
-        {viajeADespachar ? (
-          <Despacho
-            ref={despachoRef}
-            viaje={viajeADespachar}
-            choferes={choferes}
-            mostrarNombre={mostrarNombre}
-            pendientes={todosSinChofer.length}
-            onPosponer={handlePosponer}
-            onAsignado={handleAsignado}
-          />
-        ) : (
-          <FormViaje
-            ref={formRef}
-            choferes={choferes}
-            minutosAviso={minutosAviso}
-            mostrarNombre={mostrarNombre}
-            onGuardado={() => {
-              cargarDatos();
-            }}
-            onVacioCambio={setFormVacio}
-          />
-        )}
-      </section>
+      {/* Panel dinámico flotante: Despacho O Formulario de nuevo viaje */}
+      <div className="bloque-ingreso-flotante">
+        <section className="tarjeta seccion-panel-ingreso">
+          {viajeADespachar ? (
+            <Despacho
+              ref={despachoRef}
+              viaje={viajeADespachar}
+              choferes={choferes}
+              mostrarNombre={mostrarNombre}
+              pendientes={todosSinChofer.length}
+              onPosponer={handlePosponer}
+              onAsignado={handleAsignado}
+            />
+          ) : (
+            <FormViaje
+              ref={formRef}
+              choferes={choferes}
+              minutosAviso={minutosAviso}
+              mostrarNombre={mostrarNombre}
+              onGuardado={() => {
+                cargarDatos();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onVacioCambio={setFormVacio}
+            />
+          )}
+        </section>
+      </div>
 
       {/* Listado de viajes del turno */}
       <section className="seccion-listado">

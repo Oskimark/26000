@@ -845,6 +845,8 @@
         <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Modo Oscuro', this)">🌙 Modo Oscuro</button>
         <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Estadísticas', this)">📊 Estadísticas Día / Mes / Año</button>
         <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Calles San José', this)">🗺️ Admin Calles y Alias</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Tarjeta flotante', this)">📌 Tarjeta flotante</button>
+        <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('más nuevo', this)">🔄 Orden más nuevo arriba</button>
         <button type="button" class="chip-concepto" onclick="buscarConceptoRapido('Eliminar', this)">🗑️ Eliminar Chofer</button>
       </div>
 
@@ -1088,6 +1090,7 @@
           <li><strong>2.1.4. Chofer:</strong> Por defecto figura en <strong><code>Sin asignar</code></strong>. Puede dejarlo sin asignar para despacharlo luego, o escribir parte del nombre/móvil del chofer y presionar <kbd>Enter</kbd> o <kbd>Tab</kbd>.</li>
           <li><strong>2.1.5. Programado:</strong> Si es un viaje inmediato, déjelo vacío y presione <kbd>Enter</kbd> para guardar. Si es para una hora futura, escriba la hora (ej. <code>1430</code> o <code>14:30</code>) y presione <kbd>Enter</kbd>.</li>
           <li><strong>2.1.6. Guardado inmediato desde cualquier campo:</strong> Presionando <kbd>Ctrl</kbd> + <kbd>Enter</kbd> el viaje se guarda instantáneamente desde cualquiera de los campos.</li>
+          <li><strong>2.1.7. Tarjeta flotante siempre visible:</strong> La tarjeta superior de ingreso permanece flotante y visible en esa posición durante el desplazamiento (scroll) por la pantalla. No importa cuántos viajes tenga el turno ni cuán abajo se encuentre navegando en la lista: el formulario está siempre disponible para tomar llamadas inmediatas (pulsando <kbd>F1</kbd> para enfocar el teléfono) sin tener que volver arriba manualmente.</li>
         </ol>
 
         <figure class="figura-ui">
@@ -1299,6 +1302,10 @@
 
       <div class="subseccion" id="sec-2-6">
         <h3>2.6. Listado del Turno: Columnas "Asignado", Botón "Avisar / Avisado" y Estados</h3>
+        <div class="nota-box importante" style="margin-bottom:12px;">
+          <strong>🔄 Orden cronológico invertido (el más nuevo arriba):</strong>
+          El listado de viajes muestra siempre <strong>arriba de todo el viaje más nuevo</strong> (el último número correlativo ingresado). A medida que se recorre la lista hacia abajo se observan los viajes anteriores, quedando al final de la lista (abajo) el viaje más viejo del turno. De este modo, apenas se guarda un viaje en la tarjeta flotante, este aparece inmediatamente visible debajo de ella sin necesidad de desplazarse.
+        </div>
         <p>La tabla principal de <strong>Viajes del turno</strong> presenta 8 columnas clave:</p>
         <table class="tabla-manual">
           <thead>
