@@ -1,7 +1,6 @@
 // Reglas de negocio de los viajes.
 import { query, transaccion, sembrarCallesIniciales } from './db.js';
 import { geocodificarDireccion } from './geocoding.js';
-import { geocodificarDireccion } from './geocoding.js';
 import { turnoDe, turnoSiguiente, turnoAnterior, describirTurno, rangoTurno, parsearHora, proximaOcurrencia } from '../shared/turnos.js';
 
 export class ErrorNegocio extends Error {
