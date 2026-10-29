@@ -33,6 +33,7 @@ export default function Estadisticas() {
   const [tipoTurno, setTipoTurno] = useState('');
   const [choferId, setChoferId] = useState('');
   const [cliente, setCliente] = useState('');
+  const [filtrosPlegados, setFiltrosPlegados] = useState(false);
 
   // Datos
   const [datos, setDatos] = useState(null);
@@ -183,195 +184,220 @@ export default function Estadisticas() {
   const maxDiaCantidad = Math.max(...(datos?.porDiaSemana || []).map((d) => d.cantidad), 1);
 
   return (
-    <div className="modulo-estadisticas">
-      {/* 1. Panel de Filtros Multidimensionales */}
-      <div className="tarjeta seccion-filtros-estadisticas">
-        <div className="cabecera-panel-filtros">
-          <div>
-            <h3>🔍 Filtros de Segmentación</h3>
-            <p className="descripcion-filtros">
-              Ajustá los filtros para segmentar tu demanda por fechas, días, rangos horarios, turnos, chofer y cliente.
-            </p>
-          </div>
-          <div className="acciones-filtros-top">
-            <button type="button" className="btn chico" onClick={limpiarFiltros} title="Restablecer todos los filtros">
-              ✖ Limpiar filtros
-            </button>
-            <button
-              type="button"
-              className="btn chico primario"
-              onClick={cargarEstadisticas}
-              disabled={cargando}
-            >
-              {cargando ? 'Cargando…' : '🔄 Actualizar datos'}
+    <div className={`modulo-estadisticas ${filtrosPlegados ? 'filtros-plegados' : ''}`}>
+      {/* 1. Barra Lateral Flotante de Filtros */}
+      <aside className={`barra-lateral-filtros-flotante ${filtrosPlegados ? 'plegado' : ''}`}>
+        {filtrosPlegados ? (
+          <div
+            className="tarjeta tarjeta-filtros-minimizada"
+            onClick={() => setFiltrosPlegados(false)}
+            title="Haz clic para desplegar los filtros"
+          >
+            <button type="button" className="btn-expandir-filtros">
+              <span>🔍 Filtros</span>
+              <span className="icono-flecha">▶</span>
             </button>
           </div>
-        </div>
-
-        {/* Fila 1: Presets y Rango de Fechas */}
-        <div className="grilla-filtros-fila">
-          <div className="campo-filtro">
-            <label>Rango de Fechas:</label>
-            <div className="grupo-botones-preset">
-              <button
-                type="button"
-                className={presetFecha === 'hoy' ? 'btn-preset activo' : 'btn-preset'}
-                onClick={() => aplicarPresetFecha('hoy')}
-              >
-                Hoy
-              </button>
-              <button
-                type="button"
-                className={presetFecha === '7dias' ? 'btn-preset activo' : 'btn-preset'}
-                onClick={() => aplicarPresetFecha('7dias')}
-              >
-                7 días
-              </button>
-              <button
-                type="button"
-                className={presetFecha === '30dias' ? 'btn-preset activo' : 'btn-preset'}
-                onClick={() => aplicarPresetFecha('30dias')}
-              >
-                30 días
-              </button>
-              <button
-                type="button"
-                className={presetFecha === 'esteMes' ? 'btn-preset activo' : 'btn-preset'}
-                onClick={() => aplicarPresetFecha('esteMes')}
-              >
-                Este mes
-              </button>
-              <button
-                type="button"
-                className={presetFecha === 'todo' ? 'btn-preset activo' : 'btn-preset'}
-                onClick={() => aplicarPresetFecha('todo')}
-              >
-                Todo
-              </button>
-            </div>
-          </div>
-
-          <div className="campo-filtro fechas-inputs">
-            <div>
-              <label>Desde:</label>
-              <input
-                type="date"
-                value={desde}
-                onChange={(e) => {
-                  setDesde(e.target.value);
-                  setPresetFecha('personalizado');
-                }}
-              />
-            </div>
-            <div>
-              <label>Hasta:</label>
-              <input
-                type="date"
-                value={hasta}
-                onChange={(e) => {
-                  setHasta(e.target.value);
-                  setPresetFecha('personalizado');
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="campo-filtro">
-            <label>Turno:</label>
-            <select value={tipoTurno} onChange={(e) => setTipoTurno(e.target.value)}>
-              <option value="">Ambos turnos (A y B)</option>
-              <option value="A">Turno A (03:00 a 15:00)</option>
-              <option value="B">Turno B (15:00 a 03:00)</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Fila 2: Días de la semana y Horas */}
-        <div className="grilla-filtros-fila">
-          <div className="campo-filtro">
-            <div className="subcabecera-filtro">
-              <label>Días de la semana:</label>
-              <div className="atajos-dias">
-                <button type="button" className="btn-link chico" onClick={setDiasTodos}>Todos</button>
-                <span>·</span>
-                <button type="button" className="btn-link chico" onClick={setDiasHabiles}>Lun-Vie</button>
-                <span>·</span>
-                <button type="button" className="btn-link chico" onClick={setDiasFinSemana}>Sáb-Dom</button>
+        ) : (
+          <div className="tarjeta tarjeta-filtros-vertical">
+            <div className="cabecera-panel-filtros-vertical">
+              <div className="titulo-con-toggle">
+                <h3>🔍 Filtros</h3>
+                <button
+                  type="button"
+                  className="btn-icono-plegar"
+                  onClick={() => setFiltrosPlegados(true)}
+                  title="Plegar filtros para ganar espacio"
+                >
+                  ◀
+                </button>
+              </div>
+              <p className="descripcion-filtros-compacta">
+                Segmentá por fechas, días, horas, turnos, chofer y cliente.
+              </p>
+              <div className="acciones-filtros-vertical">
+                <button type="button" className="btn chico" onClick={limpiarFiltros} title="Restablecer todos los filtros">
+                  ✖ Limpiar
+                </button>
+                <button
+                  type="button"
+                  className="btn chico primario"
+                  onClick={cargarEstadisticas}
+                  disabled={cargando}
+                >
+                  {cargando ? 'Cargando…' : '🔄 Actualizar'}
+                </button>
               </div>
             </div>
-            <div className="selector-dias-semana">
-              {DIAS_SEMANA.map((d) => {
-                const activo = diasSeleccionados.includes(d.id);
-                return (
-                  <button
-                    key={d.id}
-                    type="button"
-                    className={`btn-dia-semana ${activo ? 'activo' : ''}`}
-                    onClick={() => toggleDia(d.id)}
-                    title={d.completo}
-                  >
-                    {d.nombre}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
-          <div className="campo-filtro">
-            <div className="subcabecera-filtro">
-              <label>Franja Horaria:</label>
-              <div className="atajos-dias">
-                <button type="button" className="btn-link chico" onClick={() => aplicarPresetHoras('todo')}>24h</button>
-                <span>·</span>
-                <button type="button" className="btn-link chico" onClick={() => aplicarPresetHoras('manana')}>Mañana</button>
-                <span>·</span>
-                <button type="button" className="btn-link chico" onClick={() => aplicarPresetHoras('tarde')}>Tarde</button>
-                <span>·</span>
-                <button type="button" className="btn-link chico" onClick={() => aplicarPresetHoras('noche')}>Noche</button>
+            {/* Rango de Fechas */}
+            <div className="campo-filtro">
+              <label>📅 Rango de Fechas:</label>
+              <div className="grupo-botones-preset">
+                <button
+                  type="button"
+                  className={presetFecha === 'hoy' ? 'btn-preset activo' : 'btn-preset'}
+                  onClick={() => aplicarPresetFecha('hoy')}
+                >
+                  Hoy
+                </button>
+                <button
+                  type="button"
+                  className={presetFecha === '7dias' ? 'btn-preset activo' : 'btn-preset'}
+                  onClick={() => aplicarPresetFecha('7dias')}
+                >
+                  7 días
+                </button>
+                <button
+                  type="button"
+                  className={presetFecha === '30dias' ? 'btn-preset activo' : 'btn-preset'}
+                  onClick={() => aplicarPresetFecha('30dias')}
+                >
+                  30 días
+                </button>
+                <button
+                  type="button"
+                  className={presetFecha === 'esteMes' ? 'btn-preset activo' : 'btn-preset'}
+                  onClick={() => aplicarPresetFecha('esteMes')}
+                >
+                  Este mes
+                </button>
+                <button
+                  type="button"
+                  className={presetFecha === 'todo' ? 'btn-preset activo' : 'btn-preset'}
+                  onClick={() => aplicarPresetFecha('todo')}
+                >
+                  Todo
+                </button>
+              </div>
+              <div className="fechas-inputs-vertical">
+                <div>
+                  <span className="etiqueta-subcampo">Desde:</span>
+                  <input
+                    type="date"
+                    value={desde}
+                    onChange={(e) => {
+                      setDesde(e.target.value);
+                      setPresetFecha('personalizado');
+                    }}
+                  />
+                </div>
+                <div>
+                  <span className="etiqueta-subcampo">Hasta:</span>
+                  <input
+                    type="date"
+                    value={hasta}
+                    onChange={(e) => {
+                      setHasta(e.target.value);
+                      setPresetFecha('personalizado');
+                    }}
+                  />
+                </div>
               </div>
             </div>
-            <div className="rango-horas-selectores">
-              <select value={horaDesde} onChange={(e) => setHoraDesde(Number(e.target.value))}>
-                {Array.from({ length: 24 }, (_, i) => (
-                  <option key={i} value={i}>
-                    {String(i).padStart(2, '0')}:00 hs
+
+            {/* Turnos */}
+            <div className="campo-filtro">
+              <label>⏱️ Turno:</label>
+              <select value={tipoTurno} onChange={(e) => setTipoTurno(e.target.value)}>
+                <option value="">Ambos turnos (A y B)</option>
+                <option value="A">Turno A (03:00 a 15:00)</option>
+                <option value="B">Turno B (15:00 a 03:00)</option>
+              </select>
+            </div>
+
+            {/* Días de la Semana */}
+            <div className="campo-filtro">
+              <div className="subcabecera-filtro">
+                <label>🗓️ Días de la semana:</label>
+                <div className="atajos-dias">
+                  <button type="button" className="btn-link chico" onClick={setDiasTodos}>Todos</button>
+                  <span>·</span>
+                  <button type="button" className="btn-link chico" onClick={setDiasHabiles}>Hábiles</button>
+                  <span>·</span>
+                  <button type="button" className="btn-link chico" onClick={setDiasFinSemana}>Finde</button>
+                </div>
+              </div>
+              <div className="selector-dias-semana">
+                {DIAS_SEMANA.map((d) => {
+                  const activo = diasSeleccionados.includes(d.id);
+                  return (
+                    <button
+                      key={d.id}
+                      type="button"
+                      className={`btn-dia-semana ${activo ? 'activo' : ''}`}
+                      onClick={() => toggleDia(d.id)}
+                      title={d.completo}
+                    >
+                      {d.nombre}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Franja Horaria */}
+            <div className="campo-filtro">
+              <div className="subcabecera-filtro">
+                <label>⏰ Franja Horaria:</label>
+                <div className="atajos-dias">
+                  <button type="button" className="btn-link chico" onClick={() => aplicarPresetHoras('todo')}>24h</button>
+                  <span>·</span>
+                  <button type="button" className="btn-link chico" onClick={() => aplicarPresetHoras('manana')}>Mañ</button>
+                  <span>·</span>
+                  <button type="button" className="btn-link chico" onClick={() => aplicarPresetHoras('tarde')}>Tar</button>
+                  <span>·</span>
+                  <button type="button" className="btn-link chico" onClick={() => aplicarPresetHoras('noche')}>Noc</button>
+                </div>
+              </div>
+              <div className="rango-horas-selectores">
+                <select value={horaDesde} onChange={(e) => setHoraDesde(Number(e.target.value))}>
+                  {Array.from({ length: 24 }, (_, i) => (
+                    <option key={i} value={i}>
+                      {String(i).padStart(2, '0')}:00 hs
+                    </option>
+                  ))}
+                </select>
+                <span className="separador-horas">a</span>
+                <select value={horaHasta} onChange={(e) => setHoraHasta(Number(e.target.value))}>
+                  {Array.from({ length: 24 }, (_, i) => (
+                    <option key={i} value={i}>
+                      {String(i).padStart(2, '0')}:59 hs
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Chofer */}
+            <div className="campo-filtro">
+              <label>🚖 Filtrar por Chofer:</label>
+              <select value={choferId} onChange={(e) => setChoferId(e.target.value)}>
+                <option value="">Todos los choferes ({choferes.length})</option>
+                {choferes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre} {!c.activo ? '(Inactivo)' : ''}
                   </option>
                 ))}
               </select>
-              <span className="separador-horas">a</span>
-              <select value={horaHasta} onChange={(e) => setHoraHasta(Number(e.target.value))}>
-                {Array.from({ length: 24 }, (_, i) => (
-                  <option key={i} value={i}>
-                    {String(i).padStart(2, '0')}:59 hs
-                  </option>
-                ))}
-              </select>
+            </div>
+
+            {/* Cliente */}
+            <div className="campo-filtro">
+              <label>👤 Filtrar por Cliente:</label>
+              <input
+                type="text"
+                placeholder="Teléfono o nombre…"
+                value={cliente}
+                onChange={(e) => setCliente(e.target.value)}
+              />
             </div>
           </div>
+        )}
+      </aside>
 
-          <div className="campo-filtro">
-            <label>Filtrar por Chofer:</label>
-            <select value={choferId} onChange={(e) => setChoferId(e.target.value)}>
-              <option value="">Todos los choferes ({choferes.length})</option>
-              {choferes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre} {!c.activo ? '(Inactivo)' : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="campo-filtro">
-            <label>Filtrar por Cliente:</label>
-            <input
-              type="text"
-              placeholder="Teléfono o nombre…"
-              value={cliente}
-              onChange={(e) => setCliente(e.target.value)}
-            />
-          </div>
-        </div>
-      </div>
+      {/* 2. Contenido Principal con KPIs, Mapa, Gráficas y Métricas */}
+      <main className="contenido-principal-estadisticas">
 
       {error && <div className="alerta error">{error}</div>}
 
@@ -610,6 +636,7 @@ export default function Estadisticas() {
           </div>
         </div>
       </section>
+      </main>
     </div>
   );
 }

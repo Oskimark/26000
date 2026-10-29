@@ -2498,12 +2498,165 @@ button.turno-actual.btn-turno-header:hover {
 
 .modulo-estadisticas {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-start;
   gap: 1.5rem;
   margin-top: 1rem;
+  position: relative;
+  width: 100%;
 }
 
-/* Panel de Filtros */
+/* Barra Lateral de Filtros Vertical y Flotante */
+.barra-lateral-filtros-flotante {
+  width: 310px;
+  min-width: 290px;
+  max-width: 330px;
+  position: sticky;
+  top: 1rem;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s ease;
+}
+
+.barra-lateral-filtros-flotante.plegado {
+  width: auto;
+  min-width: unset;
+}
+
+.tarjeta-filtros-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--bg-tarjeta, #fff);
+}
+
+.tarjeta-filtros-vertical::-webkit-scrollbar {
+  width: 6px;
+}
+.tarjeta-filtros-vertical::-webkit-scrollbar-thumb {
+  background: var(--borde);
+  border-radius: 4px;
+}
+
+.tarjeta-filtros-minimizada {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 1px solid var(--borde);
+  background: var(--bg-tarjeta, #fff);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.tarjeta-filtros-minimizada:hover {
+  border-color: var(--corporativo-naranja, #ea580c);
+  transform: translateY(-2px);
+}
+
+.btn-expandir-filtros {
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--texto);
+  cursor: pointer;
+  padding: 2px 0;
+  font-size: 0.92rem;
+}
+
+.cabecera-panel-filtros-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--borde);
+  padding-bottom: 0.75rem;
+}
+
+.titulo-con-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.titulo-con-toggle h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.btn-icono-plegar {
+  background: var(--bg-destacado);
+  border: 1px solid var(--borde);
+  border-radius: 5px;
+  color: var(--texto-secundario);
+  cursor: pointer;
+  padding: 2px 8px;
+  font-size: 0.82rem;
+  transition: all 0.15s ease;
+}
+
+.btn-icono-plegar:hover {
+  background: var(--borde);
+  color: var(--texto);
+}
+
+.descripcion-filtros-compacta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--texto-secundario);
+  line-height: 1.35;
+}
+
+.acciones-filtros-vertical {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.acciones-filtros-vertical button {
+  flex: 1;
+}
+
+.fechas-inputs-vertical {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.etiqueta-subcampo {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--texto-tenue);
+  margin-bottom: 2px;
+}
+
+.fechas-inputs-vertical input[type="date"] {
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 4px 6px;
+}
+
+/* Contenido Principal al costado */
+.contenido-principal-estadisticas {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Panel de Filtros clásico (fallback si aplica) */
 .seccion-filtros-estadisticas {
   display: flex;
   flex-direction: column;
@@ -3085,4 +3238,20 @@ button.turno-actual.btn-turno-header:hover {
 .tema-oscuro .ficha-destino-seleccionado {
   background: rgba(30, 58, 138, 0.3);
   border-color: rgba(59, 130, 246, 0.4);
+}
+
+@media (max-width: 1024px) {
+  .modulo-estadisticas {
+    flex-direction: column;
+  }
+  .barra-lateral-filtros-flotante {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    position: static;
+  }
+  .tarjeta-filtros-vertical {
+    max-height: none;
+    overflow-y: visible;
+  }
 }
