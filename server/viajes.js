@@ -1820,7 +1820,7 @@ export async function obtenerEstadisticas({
   const qTotales = `
     SELECT
       COUNT(v.id)::int AS total_viajes,
-      COUNT(DISTINCT v.telefono) FILTER (WHERE v.telefono <> '')::int AS total_clientes,
+      COUNT(DISTINCT v.telefono) FILTER (WHERE COALESCE(v.telefono, '') <> '')::int AS total_clientes,
       COUNT(DISTINCT v.chofer_id) FILTER (WHERE v.chofer_id IS NOT NULL)::int AS total_choferes,
       COUNT(DISTINCT v.fecha_turno)::int AS dias_activos
     FROM viajes v
@@ -1870,16 +1870,18 @@ export async function obtenerEstadisticas({
     LIMIT 15
   `;
 
+  const condTopClientes = [...condiciones, "(COALESCE(v.telefono, '') <> '' OR COALESCE(v.nombre_cliente, '') <> '')"];
+  const whereTopClientes = `WHERE ${condTopClientes.join(' AND ')}`;
+
   const qTopClientes = `
     SELECT
-      v.telefono,
+      CASE WHEN COALESCE(v.telefono, '') <> '' THEN v.telefono ELSE v.nombre_cliente END AS telefono,
       MAX(v.nombre_cliente) AS nombre,
       COUNT(v.id)::int AS cantidad,
       to_char(MAX(v.hora_toma), 'YYYY-MM-DD HH24:MI') AS ultimo_viaje
     FROM viajes v
-    ${whereClause}
-    WHERE v.telefono <> '' OR v.nombre_cliente <> ''
-    GROUP BY v.telefono
+    ${whereTopClientes}
+    GROUP BY CASE WHEN COALESCE(v.telefono, '') <> '' THEN v.telefono ELSE v.nombre_cliente END
     ORDER BY cantidad DESC
     LIMIT 15
   `;
@@ -1899,7 +1901,7 @@ export async function obtenerEstadisticas({
       d.texto AS direccion,
       COUNT(v.id)::int AS cantidad,
       to_char(MAX(v.hora_toma), 'YYYY-MM-DD HH24:MI') AS ultimo_viaje,
-      (array_agg(v.nombre_cliente) FILTER (WHERE v.nombre_cliente <> ''))[1] AS cliente_frecuente
+      (array_agg(v.nombre_cliente) FILTER (WHERE COALESCE(v.nombre_cliente, '') <> ''))[1] AS cliente_frecuente
     FROM viajes v
     JOIN direcciones d ON d.id = v.direccion_id
     ${whereClause}
