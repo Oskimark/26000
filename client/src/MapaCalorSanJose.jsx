@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import L from './leaflet-heat-setup.js';
 
-const CENTRO_SAN_JOSE = [-34.3406, -56.7135];
+const CENTRO_SAN_JOSE = [-34.3395, -56.7135];
 
 export default function MapaCalorSanJose({ destinos = [], onSeleccionarDestino }) {
   const mapContainerRef = useRef(null);
