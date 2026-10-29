@@ -9,7 +9,7 @@ import {
   obtenerFichaViaje, editarFichaViaje, obtenerNombrePorTelefono,
   buscarViajesClientes, obtenerConfiguracion, actualizarConfiguracion, ejecutarProgramadosVencidos,
   listarCalles, crearCalle, actualizarCalle, eliminarCalle, restaurarCatalogoCalles,
-  obtenerTurnoActual, obtenerInfoCambioTurno, avanzarTurnoManual,
+  obtenerTurnoActual, obtenerInfoCambioTurno, avanzarTurnoManual, obtenerEstadisticas,
 } from './viajes.js';
 import { turnoDe, turnoSiguiente, turnoAnterior, describirTurno, validarTurno } from '../shared/turnos.js';
 
@@ -313,6 +313,11 @@ export function crearApi({ notificar }) {
   api.delete('/calles/:id', requierePermiso('admin_calles'), a(async (req, res) => {
     const eliminada = await eliminarCalle(Number(req.params.id));
     res.json(eliminada);
+  }));
+
+  // ---------- Estadísticas y Analítica ----------
+  api.get('/admin/estadisticas', requierePermiso('admin_estadisticas'), a(async (req, res) => {
+    res.json(await obtenerEstadisticas(req.query));
   }));
 
   // ---------- Errores ----------

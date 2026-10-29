@@ -53,6 +53,7 @@ export const MODULOS_PERMISOS = [
       { id: 'admin_calles', nombre: 'Calles y sitios', descripcion: 'Catálogo de calles de San José, alias y referencias' },
       { id: 'admin_configuracion', nombre: 'Configuración', descripcion: 'Aviso previo programado y visualización de campos' },
       { id: 'admin_identidad', nombre: 'Identidad corporativa', descripcion: 'Colores corporativos 26000 y estilos' },
+      { id: 'admin_estadisticas', nombre: 'Estadísticas y mapas', descripcion: 'Gráficos de demanda, analítica de clientes y mapa de calor' },
     ],
   },
 ];
@@ -91,6 +92,7 @@ export const PERMISOS_DEFAULT_OPERADOR = {
   admin_calles: false,
   admin_configuracion: false,
   admin_identidad: false,
+  admin_estadisticas: false,
   // Claves legacy para compatibilidad
   cancelar_viajes: true,
   editar_viajes: true,
@@ -119,6 +121,7 @@ export const PERMISOS_DEFAULT_ADMIN = {
   admin_calles: true,
   admin_configuracion: true,
   admin_identidad: true,
+  admin_estadisticas: true,
   cancelar_viajes: true,
   editar_viajes: true,
   exportar_csv: true,

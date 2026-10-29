@@ -2491,3 +2491,598 @@ button.turno-actual.btn-turno-header:hover {
 .tema-oscuro .tabla-referencia-anterior {
   background: rgba(15, 23, 42, 0.4);
 }
+
+/* ========================================================
+   Módulo de Estadísticas, Mapas de Calor y Analítica
+   ======================================================== */
+
+.modulo-estadisticas {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+/* Panel de Filtros */
+.seccion-filtros-estadisticas {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.cabecera-panel-filtros {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--borde);
+  padding-bottom: 0.75rem;
+}
+
+.cabecera-panel-filtros h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.15rem;
+}
+
+.descripcion-filtros {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
+}
+
+.acciones-filtros-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.grilla-filtros-fila {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.campo-filtro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campo-filtro label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--texto-secundario);
+}
+
+.grupo-botones-preset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.btn-preset {
+  background: var(--bg-destacado);
+  border: 1px solid var(--borde);
+  color: var(--texto);
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-preset:hover {
+  background: var(--borde);
+}
+
+.btn-preset.activo {
+  background: var(--corporativo-naranja, #ea580c);
+  color: #fff;
+  border-color: var(--corporativo-naranja, #ea580c);
+  font-weight: 600;
+}
+
+.fechas-inputs {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.fechas-inputs > div {
+  flex: 1;
+}
+
+.fechas-inputs input[type="date"] {
+  width: 100%;
+}
+
+.subcabecera-filtro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.atajos-dias {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--texto-tenue);
+}
+
+.selector-dias-semana {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-dia-semana {
+  flex: 1;
+  background: var(--bg-destacado);
+  border: 1px solid var(--borde);
+  color: var(--texto-secundario);
+  padding: 5px 0;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.btn-dia-semana:hover {
+  border-color: var(--texto-secundario);
+}
+
+.btn-dia-semana.activo {
+  background: #2563eb;
+  color: #fff;
+  border-color: #1d4ed8;
+}
+
+.rango-horas-selectores {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rango-horas-selectores select {
+  flex: 1;
+}
+
+.separador-horas {
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
+  font-weight: 600;
+}
+
+/* Grilla de KPIs */
+.grilla-kpis-estadisticas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.tarjeta-kpi {
+  background: var(--bg-superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--sombra);
+  transition: transform 0.15s ease;
+}
+
+.tarjeta-kpi:hover {
+  transform: translateY(-2px);
+}
+
+.tarjeta-kpi.destacada {
+  border-left: 4px solid var(--corporativo-naranja, #ea580c);
+  background: linear-gradient(135deg, var(--bg-superficie) 80%, rgba(234, 88, 12, 0.08));
+}
+
+.kpi-etiqueta {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--texto-secundario);
+  margin-bottom: 4px;
+}
+
+.kpi-valor {
+  font-size: 1.8rem;
+  color: var(--texto);
+  line-height: 1.2;
+}
+
+.kpi-sub {
+  font-size: 0.78rem;
+  color: var(--texto-tenue);
+  margin-top: 4px;
+}
+
+/* Mapa de Calor */
+.seccion-mapa-calor-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.cabecera-seccion-mapa h2 {
+  margin: 0 0 4px 0;
+  font-size: 1.25rem;
+}
+
+.descripcion-mapa {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--texto-secundario);
+}
+
+.contenedor-mapa-calor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-destacado);
+  border: 1px solid var(--borde);
+}
+
+.barra-controles-mapa {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-superficie);
+  border-bottom: 1px solid var(--borde);
+}
+
+.grupo-controles-modo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.etiqueta-control {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--texto-secundario);
+  margin-right: 4px;
+}
+
+.control-slider-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-slider-radio input[type="range"] {
+  width: 110px;
+  cursor: pointer;
+}
+
+.valor-radio {
+  font-size: 0.8rem;
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.acciones-mapa-derecha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.contador-destinos-mapa {
+  font-size: 0.84rem;
+  color: var(--texto-secundario);
+}
+
+.marco-mapa-leaflet {
+  width: 100%;
+  height: 520px;
+  position: relative;
+  z-index: 1;
+}
+
+.leyenda-mapa-calor {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--bg-superficie);
+  border-top: 1px solid var(--borde);
+  font-size: 0.8rem;
+}
+
+.leyenda-titulo {
+  color: var(--texto-secundario);
+}
+
+.gradiente-leyenda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--texto-secundario);
+  font-size: 0.75rem;
+}
+
+.barra-gradiente {
+  width: 140px;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(to right, #3b82f6, #06b6d4, #10b981, #f59e0b, #ef4444);
+}
+
+/* Marcadores personalizados en el mapa */
+.pin-marcador-wrap {
+  background: transparent;
+  border: none;
+}
+
+.pin-marcador-punto {
+  border-radius: 50%;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.pin-marcador-punto:hover {
+  transform: scale(1.25);
+  z-index: 9999;
+}
+
+.popup-mapa-destino h4 {
+  margin: 0 0 6px 0;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.popup-stats p {
+  margin: 2px 0;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+.ficha-destino-seleccionado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  border-radius: 6px;
+  font-size: 0.88rem;
+}
+
+/* Grillas de gráficas */
+.grilla-graficas-estadisticas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 1.5rem;
+}
+
+.tarjeta-grafica {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cabecera-grafica {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--borde);
+  padding-bottom: 0.5rem;
+}
+
+.cabecera-grafica h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* Gráfica de barras por hora */
+.grafica-barras-horas {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 200px;
+  padding-top: 25px;
+  border-bottom: 2px solid var(--borde);
+}
+
+.columna-barra-hora {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+  cursor: pointer;
+}
+
+.barra-relleno-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.barra-relleno {
+  width: 80%;
+  background: #3b82f6;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  transition: height 0.3s ease, background 0.15s ease;
+  min-height: 4px;
+}
+
+.barra-relleno:hover {
+  background: #2563eb;
+}
+
+.barra-relleno.pico {
+  background: var(--corporativo-naranja, #ea580c);
+}
+
+.barra-relleno .valor-barra {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.etiqueta-hora {
+  font-size: 0.68rem;
+  color: var(--texto-tenue);
+  margin-top: 6px;
+}
+
+/* Gráfica de barras horizontales por día */
+.grafica-barras-dias {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fila-barra-dia {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.etiqueta-dia-nombre {
+  width: 85px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.barra-progreso-track {
+  flex: 1;
+  height: 14px;
+  background: var(--bg-destacado);
+  border-radius: 7px;
+  overflow: hidden;
+  border: 1px solid var(--borde);
+}
+
+.barra-progreso-track.mini {
+  height: 8px;
+  border-radius: 4px;
+}
+
+.barra-progreso-fill {
+  height: 100%;
+  background: linear-gradient(to right, #3b82f6, #1d4ed8);
+  border-radius: 7px;
+  transition: width 0.4s ease;
+}
+
+.cantidad-dia-valor {
+  width: 110px;
+  text-align: right;
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
+}
+
+/* Ranking de Destinos */
+.tabla-ranking-destinos {
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.porcentaje-mini {
+  font-size: 0.75rem;
+  color: var(--texto-tenue);
+  display: block;
+  margin-top: 2px;
+}
+
+/* Sección Planes de Acción */
+.seccion-planes-accion {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.cabecera-planes-accion h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.2rem;
+}
+
+.grilla-tarjetas-plan {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.tarjeta-plan {
+  display: flex;
+  gap: 14px;
+  background: var(--bg-destacado);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.icono-plan {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.contenido-plan h4 {
+  margin: 0 0 6px 0;
+  font-size: 1rem;
+  color: var(--texto);
+}
+
+.contenido-plan p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--texto-secundario);
+}
+
+/* Tema Oscuro para Estadísticas */
+.tema-oscuro .barra-relleno {
+  background: #3b82f6;
+}
+
+.tema-oscuro .barra-relleno.pico {
+  background: #f97316;
+}
+
+.tema-oscuro .popup-mapa-destino h4 {
+  color: #0f172a; /* Los popups de Leaflet tienen fondo blanco por defecto */
+}
+
+.tema-oscuro .ficha-destino-seleccionado {
+  background: rgba(30, 58, 138, 0.3);
+  border-color: rgba(59, 130, 246, 0.4);
+}

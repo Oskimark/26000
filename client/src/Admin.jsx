@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import Estadisticas from './Estadisticas.jsx';
 import { api, leerSesion } from './api.js';
 import { leerTema, guardarTema } from './tema.js';
 import {
@@ -308,6 +309,7 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
 
   // Subtabs disponibles según permisos
   const SUBTABS_ADMIN = [
+    { id: 'estadisticas', nombre: '📊 Estadísticas y Mapas', permiso: 'admin_estadisticas' },
     { id: 'choferes', nombre: `🚖 Choferes (${choferes.length})`, permiso: 'admin_choferes' },
     { id: 'operadores', nombre: `👥 Operadores (${operadores.length})`, permiso: 'admin_operadores', soloSuperAdmin: true },
     { id: 'calles', nombre: `🗺️ Calles San José (${calles.length})`, permiso: 'admin_calles' },
@@ -1168,6 +1170,10 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
             </table>
           </div>
         </div>
+      )}
+
+      {subtab === 'estadisticas' && tienePermiso(sesionOperador, 'admin_estadisticas') && (
+        <Estadisticas />
       )}
 
       {subtab === 'configuracion' && tienePermiso(sesionOperador, 'admin_configuracion') && (

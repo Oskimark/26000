@@ -1,5 +1,7 @@
 // Reglas de negocio de los viajes.
 import { query, transaccion, sembrarCallesIniciales } from './db.js';
+import { geocodificarDireccion } from './geocoding.js';
+import { geocodificarDireccion } from './geocoding.js';
 import { turnoDe, turnoSiguiente, turnoAnterior, describirTurno, rangoTurno, parsearHora, proximaOcurrencia } from '../shared/turnos.js';
 
 export class ErrorNegocio extends Error {
@@ -1753,4 +1755,255 @@ export async function restaurarCatalogoCalles() {
   const agregadas = await sembrarCallesIniciales();
   const total = await listarCalles();
   return { agregadas, total: total.length };
+}
+
+export async function obtenerEstadisticas({
+  desde,
+  hasta,
+  dias,
+  horaDesde,
+  horaHasta,
+  tipoTurno,
+  choferId,
+  cliente,
+} = {}) {
+  const condiciones = ['v.numero IS NOT NULL', 'NOT v.cancelado'];
+  const params = [];
+  let paramIdx = 1;
+
+  if (desde) {
+    condiciones.push(`v.fecha_turno >= $${paramIdx++}::date`);
+    params.push(desde);
+  }
+  if (hasta) {
+    condiciones.push(`v.fecha_turno <= $${paramIdx++}::date`);
+    params.push(hasta);
+  }
+  if (dias) {
+    const arrDias = (Array.isArray(dias) ? dias : String(dias).split(','))
+      .map(Number)
+      .filter((n) => Number.isInteger(n) && n >= 0 && n <= 6);
+    if (arrDias.length > 0 && arrDias.length < 7) {
+      condiciones.push(`EXTRACT(DOW FROM v.hora_toma)::int = ANY($${paramIdx++}::int[])`);
+      params.push(arrDias);
+    }
+  }
+  if (horaDesde != null && horaHasta != null) {
+    const hD = Number(horaDesde);
+    const hH = Number(horaHasta);
+    if (Number.isInteger(hD) && Number.isInteger(hH) && hD >= 0 && hD <= 23 && hH >= 0 && hH <= 23) {
+      if (hD <= hH) {
+        condiciones.push(`EXTRACT(HOUR FROM v.hora_toma)::int BETWEEN $${paramIdx++} AND $${paramIdx++}`);
+        params.push(hD, hH);
+      } else {
+        condiciones.push(`(EXTRACT(HOUR FROM v.hora_toma)::int >= $${paramIdx++} OR EXTRACT(HOUR FROM v.hora_toma)::int <= $${paramIdx++})`);
+        params.push(hD, hH);
+      }
+    }
+  }
+  if (tipoTurno && (tipoTurno === 'A' || tipoTurno === 'B')) {
+    condiciones.push(`v.tipo_turno = $${paramIdx++}`);
+    params.push(tipoTurno);
+  }
+  if (choferId) {
+    condiciones.push(`v.chofer_id = $${paramIdx++}`);
+    params.push(Number(choferId));
+  }
+  if (cliente && String(cliente).trim()) {
+    const c = `%${String(cliente).trim().toLowerCase()}%`;
+    condiciones.push(`(LOWER(v.telefono) LIKE $${paramIdx} OR LOWER(v.nombre_cliente) LIKE $${paramIdx})`);
+    paramIdx++;
+    params.push(c);
+  }
+
+  const whereClause = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
+
+  const qTotales = `
+    SELECT
+      COUNT(v.id)::int AS total_viajes,
+      COUNT(DISTINCT v.telefono) FILTER (WHERE v.telefono <> '')::int AS total_clientes,
+      COUNT(DISTINCT v.chofer_id) FILTER (WHERE v.chofer_id IS NOT NULL)::int AS total_choferes,
+      COUNT(DISTINCT v.fecha_turno)::int AS dias_activos
+    FROM viajes v
+    ${whereClause}
+  `;
+
+  const qPorHora = `
+    SELECT EXTRACT(HOUR FROM v.hora_toma)::int AS hora, COUNT(v.id)::int AS cantidad
+    FROM viajes v
+    ${whereClause}
+    GROUP BY EXTRACT(HOUR FROM v.hora_toma)
+    ORDER BY hora ASC
+  `;
+
+  const qPorDiaSemana = `
+    SELECT EXTRACT(DOW FROM v.hora_toma)::int AS dia, COUNT(v.id)::int AS cantidad
+    FROM viajes v
+    ${whereClause}
+    GROUP BY EXTRACT(DOW FROM v.hora_toma)
+    ORDER BY dia ASC
+  `;
+
+  const qPorFecha = `
+    SELECT to_char(v.fecha_turno, 'YYYY-MM-DD') AS fecha, COUNT(v.id)::int AS cantidad
+    FROM viajes v
+    ${whereClause}
+    GROUP BY v.fecha_turno
+    ORDER BY v.fecha_turno ASC
+    LIMIT 60
+  `;
+
+  const qPorTurno = `
+    SELECT v.tipo_turno AS tipo, COUNT(v.id)::int AS cantidad
+    FROM viajes v
+    ${whereClause}
+    GROUP BY v.tipo_turno
+    ORDER BY v.tipo_turno ASC
+  `;
+
+  const qTopDestinos = `
+    SELECT d.id, d.texto AS direccion, COUNT(v.id)::int AS cantidad
+    FROM viajes v
+    JOIN direcciones d ON d.id = v.direccion_id
+    ${whereClause}
+    GROUP BY d.id, d.texto
+    ORDER BY cantidad DESC, d.texto ASC
+    LIMIT 15
+  `;
+
+  const qTopClientes = `
+    SELECT
+      v.telefono,
+      MAX(v.nombre_cliente) AS nombre,
+      COUNT(v.id)::int AS cantidad,
+      to_char(MAX(v.hora_toma), 'YYYY-MM-DD HH24:MI') AS ultimo_viaje
+    FROM viajes v
+    ${whereClause}
+    WHERE v.telefono <> '' OR v.nombre_cliente <> ''
+    GROUP BY v.telefono
+    ORDER BY cantidad DESC
+    LIMIT 15
+  `;
+
+  const qPorChofer = `
+    SELECT c.id, c.nombre, COUNT(v.id)::int AS cantidad
+    FROM viajes v
+    JOIN choferes c ON c.id = v.chofer_id
+    ${whereClause}
+    GROUP BY c.id, c.nombre
+    ORDER BY cantidad DESC
+  `;
+
+  const qDestinosMapa = `
+    SELECT
+      d.id,
+      d.texto AS direccion,
+      COUNT(v.id)::int AS cantidad,
+      to_char(MAX(v.hora_toma), 'YYYY-MM-DD HH24:MI') AS ultimo_viaje,
+      (array_agg(v.nombre_cliente) FILTER (WHERE v.nombre_cliente <> ''))[1] AS cliente_frecuente
+    FROM viajes v
+    JOIN direcciones d ON d.id = v.direccion_id
+    ${whereClause}
+    GROUP BY d.id, d.texto
+    ORDER BY cantidad DESC
+    LIMIT 1000
+  `;
+
+  const [
+    resTotales,
+    resPorHora,
+    resPorDiaSemana,
+    resPorFecha,
+    resPorTurno,
+    resTopDestinos,
+    resTopClientes,
+    resPorChofer,
+    resDestinosMapa,
+  ] = await Promise.all([
+    query(qTotales, params),
+    query(qPorHora, params),
+    query(qPorDiaSemana, params),
+    query(qPorFecha, params),
+    query(qPorTurno, params),
+    query(qTopDestinos, params),
+    query(qTopClientes, params),
+    query(qPorChofer, params),
+    query(qDestinosMapa, params),
+  ]);
+
+  const totales = resTotales.rows[0] || { total_viajes: 0, total_clientes: 0, total_choferes: 0, dias_activos: 0 };
+  const totalViajes = Number(totales.total_viajes || 0);
+  const diasActivos = Number(totales.dias_activos || 0);
+
+  const mapaHoras = Object.fromEntries(resPorHora.rows.map((r) => [r.hora, r.cantidad]));
+  const porHora = Array.from({ length: 24 }, (_, h) => ({
+    hora: h,
+    etiqueta: `${String(h).padStart(2, '0')}:00`,
+    cantidad: mapaHoras[h] || 0,
+  }));
+
+  const NOMBRES_DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const NOMBRES_DIAS_CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const mapaDias = Object.fromEntries(resPorDiaSemana.rows.map((r) => [r.dia, r.cantidad]));
+  const ordenDias = [1, 2, 3, 4, 5, 6, 0];
+  const porDiaSemana = ordenDias.map((d) => ({
+    dia: d,
+    nombre: NOMBRES_DIAS[d],
+    nombreCorto: NOMBRES_DIAS_CORTOS[d],
+    cantidad: mapaDias[d] || 0,
+  }));
+
+  const destinosMapa = resDestinosMapa.rows.map((r) => {
+    const coords = geocodificarDireccion(r.direccion);
+    return {
+      id: r.id,
+      direccion: r.direccion,
+      cantidad: r.cantidad,
+      ultimoViaje: r.ultimo_viaje,
+      cliente: r.cliente_frecuente || '',
+      lat: coords.lat,
+      lng: coords.lng,
+    };
+  });
+
+  const topDestinos = resTopDestinos.rows.map((r) => {
+    const coords = geocodificarDireccion(r.direccion);
+    return {
+      id: r.id,
+      direccion: r.direccion,
+      cantidad: r.cantidad,
+      porcentaje: totalViajes > 0 ? Number(((r.cantidad / totalViajes) * 100).toFixed(1)) : 0,
+      lat: coords.lat,
+      lng: coords.lng,
+    };
+  });
+
+  return {
+    totales: {
+      totalViajes,
+      totalClientes: Number(totales.total_clientes || 0),
+      totalChoferes: Number(totales.total_choferes || 0),
+      diasActivos,
+      promedioDiario: diasActivos > 0 ? Number((totalViajes / diasActivos).toFixed(1)) : 0,
+    },
+    porHora,
+    porDiaSemana,
+    porFecha: resPorFecha.rows,
+    porTurno: resPorTurno.rows.map((r) => ({
+      tipo: r.tipo,
+      nombre: r.tipo === 'A' ? 'Turno A (03 a 15)' : 'Turno B (15 a 03)',
+      cantidad: r.cantidad,
+      porcentaje: totalViajes > 0 ? Number(((r.cantidad / totalViajes) * 100).toFixed(1)) : 0,
+    })),
+    topDestinos,
+    topClientes: resTopClientes.rows.map((r) => ({
+      ...r,
+      porcentaje: totalViajes > 0 ? Number(((r.cantidad / totalViajes) * 100).toFixed(1)) : 0,
+    })),
+    porChofer: resPorChofer.rows.map((r) => ({
+      ...r,
+      porcentaje: totalViajes > 0 ? Number(((r.cantidad / totalViajes) * 100).toFixed(1)) : 0,
+    })),
+    destinosMapa,
+  };
 }
