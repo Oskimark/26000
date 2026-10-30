@@ -75,6 +75,28 @@ test('viajes anulados quedan siempre al final de la lista', () => {
   assert.equal(ordenados[1].id, 1, 'Anulado queda al final');
 });
 
+test('viaje programado que es cancelado pierde prioridad de aviso y se ubica al final', () => {
+  const ahora = new Date('2026-10-30T16:00:00-03:00').getTime();
+  const viajes = [
+    { id: 1, numero: 1, chofer_id: 2, hora_toma: '2026-10-30T15:30:00-03:00', fecha_turno: '2026-10-30', tipo_turno: 'B' },
+    {
+      id: 2,
+      programado: true,
+      hora_programada: '2026-10-30T16:05:00-03:00', // en ventana de aviso (5m)
+      numero: null,
+      chofer_id: null,
+      cancelado: true, // anulado
+      fecha_turno: '2026-10-30',
+      tipo_turno: 'B',
+    },
+  ];
+
+  assert.equal(calcularPrioridadViaje(viajes[1], 15, ahora), 4);
+  const ordenados = ordenarViajesVisuales(viajes, 15, ahora);
+  assert.equal(ordenados[0].id, 1, 'El viaje activo queda primero');
+  assert.equal(ordenados[1].id, 2, 'El programado anulado no salta al inicio y queda al final');
+});
+
 test('combinación completa: sin asignar y programados en aviso al principio, completados al medio, futuros al final', () => {
   const ahora = new Date('2026-10-30T16:00:00-03:00').getTime();
   const viajes = [

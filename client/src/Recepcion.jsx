@@ -22,7 +22,7 @@ export default function Recepcion({ turnos, socket, activa }) {
   const [pospuestos, setPospuestos] = useState(new Set());
   const [atendiendoManual, setAtendiendoManual] = useState(null);
   const [formVacio, setFormVacio] = useState(true);
-  const [mostrarAnulados, setMostrarAnulados] = useState(false);
+  const [mostrarAnulados, setMostrarAnulados] = useState(true);
   const [viajeFuturoFichaId, setViajeFuturoFichaId] = useState(null);
 
   const formRef = useRef(null);
@@ -33,6 +33,7 @@ export default function Recepcion({ turnos, socket, activa }) {
   const puedeAsignarChofer = tienePermiso(sesionOperador, 'recepcion_chofer');
   const puedeAvisar = tienePermiso(sesionOperador, 'recepcion_avisar');
   const puedeAbrirFicha = tienePermiso(sesionOperador, 'recepcion_ficha');
+  const puedeCancelar = tienePermiso(sesionOperador, 'recepcion_cancelar');
 
   const tActual = turnos?.actual;
 
@@ -190,6 +191,19 @@ export default function Recepcion({ turnos, socket, activa }) {
     }
   }
 
+  async function cambiarCanceladoFuturo(e, f) {
+    e.stopPropagation();
+    try {
+      await api(`/viajes/${f.id}/cancelado`, {
+        method: 'PUT',
+        body: { cancelado: !f.cancelado },
+      });
+      cargarDatos();
+    } catch (err) {
+      window.alert(err.message || 'Error al cambiar estado del viaje programado');
+    }
+  }
+
   return (
     <div className="recepcion-contenedor">
       {/* Panel dinámico flotante: Despacho O Formulario de nuevo viaje */}
@@ -287,6 +301,7 @@ export default function Recepcion({ turnos, socket, activa }) {
                   <th className="col-avisado">Estado</th>
                   <th>Teléfono</th>
                   <th>Hora Programada / Turno</th>
+                  <th className="col-cancel">Cancel</th>
                 </tr>
               </thead>
               <tbody>
@@ -351,6 +366,17 @@ export default function Recepcion({ turnos, socket, activa }) {
                         <span className="badge-prog">
                           {horaConDia(f.hora_programada)} · Turno {f.fecha_turno} ({f.tipo_turno})
                         </span>
+                      </td>
+                      <td className="col-cancel" onClick={(e) => e.stopPropagation()}>
+                        <label className="label-cancel" title={f.cancelado ? 'Viaje anulado (click para restaurar)' : 'Marcar viaje como anulado'}>
+                          <input
+                            type="checkbox"
+                            className="checkbox-cancel"
+                            checked={Boolean(f.cancelado)}
+                            disabled={!puedeCancelar}
+                            onChange={(e) => cambiarCanceladoFuturo(e, f)}
+                          />
+                        </label>
                       </td>
                     </tr>
                   );

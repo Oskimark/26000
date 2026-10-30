@@ -738,7 +738,6 @@ export async function generarViajesRepetidos(ahora = new Date()) {
       const { rows: existentes } = await client.query(
         `SELECT id FROM viajes
          WHERE (id = $1 OR viaje_origen_id = $1)
-           AND NOT cancelado
            AND hora_programada BETWEEN $2 AND $3
          LIMIT 1`,
         [p.id, ventanaIni, ventanaFin],

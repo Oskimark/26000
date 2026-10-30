@@ -31,7 +31,13 @@ function CeldaAsignado({ viaje }) {
 function CeldaAvisado({ viaje, editable, puedeAvisar = true }) {
   const [guardando, setGuardando] = useState(false);
 
-  if (viaje.cancelado) return <td className="col-avisado" />;
+  if (viaje.cancelado) {
+    return (
+      <td className="col-avisado">
+        <span className="tenue">Anulado</span>
+      </td>
+    );
+  }
 
   const fueAvisado = Boolean(viaje.hora_avisado);
   const opAvisado = viaje.avisado_por_nombre || '';
@@ -204,16 +210,15 @@ export default function ListaViajes({
 
   async function cambiarCancelado(e, v) {
     e.stopPropagation();
-    const accion = v.cancelado ? 'restaurar' : 'anular';
-    const desc = v.numero != null
-      ? `N° ${v.numero_formateado || formatearNumeroViaje(v.numero, v.tipo_turno)}`
-      : `programado de las ${hora(v.hora_programada)}`;
-    if (!window.confirm(`¿Seguro que querés ${accion} el viaje ${desc} (${v.direccion})?`)) return;
+    const nuevoCancelado = !v.cancelado;
     try {
-      await api(`/viajes/${v.id}/cancelado`, { method: 'PUT', body: { cancelado: !v.cancelado } });
+      await api(`/viajes/${v.id}/cancelado`, {
+        method: 'PUT',
+        body: { cancelado: nuevoCancelado },
+      });
       onActualizado?.();
     } catch (err) {
-      window.alert(err.message);
+      window.alert(err.message || 'Error al actualizar estado del viaje');
     }
   }
 
@@ -238,7 +243,7 @@ export default function ListaViajes({
             <th className="col-avisado">Estado</th>
             <th>{mostrarNombre ? 'Teléfono / Cliente' : 'Teléfono'}</th>
             <th className="col-prog">Programado</th>
-            {puedeCancelar && <th className="col-acc" />}
+            <th className="col-cancel">Cancel</th>
           </tr>
         </thead>
         <tbody>
@@ -283,15 +288,15 @@ export default function ListaViajes({
                 <td>
                   <TelefonoWhatsApp telefono={v.telefono} nombre={mostrarNombre ? v.nombre_cliente : ''} />
                 </td>
-                <td className={`col-prog ${v.programado ? 'col-prog-activo' : ''}`}>
+                <td className={`col-prog ${v.programado && !v.cancelado ? 'col-prog-activo' : ''}`}>
                   {v.programado ? (
                     <span
-                      className={enAvisoPrevio ? 'badge-prog aviso-previo' : 'badge-prog'}
+                      className={!v.cancelado && enAvisoPrevio ? 'badge-prog aviso-previo' : 'badge-prog'}
                       title={`Creado por ${v.operador || '—'} a las ${horaConDia(v.hora_toma)}`}
                     >
-                      {enAvisoPrevio && '⚠️ '}
+                      {!v.cancelado && enAvisoPrevio && '⚠️ '}
                       {hora(v.hora_programada)}
-                      {mins != null && !v.hora_avisado && (
+                      {!v.cancelado && mins != null && !v.hora_avisado && (
                         <small className="badge-prog-tiempo">
                           {' · '}
                           {mins <= 0
@@ -306,13 +311,20 @@ export default function ListaViajes({
                     <span className="tenue">—</span>
                   )}
                 </td>
-                {puedeCancelar && (
-                  <td className="col-acc" onClick={(e) => e.stopPropagation()}>
-                    <button className="btn-link chico" onClick={(e) => cambiarCancelado(e, v)}>
-                      {v.cancelado ? 'Restaurar' : 'Anular'}
-                    </button>
-                  </td>
-                )}
+                <td className="col-cancel" onClick={(e) => e.stopPropagation()}>
+                  <label
+                    className="label-cancel"
+                    title={v.cancelado ? 'Viaje anulado (click para restaurar)' : 'Marcar viaje como anulado'}
+                  >
+                    <input
+                      type="checkbox"
+                      className="checkbox-cancel"
+                      checked={Boolean(v.cancelado)}
+                      disabled={!editable || !puedeCancelar}
+                      onChange={(e) => cambiarCancelado(e, v)}
+                    />
+                  </label>
+                </td>
               </tr>
             );
           })}
