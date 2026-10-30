@@ -719,29 +719,13 @@ export async function generarViajesRepetidos(ahora = new Date()) {
 }
 
 /**
- * Los programados cuya hora está dentro de la ventana de aviso previo (minutos_aviso_programado)
- * pasan a la cola activa: reciben el siguiente N° del turno.
- * Devuelve los viajes activados.
+ * Genera viajes repetidos cuando corresponde.
+ * Los programados se mantienen en su posición sin asignarles número automáticamente
+ * al llegar la hora o aviso previo, evitando que salten a la parte superior.
  */
 export async function ejecutarProgramadosVencidos(ahora = new Date()) {
   const repetidos = await generarViajesRepetidos(ahora).catch(() => []);
-  const ids = await transaccion(async (client) => {
-    const { minutosAvisoProgramado } = await obtenerConfiguracion(client);
-    const limiteAviso = new Date(ahora.getTime() + minutosAvisoProgramado * 60_000);
-    const { rows } = await client.query(
-      `SELECT id, fecha_turno, tipo_turno FROM viajes
-       WHERE numero IS NULL AND NOT cancelado AND hora_programada <= $1
-       ORDER BY hora_programada, id
-       FOR UPDATE SKIP LOCKED`,
-      [limiteAviso],
-    );
-    for (const v of rows) {
-      const numero = await siguienteNumero(client, { fecha: v.fecha_turno, tipo: v.tipo_turno });
-      await client.query('UPDATE viajes SET numero = $1, hora_ejecucion = $2 WHERE id = $3', [numero, ahora, v.id]);
-    }
-    return rows.map((r) => r.id);
-  });
-  return [...repetidos, ...ids];
+  return repetidos;
 }
 
 export async function asignarChofer(viajeId, choferId, operadorId) {
@@ -822,9 +806,13 @@ export async function registrarAvisado(viajeId, { avisado = true, borrar }, oper
     }
     const limpiar = borrar || avisado === false;
     const valor = limpiar ? null : new Date();
+    let nuevoNumero = actual.numero;
+    if (!limpiar && nuevoNumero == null) {
+      nuevoNumero = await siguienteNumero(client, { fecha: actual.fecha_turno, tipo: actual.tipo_turno });
+    }
     await client.query(
-      'UPDATE viajes SET hora_avisado = $1, avisado_por = $2 WHERE id = $3',
-      [valor, limpiar ? null : operadorId, viajeId],
+      'UPDATE viajes SET hora_avisado = $1, avisado_por = $2, numero = COALESCE(numero, $3) WHERE id = $4',
+      [valor, limpiar ? null : operadorId, nuevoNumero, viajeId],
     );
     await registrarHistorial(
       client,

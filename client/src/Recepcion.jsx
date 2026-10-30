@@ -107,17 +107,15 @@ export default function Recepcion({ turnos, socket, activa }) {
     });
   }, [viajes, futuros, minutosAviso]);
 
-  // El viaje a despachar automáticamente:
-  // - O el seleccionado manualmente (con click en F2),
-  // - O el primer programado en ventana de aviso sin chofer que no esté pospuesto
+  // El viaje a despachar: solo cuando el operador lo atiende manualmente (ej: F2 o atajo)
+  // No colocar viajes automáticamente en el panel superior al llegar la hora o aviso previo
   const viajeADespachar = useMemo(() => {
     if (atendiendoManual) {
       const sigue = todosSinChofer.find((v) => v.id === atendiendoManual.id);
       if (sigue) return sigue;
     }
-    if (!formVacio) return null; // No interrumpir al operador si está tipeando un viaje nuevo
-    return programadosEnAvisoSinChofer.find((v) => !pospuestos.has(v.id)) || null;
-  }, [atendiendoManual, todosSinChofer, programadosEnAvisoSinChofer, formVacio, pospuestos]);
+    return null;
+  }, [atendiendoManual, todosSinChofer]);
 
   function handlePosponer(v) {
     setPospuestos((prev) => new Set([...prev, v.id]));
@@ -197,23 +195,6 @@ export default function Recepcion({ turnos, socket, activa }) {
 
   return (
     <div className="recepcion-contenedor">
-      {/* Barra superior de alertas de viajes programados dentro del aviso previo */}
-      {programadosEnAvisoSinAvisar.length > 0 && !viajeADespachar && (
-        <div className="barra-aviso-despacho">
-          <span>
-            ⏰ <b>Aviso previo ({minutosAviso} min):</b> Hay <b>{programadosEnAvisoSinAvisar.length}</b> viaje(s) programado(s) próximo(s) a su hora
-            {programadosEnAvisoSinChofer.length > 0
-              ? ` (${programadosEnAvisoSinChofer.length} sin chofer asignado).`
-              : ' pendientes de avisar al chofer.'}
-          </span>
-          {programadosEnAvisoSinChofer.length > 0 && (
-            <button className="btn chico alerta" onClick={() => handleAtenderManual(programadosEnAvisoSinChofer[0])}>
-              Asignar chofer <kbd>F2</kbd>
-            </button>
-          )}
-        </div>
-      )}
-
       {/* Panel dinámico flotante: Despacho O Formulario de nuevo viaje */}
       <div className="bloque-ingreso-flotante">
         <section className="tarjeta seccion-panel-ingreso">

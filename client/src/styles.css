@@ -120,8 +120,8 @@ nav {
 }
 
 .operador {
-  font-weight: 600;
-  color: #e2e8f0;
+  font-weight: 700;
+  color: #facc15 !important;
 }
 
 .btn-link {
@@ -536,8 +536,28 @@ input:focus, select:focus {
 .col-dir { font-weight: 500; font-size: 0.95rem; min-width: 240px; }
 .col-hora { width: 110px; }
 .col-fin { width: 120px; }
-.col-prog { width: 130px; }
+.col-prog { width: 145px; }
 .col-acc { width: 80px; text-align: right; }
+
+td.col-prog.col-prog-activo {
+  padding: 0 !important;
+  vertical-align: stretch;
+  height: 100%;
+}
+
+.col-prog-activo .badge-prog {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  padding: 6px 8px;
+  animation: none !important;
+}
 
 .texto-direccion {
   font-weight: 600;
@@ -547,13 +567,21 @@ input:focus, select:focus {
 
 .badge-prog {
   display: inline-block;
-  margin-top: 3px;
-  background-color: #dbeafe;
-  color: #1e40af;
-  font-size: 0.76rem;
-  font-weight: 600;
-  padding: 1px 6px;
+  background-color: #facc15 !important;
+  color: #000000 !important;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  padding: 4px 8px;
   border-radius: 4px;
+  border: none !important;
+  text-align: center;
+}
+
+.badge-prog small,
+.badge-prog .badge-prog-tiempo {
+  color: #000000 !important;
+  font-size: 0.85rem !important;
+  font-weight: 800 !important;
 }
 
 .subtexto-op {
@@ -793,9 +821,9 @@ input:focus, select:focus {
   color: #fff;
 }
 .tema-etiquetas-naranja .badge-prog {
-  background-color: #fff5ed;
-  border: 1.5px solid var(--corporativo-borde);
-  color: #c2410c;
+  background-color: #facc15 !important;
+  color: #000000 !important;
+  border: none !important;
 }
 .tema-etiquetas-naranja .chip.prog {
   background-color: #fff5ed;
@@ -1249,10 +1277,9 @@ input:focus, select:focus {
 
 /* Aviso previo en viajes programados */
 .badge-prog.aviso-previo {
-  background-color: #fef3c7;
-  color: #b45309;
-  border: 1.5px solid #f59e0b;
-  animation: pulso 1.8s infinite;
+  background-color: #facc15 !important;
+  color: #000000 !important;
+  border: none !important;
 }
 .fila-aviso-programado {
   background-color: #fffbeb;
@@ -1703,9 +1730,13 @@ body.tema-oscuro,
 }
 
 .tema-oscuro .badge-prog {
-  background-color: rgba(255, 102, 0, 0.22) !important;
-  border: 1.5px solid var(--corporativo-borde) !important;
-  color: #ffffff !important;
+  background-color: #facc15 !important;
+  border: none !important;
+  color: #000000 !important;
+}
+
+.tema-oscuro .operador {
+  color: #facc15 !important;
 }
 
 .tema-oscuro .tabla-filas-clickeables .fila-clickeable:hover {

@@ -275,7 +275,7 @@ export default function ListaViajes({
                 <td>
                   <TelefonoWhatsApp telefono={v.telefono} nombre={mostrarNombre ? v.nombre_cliente : ''} />
                 </td>
-                <td className="col-prog">
+                <td className={`col-prog ${v.programado ? 'col-prog-activo' : ''}`}>
                   {v.programado ? (
                     <span
                       className={enAvisoPrevio ? 'badge-prog aviso-previo' : 'badge-prog'}
@@ -284,7 +284,7 @@ export default function ListaViajes({
                       {enAvisoPrevio && '⚠️ '}
                       {hora(v.hora_programada)}
                       {mins != null && !v.hora_avisado && (
-                        <small>
+                        <small className="badge-prog-tiempo">
                           {' · '}
                           {mins <= 0
                             ? 'ya'
