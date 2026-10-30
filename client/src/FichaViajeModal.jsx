@@ -32,6 +32,7 @@ export default function FichaViajeModal({
   const cerrar = onCerrar || onClose;
   const notificarCambio = onActualizado || onGuardado;
   const puedeEditar = editable && tienePermiso(leerSesion()?.operador, 'editar_viajes');
+  const puedeCancelar = editable && tienePermiso(leerSesion()?.operador, 'recepcion_cancelar');
 
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -211,6 +212,26 @@ export default function FichaViajeModal({
       notificarCambio?.();
     } catch (err) {
       window.alert(err.message);
+    }
+  }
+
+  async function handleToggleCancelado() {
+    if (!viaje) return;
+    setGuardando(true);
+    setError('');
+    const nuevoCancelado = !viaje.cancelado;
+    try {
+      await api(`/viajes/${viaje.id}/cancelado`, {
+        method: 'PUT',
+        body: { cancelado: nuevoCancelado },
+      });
+      setMensaje(nuevoCancelado ? 'Viaje anulado correctamente' : 'Viaje restaurado con éxito');
+      await cargarFicha();
+      notificarCambio?.();
+    } catch (err) {
+      setError(err.message || 'Error al cambiar estado de anulación');
+    } finally {
+      setGuardando(false);
     }
   }
 
@@ -522,6 +543,29 @@ export default function FichaViajeModal({
                 <button type="button" className="btn" onClick={cerrar}>
                   Cerrar
                 </button>
+                {puedeCancelar && (
+                  viaje.cancelado ? (
+                    <button
+                      type="button"
+                      className="btn exito"
+                      onClick={handleToggleCancelado}
+                      disabled={guardando}
+                      title="Restaurar este viaje anulado para devolverlo al listado activo"
+                    >
+                      ♻️ Restaurar viaje
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn peligro"
+                      onClick={handleToggleCancelado}
+                      disabled={guardando}
+                      title="Marcar este viaje como anulado"
+                    >
+                      🚫 Anular viaje
+                    </button>
+                  )
+                )}
                 {puedeEditar ? (
                   <button type="submit" className="btn primario" disabled={guardando}>
                     {guardando ? 'Guardando…' : '💾 Guardar cambios'}

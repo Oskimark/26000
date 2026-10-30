@@ -22,9 +22,9 @@ export function calcularPrioridadViaje(v, minutosAviso = 5, ahoraMs = Date.now()
     ? minutosHasta(v.hora_programada, ahoraMs)
     : null;
 
-  // Un viaje programado solo salta al inicio si está en período de aviso y NO tiene chofer asignado
+  // Un viaje programado solo salta al inicio si está en período de aviso (o vencido) y NO tiene chofer asignado
   const programadoEnAviso = Boolean(
-    v.programado && !v.chofer_id && mins != null && mins <= minutosAviso
+    v.programado && !v.chofer_id && (mins == null || mins <= minutosAviso)
   );
 
   // Un viaje inmediato sin chofer asignado (cliente esperando que le asignen chofer)

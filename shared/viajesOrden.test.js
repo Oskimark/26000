@@ -157,3 +157,36 @@ test('un viaje programado una vez asignado queda en su lugar, y un nuevo viaje m
   assert.equal(orden[1].id, 2, 'El viaje programado asignado (16:15) queda en su lugar intermedio');
   assert.equal(orden[2].id, 1, 'El viaje manual viejo (16:00) queda por debajo');
 });
+
+test('los viajes sin asignar se mantienen siempre arriba de los viajes nuevos asignados y no quedan enterrados', () => {
+  const ahora = new Date('2026-10-30T16:30:00-03:00').getTime();
+  const sinAsignarViejo = {
+    id: 10,
+    numero: 1,
+    chofer_id: null, // SIN CHOFER
+    hora_toma: '2026-10-30T16:00:00-03:00',
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'B',
+  };
+  const nuevoAsignado1 = {
+    id: 20,
+    numero: 2,
+    chofer_id: 3,
+    hora_toma: '2026-10-30T16:10:00-03:00',
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'B',
+  };
+  const nuevoAsignado2 = {
+    id: 30,
+    numero: 3,
+    chofer_id: 4,
+    hora_toma: '2026-10-30T16:20:00-03:00',
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'B',
+  };
+
+  const orden = ordenarViajesVisuales([nuevoAsignado2, sinAsignarViejo, nuevoAsignado1], 15, ahora);
+  assert.equal(orden[0].id, 10, 'El viaje sin asignar debe mantenerse en la cima (Prioridad 1) sin ser enterrado por los nuevos asignados');
+  assert.equal(orden[1].id, 30, 'El viaje nuevo asignado queda abajo del sin asignar');
+  assert.equal(orden[2].id, 20, 'El viaje asignado más viejo queda debajo');
+});

@@ -986,6 +986,18 @@ td.col-prog.col-prog-activo {
   border-color: #b91c1c;
 }
 
+/* Botón Éxito (Restaurar) */
+.btn.exito {
+  background-color: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
+}
+.btn.exito:hover:not(:disabled) {
+  background-color: #16a34a;
+  color: #ffffff;
+  border-color: #15803d;
+}
+
 /* Enlace de Teléfono y WhatsApp */
 .enlace-whatsapp {
   display: inline-flex;
