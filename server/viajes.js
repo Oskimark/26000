@@ -527,21 +527,21 @@ export async function listarViajesRecepcion({ fecha, tipo }) {
        CASE
          WHEN NOT v.cancelado AND (
            (NOT v.programado AND v.chofer_id IS NULL)
-           OR (v.programado AND (v.chofer_id IS NULL OR v.hora_avisado IS NULL) AND v.hora_programada <= now() + (interval '1 minute' * $3))
+           OR (v.programado AND v.chofer_id IS NULL AND v.hora_programada <= now() + (interval '1 minute' * $3))
          ) THEN 1
-         WHEN NOT v.cancelado AND v.programado AND (v.chofer_id IS NULL OR v.hora_avisado IS NULL)
+         WHEN NOT v.cancelado AND v.programado AND v.chofer_id IS NULL
               AND v.hora_programada > now() + (interval '1 minute' * $3) THEN 3
          WHEN v.cancelado THEN 4
          ELSE 2
        END ASC,
        CASE
-         WHEN NOT v.cancelado AND (v.chofer_id IS NULL OR (v.programado AND v.hora_avisado IS NULL))
+         WHEN NOT v.cancelado AND v.chofer_id IS NULL
            THEN COALESCE(v.hora_programada, v.hora_toma)
          ELSE NULL
        END ASC NULLS LAST,
        (v.fecha_turno, v.tipo_turno) DESC,
-       v.numero DESC,
-       v.hora_toma DESC,
+       COALESCE(v.hora_asignacion, v.hora_programada, v.hora_toma) DESC,
+       v.numero DESC NULLS LAST,
        v.id DESC`,
     [fecha, tipo, minutosAviso],
   );

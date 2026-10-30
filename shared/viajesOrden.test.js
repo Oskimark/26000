@@ -100,11 +100,11 @@ test('viaje programado que es cancelado pierde prioridad de aviso y se ubica al 
 test('combinación completa: sin asignar y programados en aviso al principio, completados al medio, futuros al final', () => {
   const ahora = new Date('2026-10-30T16:00:00-03:00').getTime();
   const viajes = [
-    { id: 10, numero: 5, chofer_id: 1, hora_avisado: '2026-10-30T15:50:00-03:00', fecha_turno: '2026-10-30', tipo_turno: 'B' }, // asignado
+    { id: 10, numero: 5, chofer_id: 1, hora_toma: '2026-10-30T15:50:00-03:00', hora_avisado: '2026-10-30T15:50:00-03:00', fecha_turno: '2026-10-30', tipo_turno: 'B' }, // asignado
     { id: 20, numero: 1, chofer_id: null, hora_toma: '2026-10-30T15:20:00-03:00', fecha_turno: '2026-10-30', tipo_turno: 'B' }, // sin asignar urgente
     { id: 30, programado: true, hora_programada: '2026-10-30T16:10:00-03:00', chofer_id: null, fecha_turno: '2026-10-30', tipo_turno: 'B' }, // programado en aviso (en 10m)
     { id: 40, programado: true, hora_programada: '2026-10-30T18:00:00-03:00', chofer_id: null, fecha_turno: '2026-10-30', tipo_turno: 'B' }, // programado futuro (en 2h)
-    { id: 50, numero: 6, chofer_id: 2, hora_avisado: '2026-10-30T15:55:00-03:00', fecha_turno: '2026-10-30', tipo_turno: 'B' }, // asignado más nuevo
+    { id: 50, numero: 6, chofer_id: 2, hora_toma: '2026-10-30T15:55:00-03:00', hora_avisado: '2026-10-30T15:55:00-03:00', fecha_turno: '2026-10-30', tipo_turno: 'B' }, // asignado más nuevo
   ];
 
   const orden = ordenarViajesVisuales(viajes, 15, ahora);
@@ -118,4 +118,42 @@ test('combinación completa: sin asignar y programados en aviso al principio, co
   assert.ok(ids.indexOf(10) === 3);
   // Último: programado futuro lejano (40)
   assert.equal(ids[4], 40);
+});
+
+test('un viaje programado una vez asignado queda en su lugar, y un nuevo viaje manual queda por encima de él', () => {
+  const ahora = new Date('2026-10-30T16:30:00-03:00').getTime();
+  const viajeManualViejo = {
+    id: 1,
+    numero: 1,
+    chofer_id: 2,
+    hora_toma: '2026-10-30T16:00:00-03:00',
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'B',
+  };
+  const viajeProgAsignado = {
+    id: 2,
+    programado: true,
+    hora_programada: '2026-10-30T16:15:00-03:00',
+    hora_asignacion: '2026-10-30T16:15:00-03:00',
+    numero: null,
+    chofer_id: 4, // YA ASIGNADO
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'B',
+  };
+  const viajeManualNuevo = {
+    id: 3,
+    numero: 2,
+    chofer_id: 5,
+    hora_toma: '2026-10-30T16:20:00-03:00', // ingresado DESPUÉS
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'B',
+  };
+
+  // viajeProgAsignado ya tiene chofer, por lo que NO debe ser Prioridad 1
+  assert.equal(calcularPrioridadViaje(viajeProgAsignado, 15, ahora), 2);
+
+  const orden = ordenarViajesVisuales([viajeManualViejo, viajeProgAsignado, viajeManualNuevo], 15, ahora);
+  assert.equal(orden[0].id, 3, 'El viaje manual nuevo (16:20) debe quedar por encima del programado asignado');
+  assert.equal(orden[1].id, 2, 'El viaje programado asignado (16:15) queda en su lugar intermedio');
+  assert.equal(orden[2].id, 1, 'El viaje manual viejo (16:00) queda por debajo');
 });

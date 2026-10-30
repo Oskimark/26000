@@ -251,7 +251,7 @@ export default function ListaViajes({
             const pendiente = v.numero == null;
             const mins = v.programado ? minutosHasta(v.hora_programada, ahoraMs) : null;
             const enAvisoPrevio =
-              v.programado && !v.cancelado && mins != null && mins <= minutosAviso && (!v.chofer_id || !v.hora_avisado);
+              v.programado && !v.cancelado && !v.chofer_id && mins != null && mins <= minutosAviso;
             const sinChofer = !v.chofer_id && !v.cancelado;
             const clases = [
               puedeAbrirFicha && 'fila-clickeable',
