@@ -508,18 +508,42 @@ export async function listarTurno({ fecha, tipo }) {
 
 /**
  * Para la vista activa de Recepción: mantiene visibles de forma continua los viajes
- * correspondientes a las últimas 12 horas, garantizando que el cambio de turno y operador
- * no vacíe la lista y mostrando la numeración del turno nuevo (A000 / B000).
+ * correspondientes a las últimas 12 horas.
+ * Orden prioritario:
+ * 1. Viajes sin asignar (inmediatos) y viajes programados en período de notificación (primeros siempre).
+ * 2. Viajes asignados/completados ordenados por turno y número DESC (más nuevos arriba).
+ * 3. Viajes programados futuros que aún no entraron en el período de aviso (al final, por hora ASC).
  */
 export async function listarViajesRecepcion({ fecha, tipo }) {
+  const cfg = await obtenerConfiguracion();
+  const minutosAviso = Number(cfg?.minutosAvisoProgramado) || 15;
   const { rows } = await query(
     `${SELECT_VIAJE}
      WHERE ((v.fecha_turno = $1 AND v.tipo_turno = $2)
         OR v.hora_toma >= now() - interval '12 hours'
         OR (v.programado AND v.hora_programada >= now() - interval '12 hours'))
        AND NOT (v.numero IS NULL AND NOT v.cancelado AND (v.fecha_turno, v.tipo_turno) > ($1::date, $2::char(1)))
-     ORDER BY (v.numero IS NULL) ASC, (v.fecha_turno, v.tipo_turno) DESC, v.numero DESC, v.hora_programada ASC, v.id DESC`,
-    [fecha, tipo],
+     ORDER BY
+       CASE
+         WHEN NOT v.cancelado AND (
+           (NOT v.programado AND v.chofer_id IS NULL)
+           OR (v.programado AND (v.chofer_id IS NULL OR v.hora_avisado IS NULL) AND v.hora_programada <= now() + (interval '1 minute' * $3))
+         ) THEN 1
+         WHEN NOT v.cancelado AND v.programado AND (v.chofer_id IS NULL OR v.hora_avisado IS NULL)
+              AND v.hora_programada > now() + (interval '1 minute' * $3) THEN 3
+         WHEN v.cancelado THEN 4
+         ELSE 2
+       END ASC,
+       CASE
+         WHEN NOT v.cancelado AND (v.chofer_id IS NULL OR (v.programado AND v.hora_avisado IS NULL))
+           THEN COALESCE(v.hora_programada, v.hora_toma)
+         ELSE NULL
+       END ASC NULLS LAST,
+       (v.fecha_turno, v.tipo_turno) DESC,
+       v.numero DESC,
+       v.hora_toma DESC,
+       v.id DESC`,
+    [fecha, tipo, minutosAviso],
   );
   return rows;
 }

@@ -1,14 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { api, leerSesion } from './api.js';
 import { hora, horaConDia, formatearNumeroViaje } from './formato.js';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 import FichaViajeModal from './FichaViajeModal.jsx';
 import { tienePermiso } from '../../shared/permisos.js';
-
-function minutosHasta(iso) {
-  if (!iso) return null;
-  return Math.round((new Date(iso).getTime() - Date.now()) / 60_000);
-}
+import { minutosHasta, ordenarViajesVisuales } from '../../shared/viajesOrden.js';
 
 function CeldaAsignado({ viaje }) {
   const horaAsig = viaje.hora_asignacion || viaje.hora_fin;
@@ -190,11 +186,21 @@ export default function ListaViajes({
   onActualizado,
 }) {
   const [viajeFichaId, setViajeFichaId] = useState(null);
+  const [ahoraMs, setAhoraMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    // Ticker para actualizar minutos y reordenar automáticamente cuando un programado entra en período de aviso
+    const t = setInterval(() => setAhoraMs(Date.now()), 5000);
+    return () => clearInterval(t);
+  }, []);
 
   const viajesVisibles = useMemo(() => {
-    if (!ocultarAnulados) return viajes;
-    return viajes.filter((v) => !v.cancelado);
-  }, [viajes, ocultarAnulados]);
+    let lista = viajes;
+    if (ocultarAnulados) {
+      lista = lista.filter((v) => !v.cancelado);
+    }
+    return ordenarViajesVisuales(lista, minutosAviso, ahoraMs);
+  }, [viajes, ocultarAnulados, minutosAviso, ahoraMs]);
 
   async function cambiarCancelado(e, v) {
     e.stopPropagation();
@@ -238,10 +244,10 @@ export default function ListaViajes({
         <tbody>
           {viajesVisibles.map((v) => {
             const pendiente = v.numero == null;
-            const mins = v.programado ? minutosHasta(v.hora_programada) : null;
+            const mins = v.programado ? minutosHasta(v.hora_programada, ahoraMs) : null;
             const enAvisoPrevio =
               v.programado && !v.cancelado && mins != null && mins <= minutosAviso && (!v.chofer_id || !v.hora_avisado);
-            const sinChofer = !v.chofer_id && !v.cancelado && (!v.programado || !pendiente || enAvisoPrevio);
+            const sinChofer = !v.chofer_id && !v.cancelado;
             const clases = [
               puedeAbrirFicha && 'fila-clickeable',
               pendiente && 'fila-pendiente',
