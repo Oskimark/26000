@@ -248,18 +248,20 @@ export default function ListaViajes({
         </thead>
         <tbody>
           {viajesVisibles.map((v) => {
-            const pendiente = v.numero == null;
+            const pendiente = v.numero == null && !v.chofer_id;
             const mins = v.programado ? minutosHasta(v.hora_programada, ahoraMs) : null;
             const enAvisoPrevio =
               v.programado && !v.cancelado && !v.chofer_id && mins != null && mins <= minutosAviso;
             const sinChofer = !v.chofer_id && !v.cancelado;
+            const asignado = Boolean(v.chofer_id && !v.cancelado);
+            const esProgPendiente = v.programado && !v.cancelado && !v.chofer_id;
             const clases = [
               puedeAbrirFicha && 'fila-clickeable',
               pendiente && 'fila-pendiente',
               sinChofer && 'fila-sin-chofer',
               enAvisoPrevio && 'fila-aviso-programado',
               v.cancelado && 'fila-anulada',
-              !pendiente && !v.cancelado && v.chofer_id && !v.hora_avisado && 'fila-en-curso',
+              asignado && !v.hora_avisado && 'fila-en-curso',
             ].filter(Boolean).join(' ');
 
             return (
@@ -288,25 +290,34 @@ export default function ListaViajes({
                 <td>
                   <TelefonoWhatsApp telefono={v.telefono} nombre={mostrarNombre ? v.nombre_cliente : ''} />
                 </td>
-                <td className={`col-prog ${v.programado && !v.cancelado ? 'col-prog-activo' : ''}`}>
+                <td className={`col-prog ${esProgPendiente ? 'col-prog-activo' : ''}`}>
                   {v.programado ? (
-                    <span
-                      className={!v.cancelado && enAvisoPrevio ? 'badge-prog aviso-previo' : 'badge-prog'}
-                      title={`Creado por ${v.operador || '—'} a las ${horaConDia(v.hora_toma)}`}
-                    >
-                      {!v.cancelado && enAvisoPrevio && '⚠️ '}
-                      {hora(v.hora_programada)}
-                      {!v.cancelado && mins != null && !v.hora_avisado && (
-                        <small className="badge-prog-tiempo">
-                          {' · '}
-                          {mins <= 0
-                            ? 'ya'
-                            : mins < 60
-                              ? `en ${mins}m`
-                              : `en ${Math.floor(mins / 60)}h ${mins % 60}m`}
-                        </small>
-                      )}
-                    </span>
+                    esProgPendiente ? (
+                      <span
+                        className={enAvisoPrevio ? 'badge-prog aviso-previo' : 'badge-prog'}
+                        title={`Creado por ${v.operador || '—'} a las ${horaConDia(v.hora_toma)}`}
+                      >
+                        {enAvisoPrevio && '⚠️ '}
+                        {hora(v.hora_programada)}
+                        {mins != null && (
+                          <small className="badge-prog-tiempo">
+                            {' · '}
+                            {mins <= 0
+                              ? 'ya'
+                              : mins < 60
+                                ? `en ${mins}m`
+                                : `en ${Math.floor(mins / 60)}h ${mins % 60}m`}
+                          </small>
+                        )}
+                      </span>
+                    ) : (
+                      <span
+                        className="badge-prog-asignado"
+                        title={v.cancelado ? 'Viaje programado anulado' : `Viaje programado asignado a ${v.chofer || 'chofer'}`}
+                      >
+                        {hora(v.hora_programada)}
+                      </span>
+                    )
                   ) : (
                     <span className="tenue">—</span>
                   )}

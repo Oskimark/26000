@@ -611,6 +611,19 @@ td.col-prog.col-prog-activo {
   font-weight: 800 !important;
 }
 
+/* Indicador de viaje programado ya asignado: pierde el fondo amarillo y queda como un viaje normal */
+.badge-prog-asignado {
+  display: inline-block;
+  background-color: #e2e8f0;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  text-align: center;
+}
+
 .subtexto-op {
   font-size: 0.75rem;
   color: #94a3b8;
@@ -1760,6 +1773,12 @@ body.tema-oscuro,
   background-color: #facc15 !important;
   border: none !important;
   color: #000000 !important;
+}
+
+.tema-oscuro .badge-prog-asignado {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  border-color: #334155;
 }
 
 .tema-oscuro .operador {

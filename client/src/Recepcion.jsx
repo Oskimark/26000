@@ -363,7 +363,7 @@ export default function Recepcion({ turnos, socket, activa }) {
                         />
                       </td>
                       <td>
-                        <span className="badge-prog">
+                        <span className={f.chofer_id ? 'badge-prog-asignado' : 'badge-prog'}>
                           {horaConDia(f.hora_programada)} · Turno {f.fecha_turno} ({f.tipo_turno})
                         </span>
                       </td>
