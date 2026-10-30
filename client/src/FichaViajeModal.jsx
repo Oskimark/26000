@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, leerSesion } from './api.js';
-import { hora } from './formato.js';
+import { hora, formatearNumeroViaje } from './formato.js';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 import { tienePermiso } from '../../shared/permisos.js';
 
@@ -220,7 +220,7 @@ export default function FichaViajeModal({
         <div className="modal-ficha-cabecera">
           <div className="modal-ficha-titulo-wrap">
             <h2>
-              📋 Ficha de Viaje {viaje?.numero ? `· N° ${viaje.numero}` : '· Programado'}
+              📋 Ficha de Viaje {viaje?.numero != null ? `· N° ${viaje.numero_formateado || formatearNumeroViaje(viaje.numero, viaje.tipo_turno)}` : '· Programado'}
               {viaje && <small className="tenue"> (ID #{viaje.id})</small>}
             </h2>
             {viaje && (

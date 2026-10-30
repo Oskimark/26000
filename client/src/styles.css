@@ -532,7 +532,7 @@ input:focus, select:focus {
   background-color: var(--fila-hover);
 }
 
-.col-num { width: 50px; text-align: center; font-weight: 700; color: #64748b; }
+.col-num { width: 68px; min-width: 65px; text-align: center; font-weight: 700; color: #64748b; }
 .col-dir { font-weight: 500; font-size: 0.95rem; min-width: 240px; }
 .col-hora { width: 110px; }
 .col-fin { width: 120px; }

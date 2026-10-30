@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, leerSesion } from './api.js';
-import { hora } from './formato.js';
+import { hora, formatearNumeroViaje } from './formato.js';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 import FichaViajeModal from './FichaViajeModal.jsx';
 import { tienePermiso } from '../../shared/permisos.js';
@@ -164,7 +164,7 @@ export default function Clientes({ socket }) {
     const filas = datos.viajes.map((v) => [
       v.fecha_turno,
       v.tipo_turno,
-      v.numero ?? '',
+      v.numero != null ? (v.numero_formateado || formatearNumeroViaje(v.numero, v.tipo_turno)) : '',
       v.hora_toma ? hora(v.hora_toma) : '',
       v.hora_asignacion || v.hora_fin ? hora(v.hora_asignacion || v.hora_fin) : '',
       `"${(v.chofer || 'Sin asignar').replace(/"/g, '""')}"`,
@@ -747,7 +747,7 @@ export default function Clientes({ socket }) {
                     <b>{formatearDia(v.fecha_turno)}</b>
                     <div className="subtexto-op">Turno {v.tipo_turno}</div>
                   </td>
-                  <td className="col-num">{v.numero ?? '—'}</td>
+                  <td className="col-num">{v.numero != null ? (v.numero_formateado || formatearNumeroViaje(v.numero, v.tipo_turno)) : '—'}</td>
                   <td className="col-hora">
                     <b>{hora(v.hora_toma)}</b>
                   </td>

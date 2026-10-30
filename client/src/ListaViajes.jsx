@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { api, leerSesion } from './api.js';
-import { hora, horaConDia } from './formato.js';
+import { hora, horaConDia, formatearNumeroViaje } from './formato.js';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 import FichaViajeModal from './FichaViajeModal.jsx';
 import { tienePermiso } from '../../shared/permisos.js';
@@ -199,7 +199,9 @@ export default function ListaViajes({
   async function cambiarCancelado(e, v) {
     e.stopPropagation();
     const accion = v.cancelado ? 'restaurar' : 'anular';
-    const desc = v.numero ? `N° ${v.numero}` : `programado de las ${hora(v.hora_programada)}`;
+    const desc = v.numero != null
+      ? `N° ${v.numero_formateado || formatearNumeroViaje(v.numero, v.tipo_turno)}`
+      : `programado de las ${hora(v.hora_programada)}`;
     if (!window.confirm(`¿Seguro que querés ${accion} el viaje ${desc} (${v.direccion})?`)) return;
     try {
       await api(`/viajes/${v.id}/cancelado`, { method: 'PUT', body: { cancelado: !v.cancelado } });
@@ -256,7 +258,7 @@ export default function ListaViajes({
                 onClick={() => { if (puedeAbrirFicha) setViajeFichaId(v.id); }}
                 title={puedeAbrirFicha ? 'Click para abrir la Ficha de Viaje y ver su historial' : undefined}
               >
-                <td className="col-num">{pendiente ? '—' : v.numero}</td>
+                <td className="col-num">{pendiente ? '—' : (v.numero_formateado || formatearNumeroViaje(v.numero, v.tipo_turno))}</td>
                 <td className="col-dir">
                   <span className="texto-direccion">{v.direccion}</span>
                   {Boolean(v.repetir_activo) && (

@@ -4,7 +4,7 @@ import { query, transaccion } from './db.js';
 import { firmarToken, requiereAuth, requiereAdmin, requiereSuperAdmin, requierePermiso } from './auth.js';
 import { normalizarPermisos, tienePermiso } from '../shared/permisos.js';
 import {
-  ErrorNegocio, crearViaje, listarTurno, listarProgramadosFuturos, asignarChofer,
+  ErrorNegocio, crearViaje, listarTurno, listarViajesRecepcion, listarProgramadosFuturos, asignarChofer,
   registrarFin, registrarAvisado, cambiarCancelacion, sugerirDirecciones, obtenerViaje,
   obtenerFichaViaje, editarFichaViaje, obtenerNombrePorTelefono,
   buscarViajesClientes, obtenerConfiguracion, actualizarConfiguracion, ejecutarProgramadosVencidos,
@@ -130,18 +130,16 @@ export function crearApi({ notificar }) {
         throw new ErrorNegocio('Sin permiso para ver historial de turnos', 403);
       }
     }
-    const tAnterior = turnoAnterior(t);
-    const [viajes, futuros, anteriores, cfg] = await Promise.all([
-      listarTurno(t),
+    const [viajes, futuros, cfg] = await Promise.all([
+      esTurnoActual ? listarViajesRecepcion(t) : listarTurno(t),
       listarProgramadosFuturos(t),
-      listarTurno(tAnterior),
       obtenerConfiguracion(),
     ]);
     res.json({
       turno: describirTurno(t),
       viajes,
       futuros,
-      anteriores,
+      anteriores: [],
       configuracion: cfg,
     });
   }));

@@ -16,4 +16,13 @@ export function formatearTelefono(t) {
   return t || '';
 }
 
+export function formatearNumeroViaje(numero, tipoTurno = 'A') {
+  if (numero == null) return '—';
+  if (typeof numero === 'string' && /^[AB]\d+$/i.test(numero)) return numero.toUpperCase();
+  const letra = String(tipoTurno || 'A').toUpperCase();
+  const n = Number(numero);
+  if (Number.isNaN(n)) return String(numero);
+  return `${letra}${String(n).padStart(3, '0')}`;
+}
+
 export const turnoKey = (t) => (t ? `${t.fecha}/${t.tipo}` : '');

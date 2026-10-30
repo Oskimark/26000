@@ -3,6 +3,7 @@ import { api, leerSesion } from './api.js';
 import ListaViajes from './ListaViajes.jsx';
 import { fechaISO } from '../../shared/turnos.js';
 import { tienePermiso } from '../../shared/permisos.js';
+import { formatearNumeroViaje } from './formato.js';
 
 export default function Historial({ turnos }) {
   const [fecha, setFecha] = useState(() => turnos?.anterior?.fecha || fechaISO(new Date()));
@@ -33,7 +34,7 @@ export default function Historial({ turnos }) {
     if (!datos?.viajes?.length) return;
     const encabezados = ['N°', 'Hora inicio', 'Hora programada', 'Hora asignado', 'Chofer', 'Estado', 'Teléfono', 'Cliente', 'Dirección', 'Operador', 'Condición'];
     const filas = datos.viajes.map((v) => [
-      v.numero ?? '',
+      v.numero != null ? (v.numero_formateado || formatearNumeroViaje(v.numero, v.tipo_turno)) : '',
       v.hora_toma ? new Date(v.hora_toma).toLocaleTimeString('es-AR') : '',
       v.hora_programada ? new Date(v.hora_programada).toLocaleTimeString('es-AR') : '',
       (v.hora_asignacion || v.hora_fin) ? new Date(v.hora_asignacion || v.hora_fin).toLocaleTimeString('es-AR') : '',
@@ -43,7 +44,7 @@ export default function Historial({ turnos }) {
       `"${(v.nombre_cliente || '').replace(/"/g, '""')}"`,
       `"${v.direccion.replace(/"/g, '""')}"`,
       `"${v.operador || ''}"`,
-      v.cancelado ? 'Anulado' : v.numero ? 'Completado' : 'Pendiente',
+      v.cancelado ? 'Anulado' : v.numero != null ? 'Completado' : 'Pendiente',
     ]);
     const contenido = [encabezados.join(','), ...filas.map((f) => f.join(','))].join('\n');
     const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });

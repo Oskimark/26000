@@ -92,3 +92,19 @@ export function proximaOcurrencia({ h, m }, ahora = new Date()) {
   if (d.getTime() <= ahora.getTime()) d.setDate(d.getDate() + 1);
   return d;
 }
+
+/**
+ * Formatea el número de viaje con el prefijo de turno y 3 dígitos:
+ * Ej: 0 del turno A -> "A000"
+ *     1 del turno A -> "A001"
+ *     0 del turno B -> "B000"
+ *     45 del turno B -> "B045"
+ */
+export function formatearNumeroViaje(numero, tipoTurno = 'A') {
+  if (numero == null) return '—';
+  if (typeof numero === 'string' && /^[AB]\d+$/i.test(numero)) return numero.toUpperCase();
+  const letra = String(tipoTurno || 'A').toUpperCase();
+  const n = Number(numero);
+  if (Number.isNaN(n)) return String(numero);
+  return `${letra}${String(n).padStart(3, '0')}`;
+}

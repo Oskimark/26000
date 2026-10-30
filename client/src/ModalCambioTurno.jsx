@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from './api.js';
-import { hora } from './formato.js';
+import { hora, formatearNumeroViaje } from './formato.js';
 
 export default function ModalCambioTurno({ turnos, onCerrar, onSalir }) {
   const [cargando, setCargando] = useState(true);
@@ -116,7 +116,7 @@ export default function ModalCambioTurno({ turnos, onCerrar, onSalir }) {
                     <tbody>
                       {info.pendientes.map((p) => (
                         <tr key={p.id}>
-                          <td className="col-num"><b>{p.numero != null ? p.numero : 'Prog.'}</b></td>
+                          <td className="col-num"><b>{p.numero != null ? (p.numero_formateado || formatearNumeroViaje(p.numero, p.tipo_turno)) : 'Prog.'}</b></td>
                           <td>{hora(p.hora_toma)}</td>
                           <td><span className="texto-direccion">{p.direccion}</span></td>
                           <td>{p.telefono ? `${p.telefono}${p.nombre_cliente ? ` · ${p.nombre_cliente}` : ''}` : '—'}</td>

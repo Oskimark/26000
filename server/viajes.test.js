@@ -64,7 +64,8 @@ test('Flujo completo del sistema de recepción de viajes', async () => {
       horaProgramada: '',
     },
   });
-  assert.ok(viaje1.numero > 0, 'Debe tener número autonumérico de turno');
+  assert.ok(viaje1.numero >= 0, 'Debe tener número autonumérico de turno');
+  assert.match(viaje1.numero_formateado, /^[AB]\d{3}$/, 'Debe tener número formateado con serie de turno');
   assert.equal(viaje1.direccion, 'San Martin 1250');
   assert.equal(viaje1.chofer, 'Carlos Gomez (Móvil 14)');
   assert.equal(viaje1.programado, false);

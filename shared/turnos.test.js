@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { turnoDe, rangoTurno, turnoSiguiente, parsearHora, proximaOcurrencia } from './turnos.js';
+import { turnoDe, rangoTurno, turnoSiguiente, parsearHora, proximaOcurrencia, formatearNumeroViaje } from './turnos.js';
 
 process.env.TZ = 'America/Argentina/Buenos_Aires';
 
@@ -43,4 +43,16 @@ test('la hora programada siempre es hacia adelante', () => {
   assert.equal(proximaOcurrencia({ h: 22, m: 0 }, ahora).toISOString(), '2026-10-17T01:00:00.000Z');
   assert.equal(proximaOcurrencia({ h: 23, m: 30 }, ahora).toISOString(), '2026-10-16T02:30:00.000Z');
   assert.equal(proximaOcurrencia({ h: 23, m: 0 }, ahora).toISOString(), '2026-10-17T02:00:00.000Z');
+});
+
+test('formatearNumeroViaje formatea con letra de turno y 3 digitos iniciando en 000', () => {
+  assert.equal(formatearNumeroViaje(0, 'A'), 'A000');
+  assert.equal(formatearNumeroViaje(1, 'A'), 'A001');
+  assert.equal(formatearNumeroViaje(12, 'A'), 'A012');
+  assert.equal(formatearNumeroViaje(123, 'A'), 'A123');
+  assert.equal(formatearNumeroViaje(0, 'B'), 'B000');
+  assert.equal(formatearNumeroViaje(1, 'B'), 'B001');
+  assert.equal(formatearNumeroViaje(45, 'B'), 'B045');
+  assert.equal(formatearNumeroViaje(null, 'A'), '—');
+  assert.equal(formatearNumeroViaje(undefined, 'B'), '—');
 });

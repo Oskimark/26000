@@ -274,7 +274,9 @@ function formatearReferenciaPunto(restoRef, callesActivas) {
 const DIAS_NOMBRES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 const SELECT_VIAJE = `
-  SELECT v.id, v.numero, v.telefono, v.nombre_cliente, v.direccion_id, d.texto AS direccion,
+  SELECT v.id, v.numero,
+         CASE WHEN v.numero IS NULL THEN NULL ELSE v.tipo_turno || lpad(v.numero::text, 3, '0') END AS numero_formateado,
+         v.telefono, v.nombre_cliente, v.direccion_id, d.texto AS direccion,
          v.chofer_id, c.nombre AS chofer,
          v.operador_id, o.nombre AS operador,
          v.hora_toma, v.programado, v.hora_programada, v.hora_ejecucion,
@@ -394,7 +396,9 @@ export async function obtenerInfoCambioTurno(db = { query }) {
   const siguiente = turnoSiguiente(actual);
 
   const { rows: pendientes } = await db.query(
-    `SELECT v.id, v.numero, v.hora_toma, v.telefono, v.nombre_cliente, d.texto as direccion
+    `SELECT v.id, v.numero,
+            CASE WHEN v.numero IS NULL THEN NULL ELSE v.tipo_turno || lpad(v.numero::text, 3, '0') END AS numero_formateado,
+            v.tipo_turno, v.hora_toma, v.telefono, v.nombre_cliente, d.texto as direccion
      FROM viajes v
      JOIN direcciones d ON d.id = v.direccion_id
      WHERE v.fecha_turno = $1 AND v.tipo_turno = $2
@@ -432,7 +436,9 @@ export async function avanzarTurnoManual(operadorId, db = { query }) {
     const actual = await obtenerTurnoActual(client);
 
     const { rows: sinChofer } = await client.query(
-      `SELECT v.id, v.numero, v.hora_toma, v.telefono, v.nombre_cliente, d.texto as direccion
+      `SELECT v.id, v.numero,
+            CASE WHEN v.numero IS NULL THEN NULL ELSE v.tipo_turno || lpad(v.numero::text, 3, '0') END AS numero_formateado,
+            v.tipo_turno, v.hora_toma, v.telefono, v.nombre_cliente, d.texto as direccion
        FROM viajes v
        JOIN direcciones d ON d.id = v.direccion_id
        WHERE v.fecha_turno = $1 AND v.tipo_turno = $2
@@ -500,6 +506,24 @@ export async function listarTurno({ fecha, tipo }) {
   return rows;
 }
 
+/**
+ * Para la vista activa de Recepción: mantiene visibles de forma continua los viajes
+ * correspondientes a las últimas 12 horas, garantizando que el cambio de turno y operador
+ * no vacíe la lista y mostrando la numeración del turno nuevo (A000 / B000).
+ */
+export async function listarViajesRecepcion({ fecha, tipo }) {
+  const { rows } = await query(
+    `${SELECT_VIAJE}
+     WHERE ((v.fecha_turno = $1 AND v.tipo_turno = $2)
+        OR v.hora_toma >= now() - interval '12 hours'
+        OR (v.programado AND v.hora_programada >= now() - interval '12 hours'))
+       AND NOT (v.numero IS NULL AND NOT v.cancelado AND (v.fecha_turno, v.tipo_turno) > ($1::date, $2::char(1)))
+     ORDER BY (v.numero IS NULL) ASC, (v.fecha_turno, v.tipo_turno) DESC, v.numero DESC, v.hora_programada ASC, v.id DESC`,
+    [fecha, tipo],
+  );
+  return rows;
+}
+
 /** Programados pendientes de turnos posteriores al indicado. */
 export async function listarProgramadosFuturos({ fecha, tipo }) {
   const { rows } = await query(
@@ -513,9 +537,10 @@ export async function listarProgramadosFuturos({ fecha, tipo }) {
 
 async function siguienteNumero(client, { fecha, tipo }) {
   // Serializa la numeración dentro de cada turno, aunque haya varios operadores.
+  // Inicia en 0 (A000 / B000) por cada turno que comienza.
   await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`turno:${fecha}:${tipo}`]);
   const { rows } = await client.query(
-    'SELECT COALESCE(MAX(numero), 0) + 1 AS n FROM viajes WHERE fecha_turno = $1 AND tipo_turno = $2',
+    'SELECT COALESCE(MAX(numero), -1) + 1 AS n FROM viajes WHERE fecha_turno = $1 AND tipo_turno = $2',
     [fecha, tipo],
   );
   return rows[0].n;

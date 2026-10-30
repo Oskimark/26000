@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { api } from './api.js';
 import { CampoChofer } from './Campos.jsx';
-import { hora } from './formato.js';
+import { hora, formatearNumeroViaje } from './formato.js';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 
 /**
@@ -53,12 +53,12 @@ const Despacho = forwardRef(function Despacho(
         <span className="alerta-pulso">⏰</span>
         {viaje.programado ? (
           <>
-            <b>AVISO DE VIAJE PROGRAMADO {viaje.numero ? `· N° ${viaje.numero}` : ''}</b>
+            <b>AVISO DE VIAJE PROGRAMADO {viaje.numero != null ? `· N° ${viaje.numero_formateado || formatearNumeroViaje(viaje.numero, viaje.tipo_turno)}` : ''}</b>
             <span>para las <b>{hora(viaje.hora_programada)}</b> (inicio: {hora(viaje.hora_toma)})</span>
           </>
         ) : (
           <>
-            <b>ASIGNAR CHOFER · VIAJE N° {viaje.numero}</b>
+            <b>ASIGNAR CHOFER · VIAJE N° {viaje.numero_formateado || formatearNumeroViaje(viaje.numero, viaje.tipo_turno)}</b>
             <span>iniciado a las {hora(viaje.hora_toma)}</span>
           </>
         )}
