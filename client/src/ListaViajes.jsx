@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { api, leerSesion } from './api.js';
+import { api, leerSesion, obtenerChoferEnVuelo, esperarChoferEnVuelo } from './api.js';
 import { hora, horaConDia, formatearNumeroViaje } from './formato.js';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 import FichaViajeModal from './FichaViajeModal.jsx';
@@ -28,8 +28,9 @@ function CeldaAsignado({ viaje }) {
   );
 }
 
-function CeldaAvisado({ viaje, editable, puedeAvisar = true }) {
+export function CeldaAvisado({ viaje, editable, puedeAvisar = true }) {
   const [guardando, setGuardando] = useState(false);
+  const [verificando, setVerificando] = useState(false);
 
   if (viaje.cancelado) {
     return (
@@ -39,25 +40,58 @@ function CeldaAvisado({ viaje, editable, puedeAvisar = true }) {
     );
   }
 
-  const fueAvisado = Boolean(viaje.hora_avisado);
+  const enVuelo = obtenerChoferEnVuelo(viaje.id);
+  // Si en vuelo se cambió el chofer respecto al que tenía el viaje,
+  // el estado vuelve de inmediato al color no asignado
+  const choferCambio = enVuelo && enVuelo.choferId !== viaje.chofer_id;
+  const fueAvisado = choferCambio ? false : Boolean(viaje.hora_avisado);
   const opAvisado = viaje.avisado_por_nombre || '';
 
   async function marcarAvisado(e) {
     e.stopPropagation();
-    if (!editable || guardando) return;
-    if (!fueAvisado && !viaje.chofer_id) {
-      window.alert('⚠️ Primero tenés que asignar un chofer antes de avisar.');
+    if (!editable || guardando || verificando) return;
+
+    if (fueAvisado) {
+      setGuardando(true);
+      try {
+        await api(`/viajes/${viaje.id}/avisado`, {
+          method: 'PUT',
+          body: { avisado: false },
+        });
+      } catch (err) {
+        console.warn('Error al desmarcar asignación:', err.message);
+      } finally {
+        setGuardando(false);
+      }
       return;
     }
-    setGuardando(true);
+
+    // No estaba avisado: se pulsó el botón "Asignar"
+    setVerificando(true);
     try {
+      // Dar unos milisegundos suficientes para que se detecte la asignación
+      // o se complete cualquier guardado en curso del chofer
+      await esperarChoferEnVuelo(viaje.id, 350);
+
+      const enVueloActual = obtenerChoferEnVuelo(viaje.id);
+      const choferEfectivo = enVueloActual ? enVueloActual.choferId : viaje.chofer_id;
+
+      if (!choferEfectivo) {
+        // No hay chofer asignado (o se cambió a sin chofer):
+        // El botón regresa al color anterior (rojo/btn-avisar) indicando la noasignación (sin cartel de alerta)
+        return;
+      }
+
+      setGuardando(true);
       await api(`/viajes/${viaje.id}/avisado`, {
         method: 'PUT',
-        body: { avisado: !fueAvisado },
+        body: { avisado: true },
       });
     } catch (err) {
-      window.alert(err.message);
+      // Si el backend no confirma o falla, simplemente regresa al estado previo sin cartel
+      console.warn('No se pudo marcar como asignado:', err.message);
     } finally {
+      setVerificando(false);
       setGuardando(false);
     }
   }
@@ -77,12 +111,18 @@ function CeldaAvisado({ viaje, editable, puedeAvisar = true }) {
     );
   }
 
+  const claseBoton = fueAvisado
+    ? 'btn-avisado'
+    : verificando
+      ? 'btn-avisar verificando'
+      : 'btn-avisar';
+
   return (
     <td className="col-avisado" onClick={(e) => e.stopPropagation()}>
       <div className="celda-avisado-wrap">
         <button
           type="button"
-          className={fueAvisado ? 'btn-avisado' : 'btn-avisar'}
+          className={claseBoton}
           disabled={guardando}
           onClick={marcarAvisado}
           title={
@@ -90,10 +130,10 @@ function CeldaAvisado({ viaje, editable, puedeAvisar = true }) {
               ? `Asignado a las ${hora(viaje.hora_avisado)}${opAvisado ? ` por ${opAvisado}` : ''} (click para desmarcar)`
               : viaje.chofer_id
                 ? 'Click para marcar como asignado al chofer'
-                : 'Primero asigná un chofer para poder marcar como asignado'
+                : 'Primero elegí un chofer para poder marcar como asignado'
           }
         >
-          {fueAvisado ? 'Asignado' : 'Asignar'}
+          {fueAvisado ? 'Asignado' : verificando ? 'Asignando...' : 'Asignar'}
         </button>
 
         {fueAvisado && (
@@ -109,18 +149,26 @@ function CeldaAvisado({ viaje, editable, puedeAvisar = true }) {
   );
 }
 
-function CeldaChofer({ viaje, choferes = [], editable, puedeAsignarChofer = true, onAtender }) {
+export function CeldaChofer({ viaje, choferes = [], editable, puedeAsignarChofer = true, onAtender }) {
   const [guardando, setGuardando] = useState(false);
+  const [choferLocalId, setChoferLocalId] = useState(viaje.chofer_id);
+
+  useEffect(() => {
+    setChoferLocalId(viaje.chofer_id);
+  }, [viaje.chofer_id]);
 
   async function cambiarChofer(nuevoId) {
+    const idNum = nuevoId ? Number(nuevoId) : null;
+    setChoferLocalId(idNum);
     setGuardando(true);
     try {
       await api(`/viajes/${viaje.id}/chofer`, {
         method: 'PUT',
-        body: { choferId: nuevoId ? Number(nuevoId) : null },
+        body: { choferId: idNum },
       });
     } catch (err) {
-      window.alert(err.message);
+      console.warn('Error al cambiar chofer:', err.message);
+      setChoferLocalId(viaje.chofer_id);
     } finally {
       setGuardando(false);
     }
@@ -136,16 +184,17 @@ function CeldaChofer({ viaje, choferes = [], editable, puedeAsignarChofer = true
 
   // Asegurar que si el viaje tiene un chofer que no está en el listado del turno actual, igual figure en el select
   const opciones = [...choferes];
-  if (viaje.chofer_id && !opciones.some((c) => c.id === viaje.chofer_id)) {
-    opciones.unshift({ id: viaje.chofer_id, nombre: viaje.chofer || `Chofer #${viaje.chofer_id}` });
+  const idActual = choferLocalId ?? viaje.chofer_id;
+  if (idActual && !opciones.some((c) => c.id === idActual)) {
+    opciones.unshift({ id: idActual, nombre: viaje.chofer || `Chofer #${idActual}` });
   }
 
   return (
     <td className="col-chofer-celda" onClick={(e) => e.stopPropagation()}>
       <div className="chofer-celda-acciones">
         <select
-          className={viaje.chofer_id ? 'select-chofer-tabla asignado' : 'select-chofer-tabla sin-asignar'}
-          value={viaje.chofer_id ?? ''}
+          className={idActual ? 'select-chofer-tabla asignado' : 'select-chofer-tabla sin-asignar'}
+          value={idActual ?? ''}
           disabled={guardando}
           onChange={(e) => cambiarChofer(e.target.value)}
           title="Asignar o cambiar chofer en cualquier momento (reinicia el estado de Avisar)"
@@ -157,7 +206,7 @@ function CeldaChofer({ viaje, choferes = [], editable, puedeAsignarChofer = true
             </option>
           ))}
         </select>
-        {!viaje.chofer_id && onAtender && (
+        {!idActual && onAtender && (
           <button
             type="button"
             className="btn chico alerta"

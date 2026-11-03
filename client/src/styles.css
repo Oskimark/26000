@@ -1277,6 +1277,14 @@ td.col-prog.col-prog-activo {
   border-color: #991b1b;
 }
 
+.btn-avisar.verificando {
+  background-color: #f59e0b;
+  border-color: #d97706;
+  color: #111827;
+  cursor: wait;
+  box-shadow: 0 1px 4px rgba(245, 158, 11, 0.4);
+}
+
 .btn-avisado,
 .btn-estado-avisado {
   background-color: #94a3b8;

@@ -198,9 +198,8 @@ export default function FichaViajeModal({
 
   async function handleAvisarDesdeFicha() {
     if (!viaje) return;
-    if (!viaje.chofer_id) {
-      window.alert('⚠️ Primero tenés que asignar un chofer antes de avisar.');
-      setError('Primero tenés que asignar un chofer antes de avisar.');
+    if (!viaje.hora_avisado && !viaje.chofer_id) {
+      // Sin chofer: no alertar ni bloquear con popup, simplemente permanece sin asignar
       return;
     }
     try {
@@ -211,7 +210,7 @@ export default function FichaViajeModal({
       await cargarFicha();
       notificarCambio?.();
     } catch (err) {
-      window.alert(err.message);
+      console.warn('No se pudo cambiar estado de asignación:', err.message);
     }
   }
 

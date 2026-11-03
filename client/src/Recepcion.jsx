@@ -3,7 +3,7 @@ import { api, leerSesion } from './api.js';
 import { tienePermiso } from '../../shared/permisos.js';
 import FormViaje from './FormViaje.jsx';
 import Despacho from './Despacho.jsx';
-import ListaViajes from './ListaViajes.jsx';
+import ListaViajes, { CeldaChofer, CeldaAvisado } from './ListaViajes.jsx';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 import FichaViajeModal from './FichaViajeModal.jsx';
 import { hora, horaConDia } from './formato.js';
@@ -164,33 +164,6 @@ export default function Recepcion({ turnos, socket, activa }) {
   const sinAvisarCount = viajes.filter((v) => !v.cancelado && v.chofer_id && !v.hora_avisado).length;
   const anuladosCount = viajes.filter((v) => v.cancelado).length;
 
-  async function cambiarChoferFuturo(viajeId, nuevoChoferId) {
-    try {
-      await api(`/viajes/${viajeId}/chofer`, {
-        method: 'PUT',
-        body: { choferId: nuevoChoferId ? Number(nuevoChoferId) : null },
-      });
-    } catch (err) {
-      window.alert(err.message);
-    }
-  }
-
-  async function toggleAvisadoFuturo(e, f) {
-    e.stopPropagation();
-    if (!f.hora_avisado && !f.chofer_id) {
-      window.alert('⚠️ Primero tenés que asignar un chofer antes de marcar como asignado.');
-      return;
-    }
-    try {
-      await api(`/viajes/${f.id}/avisado`, {
-        method: 'PUT',
-        body: { avisado: !f.hora_avisado },
-      });
-    } catch (err) {
-      window.alert(err.message);
-    }
-  }
-
   async function cambiarCanceladoFuturo(e, f) {
     e.stopPropagation();
     try {
@@ -200,7 +173,7 @@ export default function Recepcion({ turnos, socket, activa }) {
       });
       cargarDatos();
     } catch (err) {
-      window.alert(err.message || 'Error al cambiar estado del viaje programado');
+      console.warn('Error al cambiar estado del viaje programado:', err.message);
     }
   }
 
@@ -307,7 +280,6 @@ export default function Recepcion({ turnos, socket, activa }) {
               <tbody>
                 {futuros.map((f) => {
                   const horaAsig = f.hora_asignacion || f.hora_fin;
-                  const fueAvisado = Boolean(f.hora_avisado);
                   return (
                     <tr
                       key={f.id}
@@ -328,34 +300,8 @@ export default function Recepcion({ turnos, socket, activa }) {
                         <div className="subtexto-op">{f.operador}</div>
                       </td>
                       <td className="col-fin">{horaAsig ? <b>{hora(horaAsig)}</b> : <span className="tenue">—</span>}</td>
-                      <td onClick={(e) => e.stopPropagation()}>
-                        <select
-                          className={f.chofer_id ? 'select-chofer-tabla asignado' : 'select-chofer-tabla sin-asignar'}
-                          value={f.chofer_id ?? ''}
-                          disabled={!puedeAsignarChofer}
-                          onChange={(e) => cambiarChoferFuturo(f.id, e.target.value)}
-                        >
-                          <option value="">Sin asignar</option>
-                          {choferes.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.nombre}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="col-avisado" onClick={(e) => e.stopPropagation()}>
-                        <div className="celda-avisado-wrap">
-                          <button
-                            type="button"
-                            className={fueAvisado ? 'btn-avisado' : 'btn-avisar'}
-                            disabled={!puedeAvisar}
-                            onClick={(e) => toggleAvisadoFuturo(e, f)}
-                          >
-                            {fueAvisado ? 'Asignado' : 'Asignar'}
-                          </button>
-                          {fueAvisado && <b className="hora-avisado-texto">{hora(f.hora_avisado)}</b>}
-                        </div>
-                      </td>
+                      <CeldaChofer viaje={f} choferes={choferes} editable={true} puedeAsignarChofer={puedeAsignarChofer} />
+                      <CeldaAvisado viaje={f} editable={true} puedeAvisar={puedeAvisar} />
                       <td>
                         <TelefonoWhatsApp
                           telefono={f.telefono}
