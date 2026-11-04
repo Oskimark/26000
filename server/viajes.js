@@ -2,6 +2,7 @@
 import { query, transaccion, sembrarCallesIniciales } from './db.js';
 import { geocodificarDireccion } from './geocoding.js';
 import { turnoDe, turnoSiguiente, turnoAnterior, describirTurno, rangoTurno, parsearHora, proximaOcurrencia } from '../shared/turnos.js';
+import { ordenarViajesVisuales } from '../shared/viajesOrden.js';
 
 export class ErrorNegocio extends Error {
   constructor(mensaje, status = 400) {
@@ -524,30 +525,10 @@ export async function listarViajesRecepcion({ fecha, tipo }) {
      WHERE ((v.fecha_turno = $1 AND v.tipo_turno = $2)
         OR v.hora_toma >= now() - interval '12 hours'
         OR (v.programado AND NOT v.cancelado AND v.hora_avisado IS NULL)
-        OR (v.programado AND v.hora_programada >= now() - interval '12 hours'))
-     ORDER BY
-       CASE
-         WHEN NOT v.cancelado AND (
-           (NOT v.programado AND v.chofer_id IS NULL)
-           OR (v.programado AND v.chofer_id IS NULL AND v.hora_programada <= now() + (interval '1 minute' * $3))
-         ) THEN 1
-         WHEN NOT v.cancelado AND v.programado AND v.chofer_id IS NULL
-              AND v.hora_programada > now() + (interval '1 minute' * $3) THEN 3
-         WHEN v.cancelado THEN 4
-         ELSE 2
-       END ASC,
-       CASE
-         WHEN NOT v.cancelado AND v.chofer_id IS NULL
-           THEN COALESCE(v.hora_programada, v.hora_toma)
-         ELSE NULL
-       END ASC NULLS LAST,
-       (v.fecha_turno, v.tipo_turno) DESC,
-       COALESCE(v.hora_asignacion, v.hora_programada, v.hora_toma) DESC,
-       v.numero DESC NULLS LAST,
-       v.id DESC`,
-    [fecha, tipo, minutosAviso],
+        OR (v.programado AND v.hora_programada >= now() - interval '12 hours'))`,
+    [fecha, tipo],
   );
-  return rows;
+  return ordenarViajesVisuales(rows, minutosAviso);
 }
 
 /** Programados pendientes de turnos posteriores al indicado (deprecado: ahora se incluyen todos en listarViajesRecepcion). */

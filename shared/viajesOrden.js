@@ -3,12 +3,15 @@
  * 1. Viajes sin asignar (inmediatos sin chofer) siempre se posicionan primeros,
  *    independientemente del número de viaje que tengan.
  * 2. Viajes programados que entren en el período de aviso (hora_programada <= ahora + minutosAviso)
- *    saltan automáticamente al principio del listado.
+ *    saltan automáticamente al principio del listado (Prioridad 1).
  * 3. Viajes regulares asignados / en curso / completados se ordenan por turno y número DESC (más nuevo primero).
- * 4. Viajes programados futuros que aún no entraron en el período de aviso se mantienen al final,
- *    ordenados por hora programada ASC.
- * 5. Viajes anulados (si se muestran) se posicionan al final.
+ * 4. Viajes programados futuros que aún no entraron en el período de aviso se mantienen a partir del 10° lugar
+ *    (índice 9) en orden por hora programada ASC, evitando que queden enterrados al final de la pantalla.
+ *    A su debido momento subirán automáticamente a la cima.
+ * 5. Viajes anulados (si se muestran) se posicionan al final de todo.
  */
+
+export const POSICION_PROGRAMADOS_FUTUROS = 10;
 
 export function minutosHasta(iso, ahoraMs = Date.now()) {
   if (!iso) return null;
@@ -44,61 +47,52 @@ export function calcularPrioridadViaje(v, minutosAviso = 5, ahoraMs = Date.now()
   return 2;
 }
 
-export function ordenarViajesVisuales(lista, minutosAviso = 5, ahoraMs = Date.now()) {
+export function ordenarViajesVisuales(
+  lista,
+  minutosAviso = 5,
+  ahoraMs = Date.now(),
+  posicionProgramados = POSICION_PROGRAMADOS_FUTUROS,
+) {
   if (!Array.isArray(lista) || lista.length <= 1) return lista || [];
 
-  return [...lista].sort((a, b) => {
-    const prioA = calcularPrioridadViaje(a, minutosAviso, ahoraMs);
-    const prioB = calcularPrioridadViaje(b, minutosAviso, ahoraMs);
+  const urgentes = [];
+  const asignados = [];
+  const programadosFuturos = [];
+  const anulados = [];
 
-    if (prioA !== prioB) {
-      return prioA - prioB;
-    }
+  for (const v of lista) {
+    const prio = calcularPrioridadViaje(v, minutosAviso, ahoraMs);
+    if (prio === 1) urgentes.push(v);
+    else if (prio === 2) asignados.push(v);
+    else if (prio === 3) programadosFuturos.push(v);
+    else anulados.push(v);
+  }
 
-    // Dentro de Prioridad 1 (Sin asignar inmediatos / Programados en aviso previo sin chofer):
-    if (prioA === 1) {
-      const tiempoA = a.programado && a.hora_programada
-        ? new Date(a.hora_programada).getTime()
-        : new Date(a.hora_toma || 0).getTime();
-      const tiempoB = b.programado && b.hora_programada
-        ? new Date(b.hora_programada).getTime()
-        : new Date(b.hora_toma || 0).getTime();
+  // 1. Prioridad 1: Urgentes (sin asignar inmediatos y programados en aviso/vencidos sin chofer)
+  // El tiempo más antiguo primero (tiempo de toma o tiempo programado ASC)
+  urgentes.sort((a, b) => {
+    const tiempoA = a.programado && a.hora_programada
+      ? new Date(a.hora_programada).getTime()
+      : new Date(a.hora_toma || 0).getTime();
+    const tiempoB = b.programado && b.hora_programada
+      ? new Date(b.hora_programada).getTime()
+      : new Date(b.hora_toma || 0).getTime();
 
-      if (tiempoA !== tiempoB) return tiempoA - tiempoB;
-      return (b.id || 0) - (a.id || 0);
-    }
+    if (tiempoA !== tiempoB) return tiempoA - tiempoB;
+    return (b.id || 0) - (a.id || 0);
+  });
 
-    // Dentro de Prioridad 3 (Programados futuros que aún no llegaron a aviso previo y no tienen chofer):
-    if (prioA === 3) {
-      const progA = a.hora_programada ? new Date(a.hora_programada).getTime() : 0;
-      const progB = b.hora_programada ? new Date(b.hora_programada).getTime() : 0;
-      if (progA !== progB) return progA - progB;
-      return (b.id || 0) - (a.id || 0);
-    }
-
-    // Dentro de Prioridad 4 (Anulados):
-    if (prioA === 4) {
-      const tomaA = a.hora_toma ? new Date(a.hora_toma).getTime() : 0;
-      const tomaB = b.hora_toma ? new Date(b.hora_toma).getTime() : 0;
-      if (tomaA !== tomaB) return tomaB - tomaA;
-      return (b.id || 0) - (a.id || 0);
-    }
-
-    // Dentro de Prioridad 2 (Viajes normales asignados / completados):
-    // El turno más nuevo primero (si hay de varios turnos en la ventana de 12h)
+  // 2. Prioridad 2: Asignados (viajes en curso o completados)
+  // Turno más nuevo primero, luego momento efectivo DESC (más reciente arriba)
+  asignados.sort((a, b) => {
     const turnoA = `${a.fecha_turno || ''}_${a.tipo_turno || ''}`;
     const turnoB = `${b.fecha_turno || ''}_${b.tipo_turno || ''}`;
     if (turnoA !== turnoB) {
       return turnoB.localeCompare(turnoA);
     }
 
-    // Momento efectivo del viaje asignado en el turno:
-    // Para un programado ya asignado: su hora de asignación (o su hora programada de ejecución)
-    // Para un viaje manual: su hora de toma
-    // El más reciente queda arriba (DESC). Si luego entra un viaje manual, este queda por encima del programado ya asignado.
     const tiempoEfectivoA = a.hora_asignacion || a.hora_programada || a.hora_toma;
     const tiempoEfectivoB = b.hora_asignacion || b.hora_programada || b.hora_toma;
-
     const msA = tiempoEfectivoA ? new Date(tiempoEfectivoA).getTime() : 0;
     const msB = tiempoEfectivoB ? new Date(tiempoEfectivoB).getTime() : 0;
     if (msA !== msB) {
@@ -108,7 +102,40 @@ export function ordenarViajesVisuales(lista, minutosAviso = 5, ahoraMs = Date.no
     if (a.numero != null && b.numero != null && a.numero !== b.numero) {
       return Number(b.numero) - Number(a.numero);
     }
-
     return (b.id || 0) - (a.id || 0);
   });
+
+  // 3. Prioridad 3: Programados futuros que aún no entraron en período de aviso
+  // Por hora programada ASC (el más próximo primero)
+  programadosFuturos.sort((a, b) => {
+    const progA = a.hora_programada ? new Date(a.hora_programada).getTime() : 0;
+    const progB = b.hora_programada ? new Date(b.hora_programada).getTime() : 0;
+    if (progA !== progB) return progA - progB;
+    return (b.id || 0) - (a.id || 0);
+  });
+
+  // 4. Prioridad 4: Anulados
+  // Hora de toma DESC
+  anulados.sort((a, b) => {
+    const tomaA = a.hora_toma ? new Date(a.hora_toma).getTime() : 0;
+    const tomaB = b.hora_toma ? new Date(b.hora_toma).getTime() : 0;
+    if (tomaA !== tomaB) return tomaB - tomaA;
+    return (b.id || 0) - (a.id || 0);
+  });
+
+  // Ubicación de programados futuros:
+  // Se ubican a partir del 10° lugar (índice 9 en base 0).
+  // En las primeras posiciones van los urgentes seguidos de los asignados más recientes.
+  const targetIndex = Math.max(0, posicionProgramados - 1);
+  const cupoAntesDeTarget = Math.max(0, targetIndex - urgentes.length);
+  const asignadosArriba = asignados.slice(0, cupoAntesDeTarget);
+  const asignadosAbajo = asignados.slice(cupoAntesDeTarget);
+
+  return [
+    ...urgentes,
+    ...asignadosArriba,
+    ...programadosFuturos,
+    ...asignadosAbajo,
+    ...anulados,
+  ];
 }

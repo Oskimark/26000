@@ -216,3 +216,65 @@ test('viajes programados en periodo de aviso saltan arriba independientemente de
   assert.equal(orden[0].id, 99, 'El viaje programado en periodo de aviso salta a la cima independientemente de su turno');
   assert.equal(orden[1].id, 1, 'El viaje asignado del turno actual queda por debajo');
 });
+
+test('los viajes programados futuros se mantienen a partir del 10° lugar y suben a la cima a su debido momento', () => {
+  const t16_00 = new Date('2026-10-30T16:00:00-03:00').getTime();
+
+  // Generamos 15 viajes asignados (del 1 al 15, más nuevos con mayor id/número)
+  const asignados = Array.from({ length: 15 }, (_, i) => ({
+    id: i + 1,
+    numero: i + 1,
+    chofer_id: 10 + i,
+    hora_toma: `2026-10-30T15:${String(i).padStart(2, '0')}:00-03:00`,
+    hora_avisado: `2026-10-30T15:${String(i).padStart(2, '0')}:00-03:00`,
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'B',
+  }));
+
+  // 2 viajes programados futuros (18:00 y 19:00)
+  const prog18 = {
+    id: 101,
+    programado: true,
+    hora_programada: '2026-10-30T18:00:00-03:00',
+    numero: null,
+    chofer_id: null,
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'B',
+  };
+  const prog19 = {
+    id: 102,
+    programado: true,
+    hora_programada: '2026-10-30T19:00:00-03:00',
+    numero: null,
+    chofer_id: null,
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'B',
+  };
+
+  const lista = [...asignados, prog19, prog18];
+
+  // A las 16:00 (aviso de 15 min): faltan 2h para prog18 y 3h para prog19 (fuera de aviso)
+  const orden16 = ordenarViajesVisuales(lista, 15, t16_00);
+
+  // Las primeras 9 posiciones (índices 0..8) son los 9 asignados más recientes (ids 15 a 7)
+  assert.equal(orden16[0].id, 15);
+  assert.equal(orden16[8].id, 7);
+
+  // A partir del 10° lugar (índice 9), se ubican los programados futuros ordenados por hora
+  assert.equal(orden16[9].id, 101, 'El programado de las 18:00 debe ubicarse en el 10° lugar (índice 9)');
+  assert.equal(orden16[10].id, 102, 'El programado de las 19:00 se ubica a continuación (lugar 11)');
+
+  // Luego continúan los viajes asignados más viejos (ids 6 a 1)
+  assert.equal(orden16[11].id, 6);
+  assert.equal(orden16[16].id, 1);
+
+  // A las 17:50 (a 10 min de las 18:00): prog18 entra en aviso previo de 15m -> salta a la cima!
+  const t17_50 = new Date('2026-10-30T17:50:00-03:00').getTime();
+  const orden17_50 = ordenarViajesVisuales(lista, 15, t17_50);
+
+  // prog18 subió a la primera posición (índice 0)
+  assert.equal(orden17_50[0].id, 101, 'Al llegar a su período de aviso, prog18 sube a la cima automáticamente');
+
+  // En el 10° lugar (índice 9) ahora se ubica prog19 (19:00), que todavía no entró en aviso
+  assert.equal(orden17_50[9].id, 102, 'El programado siguiente (19:00) queda a partir del 10° lugar');
+});
