@@ -190,3 +190,29 @@ test('los viajes sin asignar se mantienen siempre arriba de los viajes nuevos as
   assert.equal(orden[1].id, 30, 'El viaje nuevo asignado queda abajo del sin asignar');
   assert.equal(orden[2].id, 20, 'El viaje asignado más viejo queda debajo');
 });
+
+test('viajes programados en periodo de aviso saltan arriba independientemente del turno', () => {
+  const ahora = new Date('2026-10-30T14:45:00-03:00').getTime(); // Durante Turno A
+  const viajeProgOtroTurno = {
+    id: 99,
+    programado: true,
+    hora_programada: '2026-10-30T15:00:00-03:00', // Programado para inicio de Turno B
+    numero: null,
+    chofer_id: null,
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'B', // Turno diferente al actual
+  };
+  const viajeAsignadoTurnoActual = {
+    id: 1,
+    numero: 25,
+    chofer_id: 2,
+    hora_avisado: '2026-10-30T14:40:00-03:00',
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'A',
+  };
+
+  // Con ventana de aviso de 15m, a las 14:45 el viaje de las 15:00 entra en aviso previo
+  const orden = ordenarViajesVisuales([viajeAsignadoTurnoActual, viajeProgOtroTurno], 15, ahora);
+  assert.equal(orden[0].id, 99, 'El viaje programado en periodo de aviso salta a la cima independientemente de su turno');
+  assert.equal(orden[1].id, 1, 'El viaje asignado del turno actual queda por debajo');
+});

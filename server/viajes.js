@@ -402,6 +402,7 @@ export async function obtenerInfoCambioTurno(db = { query }) {
      FROM viajes v
      JOIN direcciones d ON d.id = v.direccion_id
      WHERE v.fecha_turno = $1 AND v.tipo_turno = $2
+       AND NOT v.programado
        AND v.chofer_id IS NULL
        AND NOT v.cancelado
      ORDER BY v.numero ASC NULLS LAST, v.hora_toma ASC`,
@@ -442,6 +443,7 @@ export async function avanzarTurnoManual(operadorId, db = { query }) {
        FROM viajes v
        JOIN direcciones d ON d.id = v.direccion_id
        WHERE v.fecha_turno = $1 AND v.tipo_turno = $2
+         AND NOT v.programado
          AND v.chofer_id IS NULL
          AND NOT v.cancelado
        ORDER BY v.hora_toma`,
@@ -521,8 +523,8 @@ export async function listarViajesRecepcion({ fecha, tipo }) {
     `${SELECT_VIAJE}
      WHERE ((v.fecha_turno = $1 AND v.tipo_turno = $2)
         OR v.hora_toma >= now() - interval '12 hours'
+        OR (v.programado AND NOT v.cancelado AND v.hora_avisado IS NULL)
         OR (v.programado AND v.hora_programada >= now() - interval '12 hours'))
-       AND NOT (v.numero IS NULL AND NOT v.cancelado AND (v.fecha_turno, v.tipo_turno) > ($1::date, $2::char(1)))
      ORDER BY
        CASE
          WHEN NOT v.cancelado AND (
@@ -548,15 +550,9 @@ export async function listarViajesRecepcion({ fecha, tipo }) {
   return rows;
 }
 
-/** Programados pendientes de turnos posteriores al indicado. */
-export async function listarProgramadosFuturos({ fecha, tipo }) {
-  const { rows } = await query(
-    `${SELECT_VIAJE}
-     WHERE v.numero IS NULL AND NOT v.cancelado AND (v.fecha_turno, v.tipo_turno) > ($1::date, $2::char(1))
-     ORDER BY v.hora_programada, v.id`,
-    [fecha, tipo],
-  );
-  return rows;
+/** Programados pendientes de turnos posteriores al indicado (deprecado: ahora se incluyen todos en listarViajesRecepcion). */
+export async function listarProgramadosFuturos() {
+  return [];
 }
 
 async function siguienteNumero(client, { fecha, tipo }) {
@@ -855,12 +851,17 @@ export async function registrarAvisado(viajeId, { avisado = true, borrar }, oper
     const limpiar = borrar || avisado === false;
     const valor = limpiar ? null : new Date();
     let nuevoNumero = actual.numero;
+    let fechaTurno = actual.fecha_turno;
+    let tipoTurno = actual.tipo_turno;
     if (!limpiar && nuevoNumero == null) {
-      nuevoNumero = await siguienteNumero(client, { fecha: actual.fecha_turno, tipo: actual.tipo_turno });
+      const activo = await obtenerTurnoActual(client);
+      fechaTurno = activo.fecha;
+      tipoTurno = activo.tipo;
+      nuevoNumero = await siguienteNumero(client, activo);
     }
     await client.query(
-      'UPDATE viajes SET hora_avisado = $1, avisado_por = $2, numero = COALESCE(numero, $3) WHERE id = $4',
-      [valor, limpiar ? null : operadorId, nuevoNumero, viajeId],
+      'UPDATE viajes SET hora_avisado = $1, avisado_por = $2, numero = COALESCE(numero, $3), fecha_turno = $4, tipo_turno = $5 WHERE id = $6',
+      [valor, limpiar ? null : operadorId, nuevoNumero, fechaTurno, tipoTurno, viajeId],
     );
     await registrarHistorial(
       client,

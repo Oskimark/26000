@@ -3,7 +3,7 @@ import { api, leerSesion } from './api.js';
 import { tienePermiso } from '../../shared/permisos.js';
 import FormViaje from './FormViaje.jsx';
 import Despacho from './Despacho.jsx';
-import ListaViajes, { CeldaChofer, CeldaAvisado } from './ListaViajes.jsx';
+import ListaViajes from './ListaViajes.jsx';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 import FichaViajeModal from './FichaViajeModal.jsx';
 import { hora, horaConDia } from './formato.js';
@@ -16,14 +16,12 @@ function minutosHasta(iso) {
 export default function Recepcion({ turnos, socket, activa }) {
   const [choferes, setChoferes] = useState([]);
   const [viajes, setViajes] = useState([]);
-  const [futuros, setFuturos] = useState([]);
   const [minutosAviso, setMinutosAviso] = useState(5);
   const [mostrarNombre, setMostrarNombre] = useState(true);
   const [pospuestos, setPospuestos] = useState(new Set());
   const [atendiendoManual, setAtendiendoManual] = useState(null);
   const [formVacio, setFormVacio] = useState(true);
   const [mostrarAnulados, setMostrarAnulados] = useState(true);
-  const [viajeFuturoFichaId, setViajeFuturoFichaId] = useState(null);
 
   const formRef = useRef(null);
   const despachoRef = useRef(null);
@@ -46,7 +44,6 @@ export default function Recepcion({ turnos, socket, activa }) {
       ]);
       setChoferes(listaChoferes);
       setViajes(datosViajes.viajes || []);
-      setFuturos(datosViajes.futuros || []);
       if (datosViajes.configuracion?.minutosAvisoProgramado != null) {
         setMinutosAviso(datosViajes.configuracion.minutosAvisoProgramado);
       }
@@ -82,28 +79,28 @@ export default function Recepcion({ turnos, socket, activa }) {
     };
   }, [socket, cargarDatos]);
 
-  // Todos los viajes del turno (y futuros) sin chofer y no cancelados
+  // Todos los viajes sin chofer y no cancelados
   const todosSinChofer = useMemo(() => {
-    return [...viajes, ...futuros].filter((v) => !v.chofer_id && !v.cancelado);
-  }, [viajes, futuros]);
+    return viajes.filter((v) => !v.chofer_id && !v.cancelado);
+  }, [viajes]);
 
   // Programados que entraron en la ventana de aviso previo (o cuya hora ya llegó) y aún no tienen chofer
   const programadosEnAvisoSinChofer = useMemo(() => {
-    return [...viajes, ...futuros].filter((v) => {
+    return viajes.filter((v) => {
       if (!v.programado || v.cancelado || v.chofer_id) return false;
       const mins = minutosHasta(v.hora_programada);
       return v.numero != null || (mins != null && mins <= minutosAviso);
     });
-  }, [viajes, futuros, minutosAviso]);
+  }, [viajes, minutosAviso]);
 
   // Programados que entraron en ventana de aviso previo pero aún no fueron avisados al chofer
   const programadosEnAvisoSinAvisar = useMemo(() => {
-    return [...viajes, ...futuros].filter((v) => {
+    return viajes.filter((v) => {
       if (!v.programado || v.cancelado || v.hora_avisado) return false;
       const mins = minutosHasta(v.hora_programada);
       return v.numero != null || (mins != null && mins <= minutosAviso);
     });
-  }, [viajes, futuros, minutosAviso]);
+  }, [viajes, minutosAviso]);
 
   // El viaje a despachar: solo cuando el operador lo atiende manualmente (ej: F2 o atajo)
   // No colocar viajes automáticamente en el panel superior al llegar la hora o aviso previo
@@ -258,90 +255,6 @@ export default function Recepcion({ turnos, socket, activa }) {
           />
         </div>
       </section>
-
-      {/* Programados de turnos posteriores */}
-      {futuros.length > 0 && (
-        <section className="seccion-futuros">
-          <h3>📅 Programados para próximos turnos ({futuros.length})</h3>
-          <div className="tarjeta tabla-futuros-wrap">
-            <table className="tabla-viajes tabla-filas-clickeables">
-              <thead>
-                <tr>
-                  <th>Dirección</th>
-                  <th className="col-hora">Hora Inicio</th>
-                  <th className="col-fin">Asignado</th>
-                  <th>Chofer</th>
-                  <th className="col-avisado">Estado</th>
-                  <th>Teléfono</th>
-                  <th>Hora Programada / Turno</th>
-                  <th className="col-cancel">Cancel</th>
-                </tr>
-              </thead>
-              <tbody>
-                {futuros.map((f) => {
-                  const horaAsig = f.hora_asignacion || f.hora_fin;
-                  return (
-                    <tr
-                      key={f.id}
-                      className={['fila-pendiente', puedeAbrirFicha && 'fila-clickeable'].filter(Boolean).join(' ')}
-                      onClick={() => { if (puedeAbrirFicha) setViajeFuturoFichaId(f.id); }}
-                      title={puedeAbrirFicha ? 'Click para abrir la Ficha de Viaje' : undefined}
-                    >
-                      <td className="col-dir">
-                        <span className="texto-direccion">{f.direccion}</span>
-                        {Boolean(f.repetir_activo) && (
-                          <span className="badge-repetir-mini" title="Repetición programática activa">
-                            🔁
-                          </span>
-                        )}
-                      </td>
-                      <td className="col-hora" title={`Creado por ${f.operador || '—'}`}>
-                        <b>{hora(f.hora_toma)}</b>
-                        <div className="subtexto-op">{f.operador}</div>
-                      </td>
-                      <td className="col-fin">{horaAsig ? <b>{hora(horaAsig)}</b> : <span className="tenue">—</span>}</td>
-                      <CeldaChofer viaje={f} choferes={choferes} editable={true} puedeAsignarChofer={puedeAsignarChofer} />
-                      <CeldaAvisado viaje={f} editable={true} puedeAvisar={puedeAvisar} />
-                      <td>
-                        <TelefonoWhatsApp
-                          telefono={f.telefono}
-                          nombre={mostrarNombre ? f.nombre_cliente : ''}
-                        />
-                      </td>
-                      <td>
-                        <span className={f.chofer_id ? 'badge-prog-asignado' : 'badge-prog'}>
-                          {horaConDia(f.hora_programada)} · Turno {f.fecha_turno} ({f.tipo_turno})
-                        </span>
-                      </td>
-                      <td className="col-cancel" onClick={(e) => e.stopPropagation()}>
-                        <label className="label-cancel" title={f.cancelado ? 'Viaje anulado (click para restaurar)' : 'Marcar viaje como anulado'}>
-                          <input
-                            type="checkbox"
-                            className="checkbox-cancel"
-                            checked={Boolean(f.cancelado)}
-                            disabled={!puedeCancelar}
-                            onChange={(e) => cambiarCanceladoFuturo(e, f)}
-                          />
-                        </label>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      {viajeFuturoFichaId != null && (
-        <FichaViajeModal
-          viajeId={viajeFuturoFichaId}
-          choferes={choferes}
-          editable={true}
-          onClose={() => setViajeFuturoFichaId(null)}
-          onGuardado={cargarDatos}
-        />
-      )}
     </div>
   );
 }

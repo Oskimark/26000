@@ -347,7 +347,7 @@ export default function ListaViajes({
                         title={`Creado por ${v.operador || '—'} a las ${horaConDia(v.hora_toma)}`}
                       >
                         {enAvisoPrevio && '⚠️ '}
-                        {hora(v.hora_programada)}
+                        {horaConDia(v.hora_programada)}
                         {mins != null && (
                           <small className="badge-prog-tiempo">
                             {' · '}
@@ -364,7 +364,7 @@ export default function ListaViajes({
                         className="badge-prog-asignado"
                         title={v.cancelado ? 'Viaje programado anulado' : `Viaje programado asignado a ${v.chofer || 'chofer'}`}
                       >
-                        {hora(v.hora_programada)}
+                        {horaConDia(v.hora_programada)}
                       </span>
                     )
                   ) : (
