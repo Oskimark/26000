@@ -139,3 +139,104 @@ export function ordenarViajesVisuales(
     ...anulados,
   ];
 }
+
+export function normalizarTexto(s) {
+  return String(s ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+export function coincideViajeConFiltro(v, filtro) {
+  if (!filtro || typeof filtro !== 'object') return true;
+
+  // 1. Teléfono
+  if (filtro.telefono && filtro.telefono.trim()) {
+    const digitosFiltro = filtro.telefono.replace(/\D/g, '');
+    const digitosViaje = String(v.telefono ?? '').replace(/\D/g, '');
+    const textoFiltro = filtro.telefono.trim().toLowerCase();
+    const textoViaje = String(v.telefono ?? '').toLowerCase();
+
+    const coincideTel =
+      (digitosFiltro && digitosViaje.includes(digitosFiltro)) ||
+      textoViaje.includes(textoFiltro);
+
+    if (!coincideTel) return false;
+  }
+
+  // 2. Nombre
+  if (filtro.nombre && filtro.nombre.trim()) {
+    const nomFiltro = normalizarTexto(filtro.nombre);
+    const nomViaje = normalizarTexto(v.nombre_cliente || v.nombre || '');
+    if (!nomViaje.includes(nomFiltro)) return false;
+  }
+
+  // 3. Dirección
+  if (filtro.direccion && filtro.direccion.trim()) {
+    const dirFiltro = normalizarTexto(filtro.direccion);
+    const dirViaje = normalizarTexto(v.direccion || '');
+    const palabras = dirFiltro.split(' ').filter(Boolean);
+    const coincideTodas = palabras.every((palabra) => dirViaje.includes(palabra));
+    if (!coincideTodas) return false;
+  }
+
+  // 4. Chofer
+  if (filtro.choferTocado) {
+    if (filtro.choferId !== null && filtro.choferId !== undefined) {
+      if (Number(v.chofer_id) !== Number(filtro.choferId)) return false;
+    } else if (filtro.choferTexto && filtro.choferTexto.trim()) {
+      const chTexto = normalizarTexto(filtro.choferTexto);
+      if (chTexto === 'sin asignar') {
+        if (v.chofer_id != null) return false;
+      } else {
+        const chViaje = normalizarTexto(v.chofer || '');
+        if (!chViaje.includes(chTexto)) return false;
+      }
+    } else {
+      if (v.chofer_id != null) return false;
+    }
+  }
+
+  // 5. Hora / Programado
+  if (filtro.hora && filtro.hora.trim()) {
+    const hDigitos = filtro.hora.replace(/\D/g, '');
+    const hTexto = filtro.hora.trim().toLowerCase();
+
+    const valoresHora = [
+      v.hora_programada,
+      v.hora_toma,
+      v.hora_asignacion,
+      v.hora_avisado,
+    ]
+      .filter(Boolean)
+      .map((h) => String(h).toLowerCase());
+
+    const coincideHora = valoresHora.some((h) => {
+      const hLimpia = h.replace(/\D/g, '');
+      return h.includes(hTexto) || (hDigitos && hLimpia.includes(hDigitos));
+    });
+
+    if (!coincideHora) return false;
+  }
+
+  return true;
+}
+
+export function filtrarViajes(viajes, filtro) {
+  if (!Array.isArray(viajes)) return [];
+  if (!filtro) return viajes;
+
+  const tieneTerminos = Boolean(
+    (filtro.telefono && filtro.telefono.trim()) ||
+    (filtro.nombre && filtro.nombre.trim()) ||
+    (filtro.direccion && filtro.direccion.trim()) ||
+    filtro.choferTocado ||
+    (filtro.hora && filtro.hora.trim())
+  );
+
+  if (!tieneTerminos) return viajes;
+
+  return viajes.filter((v) => coincideViajeConFiltro(v, filtro));
+}

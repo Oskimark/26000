@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, leerSesion } from './api.js';
 import { tienePermiso } from '../../shared/permisos.js';
+import { filtrarViajes } from '../../shared/viajesOrden.js';
 import FormViaje from './FormViaje.jsx';
 import Despacho from './Despacho.jsx';
 import ListaViajes from './ListaViajes.jsx';
@@ -16,6 +17,7 @@ function minutosHasta(iso) {
 export default function Recepcion({ turnos, socket, activa }) {
   const [choferes, setChoferes] = useState([]);
   const [viajes, setViajes] = useState([]);
+  const [filtro, setFiltro] = useState(null);
   const [minutosAviso, setMinutosAviso] = useState(5);
   const [mostrarNombre, setMostrarNombre] = useState(true);
   const [pospuestos, setPospuestos] = useState(new Set());
@@ -161,6 +163,11 @@ export default function Recepcion({ turnos, socket, activa }) {
   const sinAvisarCount = viajes.filter((v) => !v.cancelado && v.chofer_id && !v.hora_avisado).length;
   const anuladosCount = viajes.filter((v) => v.cancelado).length;
 
+  const viajesFiltrados = useMemo(() => {
+    if (!filtro) return viajes;
+    return filtrarViajes(viajes, filtro);
+  }, [viajes, filtro]);
+
   async function cambiarCanceladoFuturo(e, f) {
     e.stopPropagation();
     try {
@@ -195,6 +202,9 @@ export default function Recepcion({ turnos, socket, activa }) {
               choferes={choferes}
               minutosAviso={minutosAviso}
               mostrarNombre={mostrarNombre}
+              modoFiltro={Boolean(filtro)}
+              onFiltrar={(criterios) => setFiltro(criterios)}
+              onLimpiarFiltro={() => setFiltro(null)}
               onGuardado={() => {
                 cargarDatos();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -215,22 +225,45 @@ export default function Recepcion({ turnos, socket, activa }) {
           <div className="titulos-listado">
             <h2>Viajes del turno actual</h2>
             <span className="resumen-viajes">
-              <b>{totalViajes}</b> activos · <b>{choferes.length}</b> choferes en turno
-              {sinAvisarCount > 0 && (
-                <> · <b style={{ color: '#dc2626' }}>{sinAvisarCount}</b> por asignar</>
-              )}
-              {anuladosCount > 0 && (
+              {filtro ? (
                 <>
+                  <span className="badge-filtro-activo-resumen">
+                    🔍 Filtrados: <b>{viajesFiltrados.length}</b> de {viajes.length}
+                  </span>
                   {' · '}
                   <button
                     type="button"
                     className="btn-link chico"
-                    style={{ color: '#94a3b8', textDecoration: 'underline', padding: '0 4px', fontSize: '0.82rem' }}
-                    onClick={() => setMostrarAnulados(!mostrarAnulados)}
-                    title={mostrarAnulados ? 'Ocultar viajes anulados de la lista' : 'Ver viajes anulados para consultar o restaurar'}
+                    style={{ color: '#f59e0b', textDecoration: 'underline', padding: '0 4px', fontSize: '0.82rem' }}
+                    onClick={() => {
+                      setFiltro(null);
+                      formRef.current?.limpiar?.();
+                    }}
+                    title="Eliminar filtro y volver a la vista común"
                   >
-                    {mostrarAnulados ? 'Ocultar anulados' : `${anuladosCount} anulado(s)`}
+                    Limpiar filtro
                   </button>
+                </>
+              ) : (
+                <>
+                  <b>{totalViajes}</b> activos · <b>{choferes.length}</b> choferes en turno
+                  {sinAvisarCount > 0 && (
+                    <> · <b style={{ color: '#dc2626' }}>{sinAvisarCount}</b> por asignar</>
+                  )}
+                  {anuladosCount > 0 && (
+                    <>
+                      {' · '}
+                      <button
+                        type="button"
+                        className="btn-link chico"
+                        style={{ color: '#94a3b8', textDecoration: 'underline', padding: '0 4px', fontSize: '0.82rem' }}
+                        onClick={() => setMostrarAnulados(!mostrarAnulados)}
+                        title={mostrarAnulados ? 'Ocultar viajes anulados de la lista' : 'Ver viajes anulados para consultar o restaurar'}
+                      >
+                        {mostrarAnulados ? 'Ocultar anulados' : `${anuladosCount} anulado(s)`}
+                      </button>
+                    </>
+                  )}
                 </>
               )}
             </span>
@@ -244,12 +277,13 @@ export default function Recepcion({ turnos, socket, activa }) {
 
         <div className="tarjeta listado-tarjeta">
           <ListaViajes
-            viajes={viajes}
+            viajes={viajesFiltrados}
             choferes={choferes}
             minutosAviso={minutosAviso}
             mostrarNombre={mostrarNombre}
             editable={true}
             ocultarAnulados={!mostrarAnulados}
+            esFiltro={Boolean(filtro)}
             onAtender={handleAtenderManual}
             onActualizado={cargarDatos}
           />

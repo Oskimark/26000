@@ -5,15 +5,26 @@ import { parsearHora, proximaOcurrencia } from '../../shared/turnos.js';
 import { horaConDia } from './formato.js';
 import { urlWhatsApp, IconoWhatsApp } from './TelefonoWhatsApp.jsx';
 
-/** Formulario de nuevo viaje: Teléfono → (Nombre) → Dirección → Chofer → Programado → Enter guarda. */
+/** Formulario de nuevo viaje: Teléfono → (Nombre) → Dirección → Chofer → Programado → Enter guarda o Filtra. */
 const FormViaje = forwardRef(function FormViaje(
-  { choferes, minutosAviso = 5, mostrarNombre = true, onGuardado, onVacioCambio },
+  {
+    choferes,
+    minutosAviso = 5,
+    mostrarNombre = true,
+    onGuardado,
+    onVacioCambio,
+    onFiltrar,
+    onLimpiarFiltro,
+    modoFiltro = false,
+  },
   ref,
 ) {
   const [telefono, setTelefono] = useState('');
   const [nombre, setNombre] = useState('');
   const [direccion, setDireccion] = useState('');
   const [choferId, setChoferId] = useState(null);
+  const [choferTexto, setChoferTexto] = useState('');
+  const [choferTocado, setChoferTocado] = useState(false);
   const [hora, setHora] = useState('');
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
@@ -25,14 +36,39 @@ const FormViaje = forwardRef(function FormViaje(
   const horaRef = useRef(null);
   const editadoManualRef = useRef(false);
 
-  useImperativeHandle(ref, () => ({ focus: () => telRef.current?.focus() }));
+  function limpiarTodo() {
+    setTelefono('');
+    setNombre('');
+    setDireccion('');
+    setChoferId(null);
+    setChoferTexto('');
+    setChoferTocado(false);
+    setHora('');
+    setError('');
+    editadoManualRef.current = false;
+    telRef.current?.focus();
+  }
 
-  const vacio = !telefono && !nombre && !direccion && !choferId && !hora;
+  function limpiarFiltro() {
+    limpiarTodo();
+    onLimpiarFiltro?.();
+  }
+
+  useImperativeHandle(ref, () => ({
+    focus: () => telRef.current?.focus(),
+    limpiar: () => limpiarFiltro(),
+  }));
+
+  const vacio = !telefono && !nombre && !direccion && !choferId && !hora && !choferTocado;
   useEffect(() => { onVacioCambio?.(vacio); }, [vacio, onVacioCambio]);
 
   // Si el chofer elegido deja de estar en el turno, se limpia.
   useEffect(() => {
-    if (choferId && !choferes.some((c) => c.id === choferId)) setChoferId(null);
+    if (choferId && !choferes.some((c) => c.id === choferId)) {
+      setChoferId(null);
+      setChoferTexto('');
+      setChoferTocado(false);
+    }
   }, [choferes, choferId]);
 
   // Sugerir nombre automáticamente si el teléfono ya tenía un nombre registrado previamente
@@ -54,12 +90,6 @@ const FormViaje = forwardRef(function FormViaje(
   const hm = programado ? parsearHora(hora) : null;
   const programadaPara = hm ? proximaOcurrencia(hm, new Date()) : null;
 
-  function limpiar() {
-    setTelefono(''); setNombre(''); setDireccion(''); setChoferId(null); setHora(''); setError('');
-    editadoManualRef.current = false;
-    telRef.current?.focus();
-  }
-
   async function guardar() {
     if (guardando) return;
     setError('');
@@ -78,7 +108,7 @@ const FormViaje = forwardRef(function FormViaje(
         },
       });
       onGuardado?.(viaje);
-      limpiar();
+      limpiarTodo();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -86,9 +116,46 @@ const FormViaje = forwardRef(function FormViaje(
     }
   }
 
-  // Ctrl+Enter guarda desde cualquier campo
+  function ejecutarFiltro() {
+    setError('');
+    const tieneTerminos = Boolean(
+      telefono.trim() ||
+      nombre.trim() ||
+      direccion.trim() ||
+      choferTocado ||
+      hora.trim()
+    );
+
+    if (!tieneTerminos) {
+      setError('Ingresá al menos un término para filtrar');
+      telRef.current?.focus();
+      return;
+    }
+
+    onFiltrar?.({
+      telefono: telefono.trim(),
+      nombre: nombre.trim(),
+      direccion: direccion.trim(),
+      choferId,
+      choferTexto: choferTexto.trim(),
+      choferTocado,
+      hora: hora.trim(),
+    });
+  }
+
+  // Ctrl+Enter guarda desde cualquier campo (o re-filtra si está en modo filtro)
   function onKeyDownForm(e) {
-    if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); guardar(); }
+    if (e.key === 'Enter' && e.ctrlKey) {
+      e.preventDefault();
+      if (modoFiltro) {
+        ejecutarFiltro();
+      } else {
+        guardar();
+      }
+    } else if (e.key === 'Escape' && modoFiltro) {
+      e.preventDefault();
+      limpiarFiltro();
+    }
   }
 
   const linkWA = urlWhatsApp(telefono);
@@ -172,7 +239,11 @@ const FormViaje = forwardRef(function FormViaje(
             ref={choferRef}
             choferes={choferes}
             choferId={choferId}
-            onCambio={setChoferId}
+            onCambio={(id, textoNombre) => {
+              setChoferId(id);
+              setChoferTexto(textoNombre ?? '');
+              setChoferTocado(true);
+            }}
             onListo={() => horaRef.current?.focus()}
           />
         </label>
@@ -186,8 +257,23 @@ const FormViaje = forwardRef(function FormViaje(
               value={hora}
               onChange={(e) => setHora(e.target.value.replace(/[^\d:.]/g, '').slice(0, 5))}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') { e.preventDefault(); guardar(); }
-                if (e.key === 'Escape' && hora) { e.stopPropagation(); setHora(''); }
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (modoFiltro) {
+                    ejecutarFiltro();
+                  } else {
+                    guardar();
+                  }
+                }
+                if (e.key === 'Escape') {
+                  if (hora) {
+                    e.stopPropagation();
+                    setHora('');
+                  } else if (modoFiltro) {
+                    e.stopPropagation();
+                    limpiarFiltro();
+                  }
+                }
               }}
               placeholder="hora"
               inputMode="numeric"
@@ -196,14 +282,49 @@ const FormViaje = forwardRef(function FormViaje(
           </div>
         </label>
 
-        <button className="btn primario btn-guardar" onClick={guardar} disabled={guardando}>
-          Guardar <kbd>Enter</kbd>
-        </button>
+        <div className="form-botones">
+          {modoFiltro ? (
+            <button
+              type="button"
+              className="btn btn-limpiar-filtro"
+              onClick={limpiarFiltro}
+              title="Eliminar filtro y volver a la vista común (Esc)"
+            >
+              Limpiar
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn primario btn-guardar"
+              onClick={guardar}
+              disabled={guardando}
+            >
+              Guardar <kbd>Enter</kbd>
+            </button>
+          )}
+
+          <button
+            type="button"
+            className={`btn btn-filtrar ${modoFiltro ? 'filtro-activo' : ''}`}
+            onClick={ejecutarFiltro}
+            title={
+              modoFiltro
+                ? 'Actualizar filtro con los términos ingresados'
+                : 'Filtrar viajes existentes por los términos ingresados'
+            }
+          >
+            Filtrar
+          </button>
+        </div>
       </div>
 
       <div className="form-pie">
         {error ? (
           <span className="error">{error}</span>
+        ) : modoFiltro ? (
+          <span className="info">
+            🔍 <b>Modo filtro activo:</b> mostrando viajes existentes que coinciden con los términos ingresados.
+          </span>
         ) : programado ? (
           programadaPara ? (
             <span className="info">
@@ -218,7 +339,13 @@ const FormViaje = forwardRef(function FormViaje(
             chofer por defecto: <b>Sin asignar</b>
           </span>
         )}
-        {!vacio && <button className="btn-link" onClick={limpiar}>Limpiar</button>}
+        {modoFiltro ? (
+          <button type="button" className="btn-link" onClick={limpiarFiltro}>
+            Limpiar filtro
+          </button>
+        ) : (
+          !vacio && <button type="button" className="btn-link" onClick={limpiarTodo}>Limpiar</button>
+        )}
       </div>
     </div>
   );

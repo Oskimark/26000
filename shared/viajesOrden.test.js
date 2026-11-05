@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ordenarViajesVisuales, calcularPrioridadViaje, minutosHasta } from './viajesOrden.js';
+import {
+  ordenarViajesVisuales,
+  calcularPrioridadViaje,
+  minutosHasta,
+  filtrarViajes,
+  coincideViajeConFiltro,
+} from './viajesOrden.js';
 
 test('viajes sin asignar se posicionan siempre primeros independientemente de su número', () => {
   const ahora = new Date('2026-10-30T16:00:00-03:00').getTime();
@@ -277,4 +283,84 @@ test('los viajes programados futuros se mantienen a partir del 10° lugar y sube
 
   // En el 10° lugar (índice 9) ahora se ubica prog19 (19:00), que todavía no entró en aviso
   assert.equal(orden17_50[9].id, 102, 'El programado siguiente (19:00) queda a partir del 10° lugar');
+});
+
+test('filtrarViajes filtra correctamente por teléfono, dirección, chofer y nombre', () => {
+  const lista = [
+    {
+      id: 1,
+      numero: 18,
+      telefono: '099123456',
+      nombre_cliente: 'Pablo Rodriguez',
+      direccion: '845 25 de Mayo',
+      chofer_id: 10,
+      chofer: 'Oscar Chappes',
+    },
+    {
+      id: 2,
+      numero: 19,
+      telefono: '4342 8899',
+      nombre_cliente: 'Maria Perez',
+      direccion: '868 Oribe',
+      chofer_id: null,
+      chofer: null,
+    },
+    {
+      id: 3,
+      numero: 20,
+      telefono: '098555666',
+      nombre_cliente: 'Juan Gomez',
+      direccion: '450 Artigas',
+      chofer_id: 12,
+      chofer: 'Martin Diaz',
+    },
+  ];
+
+  // 1. Filtrar por teléfono (parcial)
+  const fTel = filtrarViajes(lista, { telefono: '8899' });
+  assert.equal(fTel.length, 1);
+  assert.equal(fTel[0].id, 2);
+
+  // 2. Filtrar por dirección (palabras en cualquier orden)
+  const fDir = filtrarViajes(lista, { direccion: 'Mayo 25' });
+  assert.equal(fDir.length, 1);
+  assert.equal(fDir[0].id, 1);
+
+  // 3. Filtrar por nombre
+  const fNom = filtrarViajes(lista, { nombre: 'Gomez' });
+  assert.equal(fNom.length, 1);
+  assert.equal(fNom[0].id, 3);
+
+  // 4. Filtrar por chofer ID
+  const fChoferId = filtrarViajes(lista, { choferTocado: true, choferId: 10 });
+  assert.equal(fChoferId.length, 1);
+  assert.equal(fChoferId[0].id, 1);
+
+  // 5. Filtrar por chofer texto
+  const fChoferTexto = filtrarViajes(lista, { choferTocado: true, choferTexto: 'Oscar' });
+  assert.equal(fChoferTexto.length, 1);
+  assert.equal(fChoferTexto[0].id, 1);
+
+  // 6. Filtrar por sin asignar explícito
+  const fSinAsignar = filtrarViajes(lista, { choferTocado: true, choferId: null });
+  assert.equal(fSinAsignar.length, 1);
+  assert.equal(fSinAsignar[0].id, 2);
+
+  // 7. Si no se tocó chofer, no restringe por chofer
+  const fSinTocarChofer = filtrarViajes(lista, { direccion: 'Artigas', choferTocado: false, choferId: null });
+  assert.equal(fSinTocarChofer.length, 1);
+  assert.equal(fSinTocarChofer[0].id, 3);
+
+  // 8. Combinación de teléfono y dirección
+  const fComb = filtrarViajes(lista, { telefono: '099', direccion: 'Mayo' });
+  assert.equal(fComb.length, 1);
+  assert.equal(fComb[0].id, 1);
+
+  // 9. Término no coincidente devuelve vacío
+  const fVacio = filtrarViajes(lista, { direccion: 'Sarandí inexistente' });
+  assert.equal(fVacio.length, 0);
+
+  // 10. Filtro sin términos devuelve la lista completa intacta
+  const fTodos = filtrarViajes(lista, { telefono: '', direccion: '', choferTocado: false });
+  assert.equal(fTodos.length, 3);
 });

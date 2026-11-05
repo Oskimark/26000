@@ -237,6 +237,7 @@ export default function ListaViajes({
   editable = true,
   ocultarAnulados = false,
   esReferencia = false,
+  esFiltro = false,
   onAtender,
   onActualizado,
 }) {
@@ -277,7 +278,17 @@ export default function ListaViajes({
   const puedeAvisar = editable && tienePermiso(sesionOp, 'recepcion_avisar');
   const puedeAbrirFicha = tienePermiso(sesionOp, 'recepcion_ficha');
 
-  if (!viajesVisibles.length) return <p className="vacio">{esReferencia ? "No hay viajes registrados en el turno anterior." : "Todavía no hay viajes en este turno."}</p>;
+  if (!viajesVisibles.length) {
+    return (
+      <p className="vacio">
+        {esFiltro
+          ? 'No se encontraron viajes que coincidan con los términos del filtro.'
+          : esReferencia
+            ? 'No hay viajes registrados en el turno anterior.'
+            : 'Todavía no hay viajes en este turno.'}
+      </p>
+    );
+  }
 
   return (
     <>

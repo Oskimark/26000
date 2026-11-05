@@ -186,7 +186,7 @@ export const CampoChofer = forwardRef(function CampoChofer(
   }, [texto, choferes.length, choferId]);
 
   function elegir(c) {
-    onCambio(c.id);
+    onCambio(c.id, c.nombre);
     setTexto(c.nombre);
     setAbierto(false);
     onListo?.();
@@ -233,7 +233,7 @@ export const CampoChofer = forwardRef(function CampoChofer(
           setTexto(e.target.value);
           setAbierto(true);
           setInteractuado(true);
-          if (seleccionado && e.target.value !== seleccionado.nombre) onCambio(null);
+          onCambio(null, e.target.value);
         }}
         onFocus={(e) => { setAbierto(true); setInteractuado(false); e.target.select(); }}
         onBlur={() => {

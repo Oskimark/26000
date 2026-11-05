@@ -289,16 +289,17 @@ kbd {
 /* Formulario Nuevo Viaje */
 .form-viaje .campos {
   display: grid;
-  grid-template-columns: 140px 1.5fr 1fr 150px auto;
+  grid-template-columns: 140px minmax(200px, 1.8fr) 165px 145px auto;
   gap: 12px;
   align-items: flex-end;
 }
 
 .form-viaje.con-campo-nombre .campos {
-  grid-template-columns: 130px 145px 1.5fr 1fr 135px auto;
+  grid-template-columns: 125px 135px minmax(180px, 1.8fr) 165px 130px auto;
 }
 
-.campo-nombre input {
+.campo-nombre input,
+.campo-chofer input {
   min-width: 0;
 }
 
@@ -423,8 +424,100 @@ input:focus, select:focus {
   padding: 8px;
 }
 
+.form-botones {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  white-space: nowrap;
+}
+
 .btn-guardar {
   height: 38px;
+}
+
+.btn-filtrar {
+  background-color: #16a34a;
+  color: #ffffff;
+  border: 1px solid #15803d;
+  font-weight: 600;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 6px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.btn-filtrar:hover:not(:disabled) {
+  background-color: #15803d;
+  color: #ffffff;
+  border-color: #166534;
+}
+
+.btn-filtrar.filtro-activo {
+  background-color: #15803d;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.4);
+}
+
+.tema-oscuro .btn-filtrar {
+  background-color: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #15803d !important;
+}
+
+.tema-oscuro .btn-filtrar:hover:not(:disabled) {
+  background-color: #15803d !important;
+}
+
+.btn-limpiar-filtro {
+  background-color: #64748b;
+  color: #ffffff;
+  border: 1px solid #475569;
+  font-weight: 600;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 6px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.btn-limpiar-filtro:hover:not(:disabled) {
+  background-color: #475569;
+  color: #ffffff;
+}
+
+.tema-oscuro .btn-limpiar-filtro {
+  background-color: #475569 !important;
+  color: #ffffff !important;
+  border-color: #64748b !important;
+}
+
+.tema-oscuro .btn-limpiar-filtro:hover:not(:disabled) {
+  background-color: #64748b !important;
+}
+
+.badge-filtro-activo-resumen {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  padding: 1px 8px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.tema-oscuro .badge-filtro-activo-resumen {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.4);
 }
 
 .form-pie {
