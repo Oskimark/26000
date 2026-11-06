@@ -16,6 +16,7 @@ const FormViaje = forwardRef(function FormViaje(
     onFiltrar,
     onLimpiarFiltro,
     modoFiltro = false,
+    animandoFase = null,
   },
   ref,
 ) {
@@ -162,6 +163,11 @@ const FormViaje = forwardRef(function FormViaje(
 
   return (
     <div className={`form-viaje ${mostrarNombre ? 'con-campo-nombre' : ''}`} onKeyDown={onKeyDownForm}>
+      {animandoFase === 'arriba' && (
+        <div className="taxi-pista-form" aria-hidden="true">
+          <img src="/taxi.svg" className="taxi-fase-arriba" alt="" />
+        </div>
+      )}
       <div className="campos">
         <label className="campo campo-tel">
           <span>Teléfono</span>

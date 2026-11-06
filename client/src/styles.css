@@ -432,7 +432,140 @@ input:focus, select:focus {
 }
 
 .btn-guardar {
+  background-color: #facc15 !important;
+  color: #000000 !important;
+  border: 1px solid #eab308 !important;
+  font-weight: 700 !important;
   height: 38px;
+}
+
+.btn-guardar:hover:not(:disabled) {
+  background-color: #eab308 !important;
+  color: #000000 !important;
+  border-color: #ca8a04 !important;
+}
+
+.btn-guardar kbd {
+  background: rgba(0, 0, 0, 0.15) !important;
+  color: #000000 !important;
+  border: 1px solid rgba(0, 0, 0, 0.25) !important;
+  font-weight: 600;
+}
+
+.tema-oscuro .btn-guardar {
+  background-color: #facc15 !important;
+  color: #000000 !important;
+  border-color: #eab308 !important;
+}
+
+.tema-oscuro .btn-guardar:hover:not(:disabled) {
+  background-color: #eab308 !important;
+  color: #000000 !important;
+}
+
+.tema-oscuro .btn-guardar kbd {
+  background: rgba(0, 0, 0, 0.18) !important;
+  color: #000000 !important;
+  border-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Animación del taxi al crear nuevo viaje */
+.form-viaje {
+  position: relative;
+}
+
+.taxi-pista-form {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.taxi-fase-arriba {
+  position: absolute;
+  top: 16px;
+  right: 14px;
+  width: 135px;
+  height: auto;
+  pointer-events: none;
+  animation: taxi-conducir-arriba 0.75s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes taxi-conducir-arriba {
+  0% {
+    transform: translateX(0);
+    opacity: 0.95;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(calc(-100vw - 150px));
+    opacity: 0;
+  }
+}
+
+.col-num {
+  position: relative;
+}
+
+.taxi-pista-fila {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100vw;
+  height: 0;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.taxi-fase-fila {
+  position: absolute;
+  top: -22px;
+  width: 130px;
+  height: auto;
+  pointer-events: none;
+  transform: scaleX(-1);
+  animation: taxi-conducir-fila 0.9s cubic-bezier(0.25, 0.9, 0.4, 1) forwards;
+}
+
+@keyframes taxi-conducir-fila {
+  0% {
+    left: -140px;
+    opacity: 0.95;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: calc(100vw + 200px);
+    opacity: 0;
+  }
+}
+
+@keyframes fila-resplandor-nueva {
+  0% {
+    background-color: rgba(250, 204, 21, 0.45);
+    box-shadow: inset 0 0 14px rgba(250, 204, 21, 0.4);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.fila-recien-creada {
+  animation: fila-resplandor-nueva 2s ease-out;
 }
 
 .btn-filtrar {

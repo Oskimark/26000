@@ -333,9 +333,10 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
   // Identidad corporativa
   const [tema, setTema] = useState(leerTema);
 
-  // Configuración general (aviso previo y visualización de campo nombre en recepción)
+  // Configuración general (aviso previo, visualización de nombre y animación de taxi en recepción)
   const [minutosAviso, setMinutosAviso] = useState(5);
   const [mostrarNombreRecepcion, setMostrarNombreRecepcion] = useState(true);
+  const [animacionTaxiNuevoViaje, setAnimacionTaxiNuevoViaje] = useState(true);
   const [guardandoConfig, setGuardandoConfig] = useState(false);
 
   function actualizarTema(modificaciones) {
@@ -396,6 +397,9 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
       if (cfg?.mostrarNombreRecepcion != null) {
         setMostrarNombreRecepcion(cfg.mostrarNombreRecepcion);
       }
+      if (cfg?.animacionTaxiNuevoViaje != null) {
+        setAnimacionTaxiNuevoViaje(cfg.animacionTaxiNuevoViaje);
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -428,10 +432,12 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
         body: {
           minutosAvisoProgramado: Number(minutosAviso),
           mostrarNombreRecepcion: Boolean(mostrarNombreRecepcion),
+          animacionTaxiNuevoViaje: Boolean(animacionTaxiNuevoViaje),
         },
       });
       setMinutosAviso(cfg.minutosAvisoProgramado);
       setMostrarNombreRecepcion(cfg.mostrarNombreRecepcion);
+      setAnimacionTaxiNuevoViaje(cfg.animacionTaxiNuevoViaje);
       mostrarExito('Configuración guardada correctamente');
     } catch (err) {
       setError(err.message);
@@ -452,6 +458,24 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
         cfg.mostrarNombreRecepcion
           ? 'Campo "Nombre" habilitado en la pantalla de Recepción'
           : 'Campo "Nombre" oculto en la pantalla de Recepción',
+      );
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function toggleAnimacionTaxi(nuevoValor) {
+    setAnimacionTaxiNuevoViaje(nuevoValor);
+    try {
+      const cfg = await api('/configuracion', {
+        method: 'PUT',
+        body: { animacionTaxiNuevoViaje: nuevoValor },
+      });
+      setAnimacionTaxiNuevoViaje(cfg.animacionTaxiNuevoViaje);
+      mostrarExito(
+        cfg.animacionTaxiNuevoViaje
+          ? 'Animación de taxi activada al crear nuevo viaje'
+          : 'Animación de taxi desactivada',
       );
     } catch (err) {
       setError(err.message);
@@ -1224,6 +1248,29 @@ export default function Admin({ operadorId, esSuperAdmin = true }) {
                   {mostrarNombreRecepcion
                     ? 'Activado: Los operadores verán el campo "Nombre (opc)" en el formulario de Recepción para asignarlo inmediatamente al crear el viaje.'
                     : 'Oculto: El formulario de Recepción queda en modo ultrarrápido (Teléfono → Dirección → Chofer → Programado). El nombre se puede seguir viendo y cargando en la Ficha de Viaje y en Clientes.'}
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div className="tarjeta admin-form-tarjeta" style={{ marginTop: 16 }}>
+            <h3>🚖 Animación de Taxi al Crear Nuevo Viaje</h3>
+            <p className="descripcion" style={{ marginTop: 4, marginBottom: 16 }}>
+              Efecto visual del taxi desplazándose desde el botón <b>Guardar</b> hacia la izquierda y completando la nueva fila creada en la tabla de Recepción.
+            </p>
+
+            <label className="opcion-identidad-item" style={{ maxWidth: 580, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={animacionTaxiNuevoViaje}
+                onChange={(e) => toggleAnimacionTaxi(e.target.checked)}
+              />
+              <div>
+                <b>Activar animación del taxi al ingresar un nuevo viaje</b>
+                <p className="descripcion">
+                  {animacionTaxiNuevoViaje
+                    ? 'Activada: Al guardar un nuevo viaje, un taxi animado sale del botón hacia la izquierda y recorre la fila recién creada.'
+                    : 'Desactivada: Los viajes se ingresan directamente sin la animación visual del taxi.'}
                 </p>
               </div>
             </label>

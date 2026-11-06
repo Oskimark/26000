@@ -20,6 +20,9 @@ export default function Recepcion({ turnos, socket, activa }) {
   const [filtro, setFiltro] = useState(null);
   const [minutosAviso, setMinutosAviso] = useState(5);
   const [mostrarNombre, setMostrarNombre] = useState(true);
+  const [animacionTaxi, setAnimacionTaxi] = useState(true);
+  const [animandoFase, setAnimandoFase] = useState(null);
+  const [nuevoViajeId, setNuevoViajeId] = useState(null);
   const [pospuestos, setPospuestos] = useState(new Set());
   const [atendiendoManual, setAtendiendoManual] = useState(null);
   const [formVacio, setFormVacio] = useState(true);
@@ -52,6 +55,9 @@ export default function Recepcion({ turnos, socket, activa }) {
       if (datosViajes.configuracion?.mostrarNombreRecepcion != null) {
         setMostrarNombre(datosViajes.configuracion.mostrarNombreRecepcion);
       }
+      if (datosViajes.configuracion?.animacionTaxiNuevoViaje != null) {
+        setAnimacionTaxi(datosViajes.configuracion.animacionTaxiNuevoViaje);
+      }
     } catch (err) {
       console.error('Error al cargar datos del turno:', err);
     }
@@ -68,6 +74,7 @@ export default function Recepcion({ turnos, socket, activa }) {
     const alRecibirConfig = (cfg) => {
       if (cfg?.minutosAvisoProgramado != null) setMinutosAviso(cfg.minutosAvisoProgramado);
       if (cfg?.mostrarNombreRecepcion != null) setMostrarNombre(cfg.mostrarNombreRecepcion);
+      if (cfg?.animacionTaxiNuevoViaje != null) setAnimacionTaxi(cfg.animacionTaxiNuevoViaje);
       cargarDatos();
     };
 
@@ -181,6 +188,28 @@ export default function Recepcion({ turnos, socket, activa }) {
     }
   }
 
+  const handleNuevoViajeGuardado = useCallback(async (viaje) => {
+    if (!animacionTaxi) {
+      cargarDatos();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    setAnimandoFase('arriba');
+    await cargarDatos();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    setTimeout(() => {
+      setNuevoViajeId(viaje?.id ?? null);
+      setAnimandoFase('fila');
+
+      setTimeout(() => {
+        setAnimandoFase(null);
+        setNuevoViajeId(null);
+      }, 950);
+    }, 750);
+  }, [animacionTaxi, cargarDatos]);
+
   return (
     <div className="recepcion-contenedor">
       {/* Panel dinámico flotante: Despacho O Formulario de nuevo viaje */}
@@ -203,12 +232,10 @@ export default function Recepcion({ turnos, socket, activa }) {
               minutosAviso={minutosAviso}
               mostrarNombre={mostrarNombre}
               modoFiltro={Boolean(filtro)}
+              animandoFase={animandoFase}
               onFiltrar={(criterios) => setFiltro(criterios)}
               onLimpiarFiltro={() => setFiltro(null)}
-              onGuardado={() => {
-                cargarDatos();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              onGuardado={handleNuevoViajeGuardado}
               onVacioCambio={setFormVacio}
             />
           ) : (
@@ -284,6 +311,8 @@ export default function Recepcion({ turnos, socket, activa }) {
             editable={true}
             ocultarAnulados={!mostrarAnulados}
             esFiltro={Boolean(filtro)}
+            nuevoViajeId={nuevoViajeId}
+            animandoFase={animandoFase}
             onAtender={handleAtenderManual}
             onActualizado={cargarDatos}
           />

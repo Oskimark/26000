@@ -238,6 +238,8 @@ export default function ListaViajes({
   ocultarAnulados = false,
   esReferencia = false,
   esFiltro = false,
+  nuevoViajeId = null,
+  animandoFase = null,
   onAtender,
   onActualizado,
 }) {
@@ -315,6 +317,7 @@ export default function ListaViajes({
             const sinChofer = !v.chofer_id && !v.cancelado;
             const asignado = Boolean(v.chofer_id && !v.cancelado);
             const esProgPendiente = v.programado && !v.cancelado && !v.chofer_id;
+            const esRecienCreado = v.id === nuevoViajeId;
             const clases = [
               puedeAbrirFicha && 'fila-clickeable',
               pendiente && 'fila-pendiente',
@@ -322,6 +325,7 @@ export default function ListaViajes({
               enAvisoPrevio && 'fila-aviso-programado',
               v.cancelado && 'fila-anulada',
               asignado && !v.hora_avisado && 'fila-en-curso',
+              esRecienCreado && 'fila-recien-creada',
             ].filter(Boolean).join(' ');
 
             return (
@@ -331,7 +335,14 @@ export default function ListaViajes({
                 onClick={() => { if (puedeAbrirFicha) setViajeFichaId(v.id); }}
                 title={puedeAbrirFicha ? 'Click para abrir la Ficha de Viaje y ver su historial' : undefined}
               >
-                <td className="col-num">{pendiente ? '—' : (v.numero_formateado || formatearNumeroViaje(v.numero, v.tipo_turno))}</td>
+                <td className="col-num">
+                  {pendiente ? '—' : (v.numero_formateado || formatearNumeroViaje(v.numero, v.tipo_turno))}
+                  {esRecienCreado && animandoFase === 'fila' && (
+                    <div className="taxi-pista-fila" aria-hidden="true">
+                      <img src="/taxi.svg" className="taxi-fase-fila" alt="" />
+                    </div>
+                  )}
+                </td>
                 <td className="col-dir">
                   <span className="texto-direccion">{v.direccion}</span>
                   {Boolean(v.repetir_activo) && (

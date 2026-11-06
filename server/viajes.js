@@ -343,17 +343,19 @@ export async function obtenerConfiguracion(db = { query }) {
   try {
     const { rows } = await db.query(
       `SELECT clave, valor FROM configuracion
-       WHERE clave IN ('minutos_aviso_programado', 'mostrar_nombre_recepcion')`,
+       WHERE clave IN ('minutos_aviso_programado', 'mostrar_nombre_recepcion', 'animacion_taxi_nuevo_viaje')`,
     );
     const mapa = Object.fromEntries(rows.map((r) => [r.clave, r.valor]));
     const min = Number(mapa.minutos_aviso_programado);
     const mostrarNombre = mapa.mostrar_nombre_recepcion !== 'false';
+    const animacionTaxi = mapa.animacion_taxi_nuevo_viaje !== 'false';
     return {
       minutosAvisoProgramado: Number.isFinite(min) && min >= 0 ? min : 5,
       mostrarNombreRecepcion: mostrarNombre,
+      animacionTaxiNuevoViaje: animacionTaxi,
     };
   } catch {
-    return { minutosAvisoProgramado: 5, mostrarNombreRecepcion: true };
+    return { minutosAvisoProgramado: 5, mostrarNombreRecepcion: true, animacionTaxiNuevoViaje: true };
   }
 }
 
@@ -482,6 +484,15 @@ export async function actualizarConfiguracion(datos = {}) {
        VALUES ('mostrar_nombre_recepcion', $1)
        ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
       [mostrar ? 'true' : 'false'],
+    );
+  }
+  if (datos.animacionTaxiNuevoViaje !== undefined) {
+    const animar = Boolean(datos.animacionTaxiNuevoViaje);
+    await query(
+      `INSERT INTO configuracion (clave, valor)
+       VALUES ('animacion_taxi_nuevo_viaje', $1)
+       ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
+      [animar ? 'true' : 'false'],
     );
   }
   return obtenerConfiguracion();
