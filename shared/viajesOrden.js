@@ -18,32 +18,41 @@ export function minutosHasta(iso, ahoraMs = Date.now()) {
   return Math.round((new Date(iso).getTime() - ahoraMs) / 60_000);
 }
 
+/**
+ * Un viaje programado (con o sin chofer preseleccionado) sigue siendo un
+ * "programado pendiente de asignar" mientras no haya sido asignado mediante el
+ * botón correspondiente (no tiene número de viaje ni hora_avisado).
+ */
+export function esProgramadoPendiente(v) {
+  if (!v || v.cancelado) return false;
+  return Boolean(v.programado && v.numero == null && !v.hora_avisado);
+}
+
 export function calcularPrioridadViaje(v, minutosAviso = 5, ahoraMs = Date.now()) {
   if (v.cancelado) return 4;
 
-  const mins = v.programado && v.hora_programada
-    ? minutosHasta(v.hora_programada, ahoraMs)
-    : null;
+  if (esProgramadoPendiente(v)) {
+    const mins = v.hora_programada
+      ? minutosHasta(v.hora_programada, ahoraMs)
+      : null;
 
-  // Un viaje programado solo salta al inicio si está en período de aviso (o vencido) y NO tiene chofer asignado
-  const programadoEnAviso = Boolean(
-    v.programado && !v.chofer_id && (mins == null || mins <= minutosAviso)
-  );
+    // Cuando el viaje programado (con o sin chofer) entra en la ventana de tiempo predefinida,
+    // se mueve al primer lugar esperando ser asignado mediante el botón correspondiente.
+    if (mins == null || mins <= minutosAviso) {
+      return 1;
+    }
 
-  // Un viaje inmediato sin chofer asignado (cliente esperando que le asignen chofer)
-  const inmediatoSinAsignar = !v.programado && !v.chofer_id;
-
-  // Prioridad 1: Viajes sin asignar inmediatos O programados en período de notificación (sin chofer)
-  if (inmediatoSinAsignar || programadoEnAviso) {
-    return 1;
-  }
-
-  // Prioridad 3: Programados futuros que todavía no entraron al período de aviso (sin chofer)
-  if (v.programado && !v.chofer_id && mins != null && mins > minutosAviso) {
+    // Antes de entrar en la ventana de tiempo, espera en la sección de viajes programados
+    // (a partir de la fila 10 desde arriba por defecto, con o sin chofer).
     return 3;
   }
 
-  // Prioridad 2: Viajes asignados (inmediatos o programados que ya tienen chofer asignado)
+  // Un viaje inmediato (o ya numerado) sin chofer asignado se mantiene arriba (Prioridad 1)
+  if (!v.chofer_id) {
+    return 1;
+  }
+
+  // Prioridad 2: Viajes normales asignados y viajes programados que ya fueron asignados
   return 2;
 }
 
@@ -68,7 +77,7 @@ export function ordenarViajesVisuales(
     else anulados.push(v);
   }
 
-  // 1. Prioridad 1: Urgentes (sin asignar inmediatos y programados en aviso/vencidos sin chofer)
+  // 1. Prioridad 1: Urgentes (sin asignar inmediatos y programados en ventana de aviso con o sin chofer)
   // El tiempo más antiguo primero (tiempo de toma o tiempo programado ASC)
   urgentes.sort((a, b) => {
     const tiempoA = a.programado && a.hora_programada
@@ -82,17 +91,14 @@ export function ordenarViajesVisuales(
     return (b.id || 0) - (a.id || 0);
   });
 
-  // 2. Prioridad 2: Asignados (viajes en curso o completados)
-  // Turno más nuevo primero, luego momento efectivo DESC (más reciente arriba)
+  // 2. Prioridad 2: Asignados (viajes normales en curso o completados, incluyendo programados ya asignados)
+  // Ordenados estrictamente por momento efectivo DESC (más reciente arriba).
+  // Nunca se relega un viaje reciente al final por diferencias de etiqueta de turno.
   asignados.sort((a, b) => {
-    const turnoA = `${a.fecha_turno || ''}_${a.tipo_turno || ''}`;
-    const turnoB = `${b.fecha_turno || ''}_${b.tipo_turno || ''}`;
-    if (turnoA !== turnoB) {
-      return turnoB.localeCompare(turnoA);
-    }
-
-    const tiempoEfectivoA = a.hora_asignacion || a.hora_programada || a.hora_toma;
-    const tiempoEfectivoB = b.hora_asignacion || b.hora_programada || b.hora_toma;
+    const tiempoEfectivoA =
+      a.hora_avisado || a.hora_asignacion || a.hora_ejecucion || a.hora_toma || a.hora_programada;
+    const tiempoEfectivoB =
+      b.hora_avisado || b.hora_asignacion || b.hora_ejecucion || b.hora_toma || b.hora_programada;
     const msA = tiempoEfectivoA ? new Date(tiempoEfectivoA).getTime() : 0;
     const msB = tiempoEfectivoB ? new Date(tiempoEfectivoB).getTime() : 0;
     if (msA !== msB) {

@@ -759,6 +759,48 @@ input:focus, select:focus {
 }
 
 .col-num { width: 68px; min-width: 65px; text-align: center; font-weight: 700; color: #64748b; }
+
+/* Handle arrastrable (4 puntos verticales amarillos) al inicio de la sección de viajes programados */
+.handle-drag-programados {
+  position: absolute;
+  left: -14px;
+  top: 0;
+  bottom: 0;
+  width: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3.5px;
+  cursor: ns-resize;
+  z-index: 20;
+  user-select: none;
+  touch-action: none;
+  padding: 4px 0;
+  transition: transform 0.12s ease;
+}
+
+.handle-drag-programados .punto-drag {
+  width: 4.5px;
+  height: 4.5px;
+  border-radius: 50%;
+  background-color: #facc15;
+  box-shadow: 0 0 3px rgba(250, 204, 21, 0.7);
+  transition: background-color 0.12s ease, transform 0.12s ease;
+}
+
+.handle-drag-programados:hover .punto-drag,
+.handle-drag-programados.arrastrando .punto-drag {
+  background-color: #fde047;
+  transform: scale(1.25);
+  box-shadow: 0 0 6px rgba(250, 204, 21, 0.95);
+}
+
+.tabla-arrastrando-programados,
+.tabla-arrastrando-programados * {
+  cursor: ns-resize !important;
+  user-select: none !important;
+}
 .col-dir { font-weight: 500; font-size: 0.95rem; min-width: 240px; }
 .col-hora { width: 110px; }
 .col-fin { width: 120px; }

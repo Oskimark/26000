@@ -1,16 +1,33 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { api, leerSesion, obtenerChoferEnVuelo, esperarChoferEnVuelo } from './api.js';
 import { hora, horaConDia, formatearNumeroViaje } from './formato.js';
 import TelefonoWhatsApp from './TelefonoWhatsApp.jsx';
 import FichaViajeModal from './FichaViajeModal.jsx';
 import { tienePermiso } from '../../shared/permisos.js';
-import { minutosHasta, ordenarViajesVisuales } from '../../shared/viajesOrden.js';
+import {
+  minutosHasta,
+  ordenarViajesVisuales,
+  esProgramadoPendiente,
+  calcularPrioridadViaje,
+  POSICION_PROGRAMADOS_FUTUROS,
+} from '../../shared/viajesOrden.js';
+
+const CLAVE_POSICION_PROGRAMADOS = 'recepcion_posicion_programados';
 
 function CeldaAsignado({ viaje }) {
   const horaAsig = viaje.hora_asignacion || viaje.hora_fin;
   const opAsig = viaje.asignado_por_nombre || '';
 
   if (viaje.cancelado) return <td className="col-fin" />;
+
+  // Mientras el viaje programado espera ser asignado con el botón correspondiente, muestra guión
+  if (esProgramadoPendiente(viaje)) {
+    return (
+      <td className="col-fin">
+        <span className="tenue">—</span>
+      </td>
+    );
+  }
 
   if (horaAsig) {
     return (
@@ -245,6 +262,17 @@ export default function ListaViajes({
 }) {
   const [viajeFichaId, setViajeFichaId] = useState(null);
   const [ahoraMs, setAhoraMs] = useState(() => Date.now());
+  const [posicionProgramados, setPosicionProgramados] = useState(() => {
+    try {
+      const guardado = Number(localStorage.getItem(CLAVE_POSICION_PROGRAMADOS));
+      if (Number.isInteger(guardado) && guardado >= 1) return guardado;
+    } catch {
+      // ignorar
+    }
+    return POSICION_PROGRAMADOS_FUTUROS;
+  });
+  const [arrastrandoProgramados, setArrastrandoProgramados] = useState(false);
+  const tbodyRef = useRef(null);
 
   useEffect(() => {
     // Ticker para actualizar minutos y reordenar automáticamente cuando un programado entra en período de aviso
@@ -257,8 +285,57 @@ export default function ListaViajes({
     if (ocultarAnulados) {
       lista = lista.filter((v) => !v.cancelado);
     }
-    return ordenarViajesVisuales(lista, minutosAviso, ahoraMs);
-  }, [viajes, ocultarAnulados, minutosAviso, ahoraMs]);
+    return ordenarViajesVisuales(lista, minutosAviso, ahoraMs, posicionProgramados);
+  }, [viajes, ocultarAnulados, minutosAviso, ahoraMs, posicionProgramados]);
+
+  const primerProgramadoEnEsperaId = useMemo(() => {
+    const primero = viajesVisibles.find(
+      (v) => calcularPrioridadViaje(v, minutosAviso, ahoraMs) === 3
+    );
+    return primero ? primero.id : null;
+  }, [viajesVisibles, minutosAviso, ahoraMs]);
+
+  function iniciarArrastreProgramados(e) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const indiceActual = viajesVisibles.findIndex(
+      (v) => calcularPrioridadViaje(v, minutosAviso, ahoraMs) === 3
+    );
+    const filaInicial = indiceActual >= 0 ? indiceActual + 1 : posicionProgramados;
+    const startY = e.clientY;
+    const primeraFila = tbodyRef.current?.querySelector('tr');
+    const altoFila = Math.max(36, primeraFila ? primeraFila.getBoundingClientRect().height : 50);
+    const maxPosicion = Math.max(POSICION_PROGRAMADOS_FUTUROS, viajesVisibles.length + 1);
+
+    setArrastrandoProgramados(true);
+
+    function onPointerMove(ev) {
+      const deltaFilas = Math.round((ev.clientY - startY) / altoFila);
+      const nuevaPos = Math.max(1, Math.min(maxPosicion, filaInicial + deltaFilas));
+      setPosicionProgramados((prev) => {
+        if (prev !== nuevaPos) {
+          try {
+            localStorage.setItem(CLAVE_POSICION_PROGRAMADOS, String(nuevaPos));
+          } catch {
+            // ignorar
+          }
+        }
+        return nuevaPos;
+      });
+    }
+
+    function onPointerUp() {
+      setArrastrandoProgramados(false);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    }
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+  }
 
   async function cambiarCancelado(e, v) {
     e.stopPropagation();
@@ -294,7 +371,7 @@ export default function ListaViajes({
 
   return (
     <>
-      <table className={`tabla-viajes tabla-filas-clickeables ${esReferencia ? "tabla-referencia-anterior" : ""}`.trim()}>
+      <table className={`tabla-viajes tabla-filas-clickeables ${esReferencia ? "tabla-referencia-anterior" : ""} ${arrastrandoProgramados ? "tabla-arrastrando-programados" : ""}`.trim()}>
         <thead>
           <tr>
             <th className="col-num">N°</th>
@@ -308,21 +385,23 @@ export default function ListaViajes({
             <th className="col-cancel">Cancel</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody ref={tbodyRef}>
           {viajesVisibles.map((v) => {
-            const pendiente = v.numero == null && !v.chofer_id;
+            const esProgPendiente = esProgramadoPendiente(v);
+            const pendiente = v.numero == null;
             const mins = v.programado ? minutosHasta(v.hora_programada, ahoraMs) : null;
             const enAvisoPrevio =
-              v.programado && !v.cancelado && !v.chofer_id && mins != null && mins <= minutosAviso;
-            const sinChofer = !v.chofer_id && !v.cancelado;
-            const asignado = Boolean(v.chofer_id && !v.cancelado);
-            const esProgPendiente = v.programado && !v.cancelado && !v.chofer_id;
+              esProgPendiente && (mins == null || mins <= minutosAviso);
+            const sinChofer = (!v.chofer_id || esProgPendiente) && !v.cancelado;
+            const asignado = Boolean(v.chofer_id && !esProgPendiente && !v.cancelado);
+            const esPrimerProgramadoEnEspera = editable && v.id === primerProgramadoEnEsperaId;
             const esRecienCreado = v.id === nuevoViajeId;
             const clases = [
               puedeAbrirFicha && 'fila-clickeable',
               pendiente && 'fila-pendiente',
               sinChofer && 'fila-sin-chofer',
               enAvisoPrevio && 'fila-aviso-programado',
+              esPrimerProgramadoEnEspera && 'fila-inicio-programados',
               v.cancelado && 'fila-anulada',
               asignado && !v.hora_avisado && 'fila-en-curso',
               esRecienCreado && 'fila-recien-creada',
@@ -336,6 +415,31 @@ export default function ListaViajes({
                 title={puedeAbrirFicha ? 'Click para abrir la Ficha de Viaje y ver su historial' : undefined}
               >
                 <td className="col-num">
+                  {esPrimerProgramadoEnEspera && (
+                    <span
+                      className={`handle-drag-programados ${arrastrandoProgramados ? 'arrastrando' : ''}`.trim()}
+                      onPointerDown={iniciarArrastreProgramados}
+                      onClick={(e) => e.stopPropagation()}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        setPosicionProgramados(POSICION_PROGRAMADOS_FUTUROS);
+                        try {
+                          localStorage.setItem(CLAVE_POSICION_PROGRAMADOS, String(POSICION_PROGRAMADOS_FUTUROS));
+                        } catch {
+                          // ignorar
+                        }
+                      }}
+                      title={`Arrastrar arriba o abajo para modificar la fila donde esperan los viajes programados (actual: fila ${posicionProgramados} · doble click para restaurar fila 10)`}
+                      role="slider"
+                      aria-label="Cambiar posición de espera de viajes programados"
+                      aria-valuenow={posicionProgramados}
+                    >
+                      <span className="punto-drag" />
+                      <span className="punto-drag" />
+                      <span className="punto-drag" />
+                      <span className="punto-drag" />
+                    </span>
+                  )}
                   {pendiente ? '—' : (v.numero_formateado || formatearNumeroViaje(v.numero, v.tipo_turno))}
                   {esRecienCreado && animandoFase === 'fila' && (
                     <div className="taxi-pista-fila" aria-hidden="true">

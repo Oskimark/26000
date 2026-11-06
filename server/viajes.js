@@ -657,8 +657,8 @@ export async function crearViaje(
     }
     const numero = programada ? null : await siguienteNumero(client, turno);
     const horaAsig = chofer ? ahora : null;
-    const horaAvisado = chofer ? ahora : null;
-    const avisadoPor = chofer ? operadorId : null;
+    const horaAvisado = !programada && chofer ? ahora : null;
+    const avisadoPor = !programada && chofer ? operadorId : null;
     const { rows } = await client.query(
       `INSERT INTO viajes (telefono, nombre_cliente, direccion_id, chofer_id, operador_id, hora_toma,
                            programado, hora_programada, fecha_turno, tipo_turno,
@@ -687,7 +687,11 @@ export async function crearViaje(
       `Dirección: "${limpiarDireccion(direccion)}"`,
       tel ? `Tel: ${tel}` : 'Sin teléfono',
       nomCliente ? `Cliente: ${nomCliente}` : null,
-      infoChofer ? `Chofer asignado: ${infoChofer.nombre} (avisado por defecto)` : 'Chofer: Sin asignar',
+      infoChofer
+        ? programada
+          ? `Chofer preseleccionado: ${infoChofer.nombre} (pendiente de asignar)`
+          : `Chofer asignado: ${infoChofer.nombre} (avisado por defecto)`
+        : 'Chofer: Sin asignar',
       programada ? `Programado para ${textoHora}` : 'Viaje inmediato',
     ].filter(Boolean).join(' · ');
     await registrarHistorial(client, viajeId, operadorId, 'Creación de viaje', resumenCreacion);
@@ -845,16 +849,34 @@ export async function registrarAvisado(viajeId, { avisado = true, borrar }, oper
     let nuevoNumero = actual.numero;
     let fechaTurno = actual.fecha_turno;
     let tipoTurno = actual.tipo_turno;
-    if (!limpiar && nuevoNumero == null) {
+    const eraPendienteNumero = nuevoNumero == null;
+    if (!limpiar && eraPendienteNumero) {
       const activo = await obtenerTurnoActual(client);
       fechaTurno = activo.fecha;
       tipoTurno = activo.tipo;
       nuevoNumero = await siguienteNumero(client, activo);
     }
-    await client.query(
-      'UPDATE viajes SET hora_avisado = $1, avisado_por = $2, numero = COALESCE(numero, $3), fecha_turno = $4, tipo_turno = $5 WHERE id = $6',
-      [valor, limpiar ? null : operadorId, nuevoNumero, fechaTurno, tipoTurno, viajeId],
-    );
+    if (!limpiar && eraPendienteNumero) {
+      await client.query(
+        `UPDATE viajes
+         SET hora_avisado = $1,
+             avisado_por = $2,
+             hora_asignacion = $1,
+             hora_fin = $1,
+             asignado_por = COALESCE($2, asignado_por),
+             hora_ejecucion = COALESCE(hora_ejecucion, $1),
+             numero = COALESCE(numero, $3),
+             fecha_turno = $4,
+             tipo_turno = $5
+         WHERE id = $6`,
+        [valor, operadorId, nuevoNumero, fechaTurno, tipoTurno, viajeId],
+      );
+    } else {
+      await client.query(
+        'UPDATE viajes SET hora_avisado = $1, avisado_por = $2, numero = COALESCE(numero, $3), fecha_turno = $4, tipo_turno = $5 WHERE id = $6',
+        [valor, limpiar ? null : operadorId, nuevoNumero, fechaTurno, tipoTurno, viajeId],
+      );
+    }
     await registrarHistorial(
       client,
       viajeId,
@@ -964,6 +986,8 @@ export async function editarFichaViaje(viajeId, datos, operadorId, ahora = new D
           if (nuevaHoraProg.getTime() > ahora.getTime() + minutosAvisoProgramado * 60_000) {
             nuevoNumero = null;
             nuevaHoraEjec = null;
+            nuevaHoraAvisado = null;
+            nuevoAvisadoPor = null;
           }
           cambios.push(`Reprogramado para las ${ String(hm.h).padStart(2, '0') }:${ String(hm.m).padStart(2, '0') }`);
         }

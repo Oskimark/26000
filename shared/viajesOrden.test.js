@@ -141,27 +141,90 @@ test('un viaje programado una vez asignado queda en su lugar, y un nuevo viaje m
     programado: true,
     hora_programada: '2026-10-30T16:15:00-03:00',
     hora_asignacion: '2026-10-30T16:15:00-03:00',
-    numero: null,
-    chofer_id: 4, // YA ASIGNADO
+    hora_avisado: '2026-10-30T16:15:00-03:00',
+    numero: 2,
+    chofer_id: 4, // YA ASIGNADO CON BOTÓN ASIGNAR
     fecha_turno: '2026-10-30',
     tipo_turno: 'B',
   };
   const viajeManualNuevo = {
     id: 3,
-    numero: 2,
+    numero: 3,
     chofer_id: 5,
     hora_toma: '2026-10-30T16:20:00-03:00', // ingresado DESPUÉS
     fecha_turno: '2026-10-30',
     tipo_turno: 'B',
   };
 
-  // viajeProgAsignado ya tiene chofer, por lo que NO debe ser Prioridad 1
+  // viajeProgAsignado ya fue asignado (tiene número y hora_avisado), por lo que es Prioridad 2
   assert.equal(calcularPrioridadViaje(viajeProgAsignado, 15, ahora), 2);
 
   const orden = ordenarViajesVisuales([viajeManualViejo, viajeProgAsignado, viajeManualNuevo], 15, ahora);
   assert.equal(orden[0].id, 3, 'El viaje manual nuevo (16:20) debe quedar por encima del programado asignado');
   assert.equal(orden[1].id, 2, 'El viaje programado asignado (16:15) queda en su lugar intermedio');
   assert.equal(orden[2].id, 1, 'El viaje manual viejo (16:00) queda por debajo');
+});
+
+test('darle chofer a un viaje programado NUNCA lo tira al fondo de la planilla: espera en la fila 10, sube al 1° lugar en ventana y al pulsar Asignar pasa a viaje normal', () => {
+  const t16_00 = new Date('2026-10-30T16:00:00-03:00').getTime();
+
+  // 20 viajes normales asignados (simulando planilla grande)
+  const normales = Array.from({ length: 20 }, (_, i) => ({
+    id: i + 1,
+    numero: i + 1,
+    chofer_id: 10 + (i % 5),
+    hora_toma: `2026-10-30T15:${String(i).padStart(2, '0')}:00-03:00`,
+    hora_asignacion: `2026-10-30T15:${String(i).padStart(2, '0')}:00-03:00`,
+    hora_avisado: `2026-10-30T15:${String(i).padStart(2, '0')}:00-03:00`,
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'B',
+  }));
+
+  // Viaje programado para las 18:00 al que el operador YA le seleccionó un chofer en el desplegable,
+  // pero todavía NO fue asignado mediante el botón "Asignar" (numero: null, hora_avisado: null)
+  // Incluso si fue agendado en un turno anterior (tipo_turno: 'A')
+  const progConChofer = {
+    id: 500,
+    programado: true,
+    hora_programada: '2026-10-30T18:00:00-03:00',
+    hora_toma: '2026-10-30T10:00:00-03:00',
+    hora_asignacion: '2026-10-30T16:00:00-03:00',
+    hora_avisado: null,
+    numero: null,
+    chofer_id: 7,
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'A',
+  };
+
+  // 1) Fuera de la ventana de tiempo: espera en la fila 10 (índice 9), NUNCA al final de los 20 viajes
+  assert.equal(calcularPrioridadViaje(progConChofer, 15, t16_00), 3);
+  const ordenEnEspera = ordenarViajesVisuales([...normales, progConChofer], 15, t16_00, 10);
+  assert.equal(ordenEnEspera[9].id, 500, 'El programado con chofer preseleccionado espera en la fila 10 (índice 9)');
+
+  // Si el operador arrastra el handle a la fila 5, espera en la fila 5 (índice 4)
+  const ordenFila5 = ordenarViajesVisuales([...normales, progConChofer], 15, t16_00, 5);
+  assert.equal(ordenFila5[4].id, 500, 'Al arrastrar la sección a la fila 5, el programado espera en el índice 4');
+
+  // 2) Cuando entra en la ventana de tiempo predefinida (17:50, faltan 10 min <= 15 min):
+  // Se mueve al primer lugar (índice 0) esperando ser asignado mediante el botón correspondiente
+  const t17_50 = new Date('2026-10-30T17:50:00-03:00').getTime();
+  assert.equal(calcularPrioridadViaje(progConChofer, 15, t17_50), 1);
+  const ordenEnVentana = ordenarViajesVisuales([...normales, progConChofer], 15, t17_50, 10);
+  assert.equal(ordenEnVentana[0].id, 500, 'En ventana de aviso se mueve al primer lugar para poder pulsar Asignar');
+
+  // 3) Una vez asignado con el botón "Asignar" (recibe numero y hora_avisado):
+  // Cambia a viaje normal (Prioridad 2) en la cima de los viajes normales
+  const progYaAsignado = {
+    ...progConChofer,
+    numero: 21,
+    hora_asignacion: '2026-10-30T17:51:00-03:00',
+    hora_avisado: '2026-10-30T17:51:00-03:00',
+    fecha_turno: '2026-10-30',
+    tipo_turno: 'B',
+  };
+  assert.equal(calcularPrioridadViaje(progYaAsignado, 15, t17_50), 2);
+  const ordenYaAsignado = ordenarViajesVisuales([...normales, progYaAsignado], 15, t17_50, 10);
+  assert.equal(ordenYaAsignado[0].id, 500, 'Recién asignado encabeza los viajes normales (no cae al fondo)');
 });
 
 test('los viajes sin asignar se mantienen siempre arriba de los viajes nuevos asignados y no quedan enterrados', () => {
