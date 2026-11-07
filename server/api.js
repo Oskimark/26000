@@ -11,7 +11,7 @@ import {
   listarCalles, crearCalle, actualizarCalle, eliminarCalle, restaurarCatalogoCalles,
   obtenerTurnoActual, obtenerInfoCambioTurno, avanzarTurnoManual, obtenerEstadisticas,
 } from './viajes.js';
-import { turnoDe, turnoSiguiente, turnoAnterior, describirTurno, validarTurno } from '../shared/turnos.js';
+import { turnoDe, turnoSiguiente, turnoAnterior, proximoTurnoSegunReloj, describirTurno, validarTurno } from '../shared/turnos.js';
 
 const a = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -67,11 +67,12 @@ export function crearApi({ notificar }) {
 
   // ---------- Turnos ----------
   api.get('/turnos/actual', a(async (req, res) => {
-    const actual = await obtenerTurnoActual();
+    const ahora = new Date();
+    const actual = await obtenerTurnoActual( undefined, ahora);
     res.json({
-      ahora: new Date().toISOString(),
+      ahora: ahora.toISOString(),
       actual: describirTurno(actual),
-      siguiente: describirTurno(turnoSiguiente(actual)),
+      siguiente: describirTurno(proximoTurnoSegunReloj(actual, ahora)),
       anterior: describirTurno(turnoAnterior(actual)),
     });
   }));

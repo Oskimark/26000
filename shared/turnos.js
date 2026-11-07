@@ -47,6 +47,43 @@ export function turnoAnterior(turno) {
   return turnoDe(new Date(rangoTurno(turno).inicio.getTime() - 1));
 }
 
+/**
+ * Determina la fecha calendario real (YYYY-MM-DD) correspondiente a un tipo de turno ('A' o 'B')
+ * en función del instante actual, trabajando los 7 días de la semana de corrido y evitando
+ * que cambios manuales repetidos adelanten la fecha hacia días futuros.
+ */
+export function calcularFechaParaTipoTurno(tipo, ahora = new Date()) {
+  const d = new Date(ahora);
+  const h = d.getHours();
+  if (tipo === 'A') {
+    // Si se pasa al turno A (03 a 15) tarde en la noche (21:00 a 23:59), corresponde al día siguiente.
+    // En cualquier otro horario (00:00 a 20:59), corresponde al día calendario actual.
+    if (h >= 21) {
+      const manana = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+      return fechaISO(manana);
+    }
+    return fechaISO(d);
+  }
+  // Tipo 'B' (15 a 03):
+  // Entre las 00:00 y las 02:59 de la madrugada corresponde al turno B iniciado el día anterior.
+  // Desde las 03:00 hasta las 23:59 corresponde al día calendario actual.
+  if (h < INICIO_A) {
+    const ayer = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+    return fechaISO(ayer);
+  }
+  return fechaISO(d);
+}
+
+/**
+ * Calcula el próximo turno al realizar un Cambio de Turno manual:
+ * alterna entre 'A' (03 a 15) y 'B' (15 a 03) anclando siempre la fecha al calendario real.
+ */
+export function proximoTurnoSegunReloj(actual, ahora = new Date()) {
+  const nuevoTipo = actual?.tipo === 'A' ? 'B' : 'A';
+  const nuevaFecha = calcularFechaParaTipoTurno(nuevoTipo, ahora);
+  return { fecha: nuevaFecha, tipo: nuevoTipo };
+}
+
 export function describirTurno(turno) {
   const { inicio, fin } = rangoTurno(turno);
   return {

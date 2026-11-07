@@ -1,7 +1,17 @@
 // Reglas de negocio de los viajes.
 import { query, transaccion, sembrarCallesIniciales } from './db.js';
 import { geocodificarDireccion } from './geocoding.js';
-import { turnoDe, turnoSiguiente, turnoAnterior, describirTurno, rangoTurno, parsearHora, proximaOcurrencia } from '../shared/turnos.js';
+import {
+  turnoDe,
+  turnoSiguiente,
+  turnoAnterior,
+  describirTurno,
+  rangoTurno,
+  parsearHora,
+  proximaOcurrencia,
+  calcularFechaParaTipoTurno,
+  proximoTurnoSegunReloj,
+} from '../shared/turnos.js';
 import { ordenarViajesVisuales } from '../shared/viajesOrden.js';
 
 export class ErrorNegocio extends Error {
@@ -359,23 +369,58 @@ export async function obtenerConfiguracion(db = { query }) {
   }
 }
 
-export async function obtenerTurnoActual(db = { query }) {
+export async function obtenerTurnoActual(db = { query }, ahora = new Date()) {
   try {
     const { rows } = await db.query(
       `SELECT clave, valor FROM configuracion WHERE clave IN ('turno_actual_fecha', 'turno_actual_tipo')`,
     );
     const mapa = Object.fromEntries(rows.map((r) => [r.clave, r.valor]));
     if (mapa.turno_actual_fecha && (mapa.turno_actual_tipo === 'A' || mapa.turno_actual_tipo === 'B')) {
-      return {
+      const guardado = {
         fecha: mapa.turno_actual_fecha,
         tipo: mapa.turno_actual_tipo,
       };
+      const { inicio, fin } = rangoTurno(guardado);
+      const adelantadoMs = inicio.getTime() - ahora.getTime();
+      const atrasadoMs = ahora.getTime() - fin.getTime();
+
+      // Si la fecha del turno guardado quedó desfasada en el futuro (> 6 hs antes de su inicio)
+      // o muy atrás en el pasado (> 12 hs después de su cierre), sincronizar con la fecha calendario real.
+      if (adelantadoMs > 6 * 3600_000 || atrasadoMs > 12 * 3600_000) {
+        const fechaReal = calcularFechaParaTipoTurno(guardado.tipo, ahora);
+        const corregido = { fecha: fechaReal, tipo: guardado.tipo };
+        if (guardado.fecha > fechaReal) {
+          // Reasignar choferes y viajes inmediatos que se hayan registrado con fecha futura adelantada
+          await db.query(
+            `INSERT INTO turno_choferes (fecha_turno, tipo_turno, chofer_id)
+             SELECT $1, tipo_turno, chofer_id
+             FROM turno_choferes
+             WHERE fecha_turno > $1
+             ON CONFLICT DO NOTHING`,
+            [fechaReal],
+          ).catch(() => {});
+          await db.query(
+            `DELETE FROM turno_choferes WHERE fecha_turno > $1`,
+            [fechaReal],
+          ).catch(() => {});
+          await db.query(
+            `UPDATE viajes
+             SET fecha_turno = $1
+             WHERE fecha_turno > $1 AND (NOT programado OR numero IS NOT NULL)`,
+            [fechaReal],
+          ).catch(() => {});
+        }
+        await fijarTurnoActual(corregido, db).catch(() => {});
+        return corregido;
+      }
+
+      return guardado;
     }
   } catch {
     // Si la tabla no existe o error, recurre al turno por hora
   }
 
-  const porDefecto = turnoDe(new Date());
+  const porDefecto = turnoDe(ahora);
   await fijarTurnoActual(porDefecto, db).catch(() => {});
   return porDefecto;
 }
@@ -394,9 +439,9 @@ export async function fijarTurnoActual(turno, db = { query }) {
   return turno;
 }
 
-export async function obtenerInfoCambioTurno(db = { query }) {
-  const actual = await obtenerTurnoActual(db);
-  const siguiente = turnoSiguiente(actual);
+export async function obtenerInfoCambioTurno(db = { query }, ahora = new Date()) {
+  const actual = await obtenerTurnoActual(db, ahora);
+  const siguiente = proximoTurnoSegunReloj(actual, ahora);
 
   const { rows: pendientes } = await db.query(
     `SELECT v.id, v.numero,
@@ -435,9 +480,9 @@ export async function obtenerInfoCambioTurno(db = { query }) {
   };
 }
 
-export async function avanzarTurnoManual(operadorId, db = { query }) {
+export async function avanzarTurnoManual(operadorId, db = { query }, ahora = new Date()) {
   return transaccion(async (client) => {
-    const actual = await obtenerTurnoActual(client);
+    const actual = await obtenerTurnoActual(client, ahora);
 
     const { rows: sinChofer } = await client.query(
       `SELECT v.id, v.numero,
@@ -457,7 +502,7 @@ export async function avanzarTurnoManual(operadorId, db = { query }) {
       throw new ErrorNegocio('Tienes viajes sin terminar en tu turno, asigna primero un chofer', 400);
     }
 
-    const nuevo = turnoSiguiente(actual);
+    const nuevo = proximoTurnoSegunReloj(actual, ahora);
     await fijarTurnoActual(nuevo, client);
     return { actual, nuevo };
   });

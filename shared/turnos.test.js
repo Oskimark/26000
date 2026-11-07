@@ -1,6 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { turnoDe, rangoTurno, turnoSiguiente, parsearHora, proximaOcurrencia, formatearNumeroViaje } from './turnos.js';
+import {
+  turnoDe,
+  rangoTurno,
+  turnoSiguiente,
+  calcularFechaParaTipoTurno,
+  proximoTurnoSegunReloj,
+  parsearHora,
+  proximaOcurrencia,
+  formatearNumeroViaje,
+} from './turnos.js';
 
 process.env.TZ = 'America/Argentina/Buenos_Aires';
 
@@ -55,4 +64,40 @@ test('formatearNumeroViaje formatea con letra de turno y 3 digitos iniciando en 
   assert.equal(formatearNumeroViaje(45, 'B'), 'B045');
   assert.equal(formatearNumeroViaje(null, 'A'), '—');
   assert.equal(formatearNumeroViaje(undefined, 'B'), '—');
+});
+
+test('proximoTurnoSegunReloj trabaja los 7 días de corrido y nunca salta días si se alterna el turno varias veces', () => {
+  // Sábado 07/11/2026 a las 06:16 AM
+  const sab06 = d('2026-11-07T06:16:00-03:00');
+  const tActual = { fecha: '2026-11-07', tipo: 'A' };
+
+  // De A pasa a B del mismo día 07/11
+  const sig1 = proximoTurnoSegunReloj(tActual, sab06);
+  assert.deepEqual(sig1, { fecha: '2026-11-07', tipo: 'B' });
+
+  // Si se vuelve a cambiar el mismo día 07/11 de B a A, mantiene el 07/11 (NUNCA salta al 08/11 ni al 10/11)
+  const sig2 = proximoTurnoSegunReloj(sig1, sab06);
+  assert.deepEqual(sig2, { fecha: '2026-11-07', tipo: 'A' });
+
+  // Domingo 08/11/2026 a las 03:00 AM: al cerrar el turno B del sábado pasa al turno A del domingo 08/11
+  const dom03 = d('2026-11-08T03:00:00-03:00');
+  assert.deepEqual(
+    proximoTurnoSegunReloj({ fecha: '2026-11-07', tipo: 'B' }, dom03),
+    { fecha: '2026-11-08', tipo: 'A' }
+  );
+
+  // Domingo 08/11/2026 a las 15:00: pasa al turno B del domingo 08/11
+  const dom15 = d('2026-11-08T15:00:00-03:00');
+  assert.deepEqual(
+    proximoTurnoSegunReloj({ fecha: '2026-11-08', tipo: 'A' }, dom15),
+    { fecha: '2026-11-08', tipo: 'B' }
+  );
+
+  // Lunes 09/11/2026 a las 03:00 AM: pasa al turno A del lunes 09/11
+  const lun03 = d('2026-11-09T03:00:00-03:00');
+  assert.deepEqual(
+    proximoTurnoSegunReloj({ fecha: '2026-11-08', tipo: 'B' }, lun03),
+    { fecha: '2026-11-09', tipo: 'A' }
+  );
+  assert.equal(calcularFechaParaTipoTurno('A', sab06), '2026-11-07');
 });
