@@ -2,12 +2,12 @@
 // del proceso (TZ=America/Argentina/Buenos_Aires, se fija en config.js).
 //
 // Turnos:
-//   'A' = 03:00 a 15:00
-//   'B' = 15:00 a 03:00 del día siguiente
+//   'A' = 06:00 a 18:00
+//   'B' = 18:00 a 06:00 del día siguiente
 // Un turno se identifica por la fecha en que COMIENZA + su tipo.
 
-export const INICIO_A = 3;
-export const INICIO_B = 15;
+export const INICIO_A = 6;
+export const INICIO_B = 18;
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -26,7 +26,7 @@ export function turnoDe(instante = new Date()) {
   const h = d.getHours();
   if (h >= INICIO_A && h < INICIO_B) return { fecha: fechaISO(d), tipo: 'A' };
   if (h >= INICIO_B) return { fecha: fechaISO(d), tipo: 'B' };
-  // Entre 00:00 y 03:00 pertenece al turno B que empezó el día anterior.
+  // Entre 00:00 y 06:00 pertenece al turno B que empezó el día anterior.
   const ayer = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
   return { fecha: fechaISO(ayer), tipo: 'B' };
 }
@@ -56,7 +56,7 @@ export function calcularFechaParaTipoTurno(tipo, ahora = new Date()) {
   const d = new Date(ahora);
   const h = d.getHours();
   if (tipo === 'A') {
-    // Si se pasa al turno A (03 a 15) tarde en la noche (21:00 a 23:59), corresponde al día siguiente.
+    // Si se pasa al turno A (06 a 18) tarde en la noche (21:00 a 23:59), corresponde al día siguiente.
     // En cualquier otro horario (00:00 a 20:59), corresponde al día calendario actual.
     if (h >= 21) {
       const manana = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
@@ -64,9 +64,9 @@ export function calcularFechaParaTipoTurno(tipo, ahora = new Date()) {
     }
     return fechaISO(d);
   }
-  // Tipo 'B' (15 a 03):
-  // Entre las 00:00 y las 02:59 de la madrugada corresponde al turno B iniciado el día anterior.
-  // Desde las 03:00 hasta las 23:59 corresponde al día calendario actual.
+  // Tipo 'B' (18 a 06):
+  // Entre las 00:00 y las 05:59 de la madrugada corresponde al turno B iniciado el día anterior.
+  // Desde las 06:00 hasta las 23:59 corresponde al día calendario actual.
   if (h < INICIO_A) {
     const ayer = new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
     return fechaISO(ayer);
@@ -76,7 +76,7 @@ export function calcularFechaParaTipoTurno(tipo, ahora = new Date()) {
 
 /**
  * Calcula el próximo turno al realizar un Cambio de Turno manual:
- * alterna entre 'A' (03 a 15) y 'B' (15 a 03) anclando siempre la fecha al calendario real.
+ * alterna entre 'A' (06 a 18) y 'B' (18 a 06) anclando siempre la fecha al calendario real.
  */
 export function proximoTurnoSegunReloj(actual, ahora = new Date()) {
   const nuevoTipo = actual?.tipo === 'A' ? 'B' : 'A';
@@ -90,7 +90,7 @@ export function describirTurno(turno) {
     ...turno,
     inicio: inicio.toISOString(),
     fin: fin.toISOString(),
-    etiqueta: `${turno.fecha.split('-').reverse().join('/')} ${turno.tipo === 'A' ? '03 a 15' : '15 a 03'}`,
+    etiqueta: `${turno.fecha.split('-').reverse().join('/')} ${turno.tipo === 'A' ? '06 a 18' : '18 a 06'}`,
   };
 }
 

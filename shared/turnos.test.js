@@ -15,22 +15,22 @@ process.env.TZ = 'America/Argentina/Buenos_Aires';
 
 const d = (s) => new Date(s); // fechas con offset explícito -03:00
 
-test('turno A entre 03:00 y 14:59', () => {
-  assert.deepEqual(turnoDe(d('2026-10-15T03:00:00-03:00')), { fecha: '2026-10-15', tipo: 'A' });
-  assert.deepEqual(turnoDe(d('2026-10-15T14:59:59-03:00')), { fecha: '2026-10-15', tipo: 'A' });
+test('turno A entre 06:00 y 17:59', () => {
+  assert.deepEqual(turnoDe(d('2026-10-15T06:00:00-03:00')), { fecha: '2026-10-15', tipo: 'A' });
+  assert.deepEqual(turnoDe(d('2026-10-15T17:59:59-03:00')), { fecha: '2026-10-15', tipo: 'A' });
 });
 
-test('turno B desde 15:00 y hasta las 02:59 del día siguiente', () => {
-  assert.deepEqual(turnoDe(d('2026-10-15T15:00:00-03:00')), { fecha: '2026-10-15', tipo: 'B' });
+test('turno B desde 18:00 y hasta las 05:59 del día siguiente', () => {
+  assert.deepEqual(turnoDe(d('2026-10-15T18:00:00-03:00')), { fecha: '2026-10-15', tipo: 'B' });
   assert.deepEqual(turnoDe(d('2026-10-15T23:59:00-03:00')), { fecha: '2026-10-15', tipo: 'B' });
-  assert.deepEqual(turnoDe(d('2026-10-16T02:59:00-03:00')), { fecha: '2026-10-15', tipo: 'B' });
+  assert.deepEqual(turnoDe(d('2026-10-16T05:59:00-03:00')), { fecha: '2026-10-15', tipo: 'B' });
   assert.deepEqual(turnoDe(d('2026-11-01T01:00:00-03:00')), { fecha: '2026-10-31', tipo: 'B' });
 });
 
 test('rango y turno siguiente', () => {
   const { inicio, fin } = rangoTurno({ fecha: '2026-10-15', tipo: 'B' });
-  assert.equal(inicio.toISOString(), '2026-10-15T18:00:00.000Z');
-  assert.equal(fin.toISOString(), '2026-10-16T06:00:00.000Z');
+  assert.equal(inicio.toISOString(), '2026-10-15T21:00:00.000Z');
+  assert.equal(fin.toISOString(), '2026-10-16T09:00:00.000Z');
   assert.deepEqual(turnoSiguiente({ fecha: '2026-10-15', tipo: 'B' }), { fecha: '2026-10-16', tipo: 'A' });
   assert.deepEqual(turnoSiguiente({ fecha: '2026-10-15', tipo: 'A' }), { fecha: '2026-10-15', tipo: 'B' });
 });
@@ -79,24 +79,24 @@ test('proximoTurnoSegunReloj trabaja los 7 días de corrido y nunca salta días 
   const sig2 = proximoTurnoSegunReloj(sig1, sab06);
   assert.deepEqual(sig2, { fecha: '2026-11-07', tipo: 'A' });
 
-  // Domingo 08/11/2026 a las 03:00 AM: al cerrar el turno B del sábado pasa al turno A del domingo 08/11
-  const dom03 = d('2026-11-08T03:00:00-03:00');
+  // Domingo 08/11/2026 a las 06:00 AM: al cerrar el turno B del sábado pasa al turno A del domingo 08/11
+  const dom06 = d('2026-11-08T06:00:00-03:00');
   assert.deepEqual(
-    proximoTurnoSegunReloj({ fecha: '2026-11-07', tipo: 'B' }, dom03),
+    proximoTurnoSegunReloj({ fecha: '2026-11-07', tipo: 'B' }, dom06),
     { fecha: '2026-11-08', tipo: 'A' }
   );
 
-  // Domingo 08/11/2026 a las 15:00: pasa al turno B del domingo 08/11
-  const dom15 = d('2026-11-08T15:00:00-03:00');
+  // Domingo 08/11/2026 a las 18:00: pasa al turno B del domingo 08/11
+  const dom18 = d('2026-11-08T18:00:00-03:00');
   assert.deepEqual(
-    proximoTurnoSegunReloj({ fecha: '2026-11-08', tipo: 'A' }, dom15),
+    proximoTurnoSegunReloj({ fecha: '2026-11-08', tipo: 'A' }, dom18),
     { fecha: '2026-11-08', tipo: 'B' }
   );
 
-  // Lunes 09/11/2026 a las 03:00 AM: pasa al turno A del lunes 09/11
-  const lun03 = d('2026-11-09T03:00:00-03:00');
+  // Lunes 09/11/2026 a las 06:00 AM: pasa al turno A del lunes 09/11
+  const lun06 = d('2026-11-09T06:00:00-03:00');
   assert.deepEqual(
-    proximoTurnoSegunReloj({ fecha: '2026-11-08', tipo: 'B' }, lun03),
+    proximoTurnoSegunReloj({ fecha: '2026-11-08', tipo: 'B' }, lun06),
     { fecha: '2026-11-09', tipo: 'A' }
   );
   assert.equal(calcularFechaParaTipoTurno('A', sab06), '2026-11-07');

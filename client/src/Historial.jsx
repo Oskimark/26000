@@ -77,8 +77,8 @@ export default function Historial({ turnos }) {
           <label>
             <span>Turno</span>
             <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
-              <option value="A">Turno A (03:00 a 15:00)</option>
-              <option value="B">Turno B (15:00 a 03:00 día siguiente)</option>
+              <option value="A">Turno A (06:00 a 18:00)</option>
+              <option value="B">Turno B (18:00 a 06:00 día siguiente)</option>
             </select>
           </label>
           <button className="btn primario" onClick={cargarTurno} disabled={cargando}>

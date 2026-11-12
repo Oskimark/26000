@@ -142,7 +142,7 @@ export default function App() {
               onClick={() => setModalCambioTurnoAbierto(true)}
               title="Hacé clic para ver estado del turno o realizar Cambio de Turno"
             >
-              {turnos.actual.tipo === 'A' ? '03 - 15' : '15 - 03'}
+              {turnos.actual.tipo === 'A' ? '06 - 18' : '18 - 06'}
               <span className="flecha-cambio-turno"> ▾</span>
             </button>
           )}

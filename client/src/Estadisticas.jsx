@@ -301,8 +301,8 @@ export default function Estadisticas() {
               <label>⏱️ Turno:</label>
               <select value={tipoTurno} onChange={(e) => setTipoTurno(e.target.value)}>
                 <option value="">Ambos turnos (A y B)</option>
-                <option value="A">Turno A (03:00 a 15:00)</option>
-                <option value="B">Turno B (15:00 a 03:00)</option>
+                <option value="A">Turno A (06:00 a 18:00)</option>
+                <option value="B">Turno B (18:00 a 06:00)</option>
               </select>
             </div>
 
