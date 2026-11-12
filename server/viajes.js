@@ -32,11 +32,11 @@ export function normalizarDireccion(texto) {
 }
 
 export function limpiarDireccion(texto) {
-  return String(texto ?? '').replace(/\s+/g, ' ').trim();
+  return String(texto ?? '').replace(/\s+/g, ' ').trim().slice(0, 250);
 }
 
 export function normalizarTelefono(texto) {
-  return String(texto ?? '').replace(/\D/g, '');
+  return String(texto ?? '').replace(/\D/g, '').slice(0, 30);
 }
 
 /**
@@ -309,7 +309,7 @@ const SELECT_VIAJE = `
 const ORDEN_LISTADO = `ORDER BY v.numero IS NULL, v.numero DESC, v.hora_programada, v.id DESC`;
 
 export function limpiarNombreCliente(texto) {
-  return String(texto ?? '').replace(/\s+/g, ' ').trim();
+  return String(texto ?? '').replace(/\s+/g, ' ').trim().slice(0, 120);
 }
 
 export async function obtenerNombrePorTelefono(telefono, db = { query }) {
@@ -1488,7 +1488,8 @@ export async function buscarViajesClientes(filtros = {}) {
   }
 
   if (filtros.nombre && String(filtros.nombre).trim()) {
-    const p = addParam(`%${String(filtros.nombre).trim()}%`);
+    const nomEsc = String(filtros.nombre).trim().slice(0, 120).replace(/[%_\\]/g, '\\$&');
+    const p = addParam(`%${nomEsc}%`);
     condiciones.push(`v.nombre_cliente ILIKE ${p}`);
   }
 
@@ -1502,12 +1503,14 @@ export async function buscarViajesClientes(filtros = {}) {
     const p = addParam(Number(filtros.choferId));
     condiciones.push(`v.chofer_id = ${p}`);
   } else if (filtros.chofer && String(filtros.chofer).trim()) {
-    const p = addParam(`%${String(filtros.chofer).trim()}%`);
+    const chEsc = String(filtros.chofer).trim().slice(0, 100).replace(/[%_\\]/g, '\\$&');
+    const p = addParam(`%${chEsc}%`);
     condiciones.push(`c.nombre ILIKE ${p}`);
   }
 
   if (filtros.operador && String(filtros.operador).trim()) {
-    const p = addParam(`%${String(filtros.operador).trim()}%`);
+    const opEsc = String(filtros.operador).trim().slice(0, 100).replace(/[%_\\]/g, '\\$&');
+    const p = addParam(`%${opEsc}%`);
     condiciones.push(`o.nombre ILIKE ${p}`);
   }
 
@@ -1868,13 +1871,13 @@ export async function obtenerEstadisticas({
   const params = [];
   let paramIdx = 1;
 
-  if (desde) {
+  if (desde && /^\d{4}-\d{2}-\d{2}$/.test(String(desde))) {
     condiciones.push(`v.fecha_turno >= $${paramIdx++}::date`);
-    params.push(desde);
+    params.push(String(desde));
   }
-  if (hasta) {
+  if (hasta && /^\d{4}-\d{2}-\d{2}$/.test(String(hasta))) {
     condiciones.push(`v.fecha_turno <= $${paramIdx++}::date`);
-    params.push(hasta);
+    params.push(String(hasta));
   }
   if (dias) {
     const arrDias = (Array.isArray(dias) ? dias : String(dias).split(','))
@@ -1907,7 +1910,8 @@ export async function obtenerEstadisticas({
     params.push(Number(choferId));
   }
   if (cliente && String(cliente).trim()) {
-    const c = `%${String(cliente).trim().toLowerCase()}%`;
+    const cEsc = String(cliente).trim().slice(0, 120).toLowerCase().replace(/[%_\\]/g, '\\$&');
+    const c = `%${cEsc}%`;
     condiciones.push(`(LOWER(v.telefono) LIKE $${paramIdx} OR LOWER(v.nombre_cliente) LIKE $${paramIdx})`);
     paramIdx++;
     params.push(c);

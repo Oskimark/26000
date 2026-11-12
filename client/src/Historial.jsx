@@ -30,6 +30,13 @@ export default function Historial({ turnos }) {
     cargarTurno();
   }, [cargarTurno]);
 
+  function escaparCeldaCSV(valor) {
+    const texto = String(valor ?? '').replace(/"/g, '""');
+    // Prevenir inyección de fórmulas en planillas de cálculo (=, +, -, @, tab, CR)
+    const seguro = /^[=+\-@\t\r]/.test(texto) ? `'${texto}` : texto;
+    return `"${seguro}"`;
+  }
+
   function exportarCSV() {
     if (!datos?.viajes?.length) return;
     const encabezados = ['N°', 'Hora inicio', 'Hora programada', 'Hora asignado', 'Chofer', 'Estado', 'Teléfono', 'Cliente', 'Dirección', 'Operador', 'Condición'];
@@ -38,12 +45,12 @@ export default function Historial({ turnos }) {
       v.hora_toma ? new Date(v.hora_toma).toLocaleTimeString('es-AR') : '',
       v.hora_programada ? new Date(v.hora_programada).toLocaleTimeString('es-AR') : '',
       (v.hora_asignacion || v.hora_fin) ? new Date(v.hora_asignacion || v.hora_fin).toLocaleTimeString('es-AR') : '',
-      `"${v.chofer || 'Sin asignar'}"`,
+      escaparCeldaCSV(v.chofer || 'Sin asignar'),
       v.hora_avisado ? new Date(v.hora_avisado).toLocaleTimeString('es-AR') : '',
-      `"${v.telefono || ''}"`,
-      `"${(v.nombre_cliente || '').replace(/"/g, '""')}"`,
-      `"${v.direccion.replace(/"/g, '""')}"`,
-      `"${v.operador || ''}"`,
+      escaparCeldaCSV(v.telefono || ''),
+      escaparCeldaCSV(v.nombre_cliente || ''),
+      escaparCeldaCSV(v.direccion || ''),
+      escaparCeldaCSV(v.operador || ''),
       v.cancelado ? 'Anulado' : v.numero != null ? 'Completado' : 'Pendiente',
     ]);
     const contenido = [encabezados.join(','), ...filas.map((f) => f.join(','))].join('\n');

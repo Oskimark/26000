@@ -1,7 +1,14 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { query, transaccion } from './db.js';
-import { firmarToken, requiereAuth, requiereAdmin, requiereSuperAdmin, requierePermiso } from './auth.js';
+import {
+  firmarToken,
+  requiereAuth,
+  requiereAdmin,
+  requiereSuperAdmin,
+  requierePermiso,
+  invalidarCacheOperador,
+} from './auth.js';
 import { normalizarPermisos, tienePermiso } from '../shared/permisos.js';
 import {
   ErrorNegocio, crearViaje, listarTurno, listarViajesRecepcion, listarProgramadosFuturos, asignarChofer,
@@ -15,18 +22,68 @@ import { turnoDe, turnoSiguiente, turnoAnterior, proximoTurnoSegunReloj, describ
 
 const a = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
+// Hash señuelo para igualar el tiempo de respuesta cuando el usuario no existe (evita enumeración por timing)
+const DUMMY_BCRYPT_HASH = bcrypt.hashSync('clave-senuelo-anti-timing-26000', 10);
+
+// Protección contra ataques de fuerza bruta en /login
+const VENTANA_LOGIN_MS = 5 * 60_000;
+const MAX_INTENTOS_LOGIN = 10;
+const intentosLogin = new Map();
+
+function verificarLimiteLogin(clave) {
+  const ahora = Date.now();
+  if (intentosLogin.size > 5000) {
+    for (const [k, v] of intentosLogin.entries()) {
+      if (ahora > v.expira) intentosLogin.delete(k);
+    }
+  }
+  const reg = intentosLogin.get(clave);
+  if (!reg || ahora > reg.expira) return;
+  if (reg.intentos >= MAX_INTENTOS_LOGIN) {
+    throw new ErrorNegocio(
+      'Demasiados intentos de inicio de sesión fallidos. Esperá unos minutos antes de volver a intentar.',
+      429,
+    );
+  }
+}
+
+function registrarFalloLogin(clave) {
+  const ahora = Date.now();
+  const reg = intentosLogin.get(clave);
+  if (!reg || ahora > reg.expira) {
+    intentosLogin.set(clave, { intentos: 1, expira: ahora + VENTANA_LOGIN_MS });
+  } else {
+    reg.intentos += 1;
+  }
+}
+
 export function crearApi({ notificar }) {
   const api = express.Router();
-  api.use(express.json());
+  api.use(express.json({ limit: '100kb' }));
 
   // ---------- Sesión ----------
   api.post('/login', a(async (req, res) => {
     const { usuario, password } = req.body || {};
-    const { rows } = await query('SELECT * FROM operadores WHERE usuario = $1 AND activo', [String(usuario || '').trim()]);
+    const usuLimpio = String(usuario || '').trim().slice(0, 80);
+    const passStr = String(password || '').slice(0, 128);
+    const ip = String(req.ip || req.socket?.remoteAddress || 'local');
+    const claveIpUsuario = `${ip}:${usuLimpio.toLowerCase()}`;
+
+    verificarLimiteLogin(ip);
+    verificarLimiteLogin(claveIpUsuario);
+
+    const { rows } = await query('SELECT * FROM operadores WHERE usuario = $1 AND activo', [usuLimpio]);
     const op = rows[0];
-    if (!op || !(await bcrypt.compare(String(password || ''), op.password_hash))) {
+    const hashComparar = op ? op.password_hash : DUMMY_BCRYPT_HASH;
+    const coincide = await bcrypt.compare(passStr, hashComparar);
+
+    if (!op || !coincide) {
+      registrarFalloLogin(ip);
+      registrarFalloLogin(claveIpUsuario);
       throw new ErrorNegocio('Usuario o contraseña incorrectos', 401);
     }
+
+    intentosLogin.delete(claveIpUsuario);
     const operador = {
       id: op.id,
       usuario: op.usuario,
@@ -77,11 +134,11 @@ export function crearApi({ notificar }) {
     });
   }));
 
-  api.get('/turnos/cambio-info', a(async (req, res) => {
+  api.get('/turnos/cambio-info', requierePermiso('recepcion'), a(async (req, res) => {
     res.json(await obtenerInfoCambioTurno());
   }));
 
-  api.post('/turnos/cambiar', a(async (req, res) => {
+  api.post('/turnos/cambiar', requierePermiso('recepcion'), a(async (req, res) => {
     const { actual, nuevo } = await avanzarTurnoManual(req.operador.id);
     notificar('turno', describirTurno(nuevo));
     res.json({ ok: true, nuevo: describirTurno(nuevo), anterior: describirTurno(actual) });
@@ -170,7 +227,7 @@ export function crearApi({ notificar }) {
     res.json(viaje);
   }));
 
-  api.put('/viajes/:id/fin', a(async (req, res) => {
+  api.put('/viajes/:id/fin', requierePermiso('recepcion'), a(async (req, res) => {
     const viaje = await registrarFin(Number(req.params.id), req.body || {});
     notificar('viajes', { id: viaje.id });
     res.json(viaje);
@@ -209,7 +266,7 @@ export function crearApi({ notificar }) {
   }));
 
   api.post('/choferes', requierePermiso('admin_choferes'), a(async (req, res) => {
-    const nombre = String(req.body?.nombre || '').trim();
+    const nombre = String(req.body?.nombre || '').trim().slice(0, 100);
     if (!nombre) throw new ErrorNegocio('Falta el nombre');
     const { rows } = await query('INSERT INTO choferes (nombre) VALUES ($1) RETURNING id, nombre, activo', [nombre]);
     notificar('choferes');
@@ -217,7 +274,7 @@ export function crearApi({ notificar }) {
   }));
 
   api.put('/choferes/:id', requierePermiso('admin_choferes'), a(async (req, res) => {
-    const nombre = String(req.body?.nombre || '').trim();
+    const nombre = String(req.body?.nombre || '').trim().slice(0, 100);
     if (!nombre) throw new ErrorNegocio('Falta el nombre');
     const { rows } = await query(
       'UPDATE choferes SET nombre = $1, activo = $2 WHERE id = $3 RETURNING id, nombre, activo',
@@ -251,15 +308,21 @@ export function crearApi({ notificar }) {
 
   api.post('/operadores', requiereSuperAdmin, a(async (req, res) => {
     const { usuario, nombre, password, rol, permisos } = req.body || {};
-    if (!usuario?.trim() || !nombre?.trim() || !password) throw new ErrorNegocio('Completá usuario, nombre y contraseña');
+    const usuLimpio = String(usuario || '').trim().slice(0, 80);
+    const nomLimpio = String(nombre || '').trim().slice(0, 100);
+    const passStr = String(password || '');
+    if (!usuLimpio || !nomLimpio || !passStr) throw new ErrorNegocio('Completá usuario, nombre y contraseña');
+    if (passStr.length < 4 || passStr.length > 128) {
+      throw new ErrorNegocio('La contraseña debe tener entre 4 y 128 caracteres');
+    }
     const rolEfectivo = rol === 'admin' ? 'admin' : 'operador';
     const perms = JSON.stringify(normalizarPermisos(permisos, rolEfectivo));
-    const hash = await bcrypt.hash(String(password), 10);
+    const hash = await bcrypt.hash(passStr, 10);
     try {
       const { rows } = await query(
         `INSERT INTO operadores (usuario, nombre, password_hash, rol, permisos) VALUES ($1, $2, $3, $4, $5::jsonb)
          RETURNING id, usuario, nombre, rol, activo, permisos`,
-        [usuario.trim(), nombre.trim(), hash, rolEfectivo, perms],
+        [usuLimpio, nomLimpio, hash, rolEfectivo, perms],
       );
       const creado = rows[0];
       res.status(201).json({ ...creado, permisos: normalizarPermisos(creado.permisos, creado.rol) });
@@ -272,19 +335,25 @@ export function crearApi({ notificar }) {
   api.put('/operadores/:id', requiereSuperAdmin, a(async (req, res) => {
     const id = Number(req.params.id);
     const { nombre, password, rol, activo, permisos } = req.body || {};
-    if (!nombre?.trim()) throw new ErrorNegocio('Falta el nombre');
+    const nomLimpio = String(nombre || '').trim().slice(0, 100);
+    if (!nomLimpio) throw new ErrorNegocio('Falta el nombre');
     if (id === req.operador.id && (activo === false || rol !== 'admin')) {
       throw new ErrorNegocio('No podés quitarte el rol de administrador ni desactivarte');
     }
+    const passStr = password ? String(password) : '';
+    if (passStr && (passStr.length < 4 || passStr.length > 128)) {
+      throw new ErrorNegocio('La contraseña debe tener entre 4 y 128 caracteres');
+    }
     const rolEfectivo = rol === 'admin' ? 'admin' : 'operador';
     const perms = permisos !== undefined ? JSON.stringify(normalizarPermisos(permisos, rolEfectivo)) : null;
-    const hash = password ? await bcrypt.hash(String(password), 10) : null;
+    const hash = passStr ? await bcrypt.hash(passStr, 10) : null;
     const { rows } = await query(
       `UPDATE operadores SET nombre = $1, rol = $2, activo = $3, password_hash = COALESCE($4, password_hash), permisos = COALESCE($5::jsonb, permisos)
        WHERE id = $6 RETURNING id, usuario, nombre, rol, activo, permisos`,
-      [nombre.trim(), rolEfectivo, activo !== false, hash, perms, id],
+      [nomLimpio, rolEfectivo, activo !== false, hash, perms, id],
     );
     if (!rows[0]) throw new ErrorNegocio('Operador inexistente', 404);
+    invalidarCacheOperador(id);
     const modificado = rows[0];
     res.json({ ...modificado, permisos: normalizarPermisos(modificado.permisos, modificado.rol) });
   }));
